@@ -511,7 +511,7 @@ int Engine::iterative(int color) {
           for (int i = 1; i < pvtable[0][0]; i++) {
             std::cout << algebraic(pvtable[0][i]) << " ";
           }
-          std::cout << "\n";
+          std::cout << std::endl;
         } else {
           int matescore;
           if (score > 0) {
@@ -531,7 +531,7 @@ int Engine::iterative(int color) {
           for (int i = 1; i < pvtable[0][0]; i++) {
             std::cout << algebraic(pvtable[0][i]) << " ";
           }
-          std::cout << "\n";
+          std::cout << std::endl;
         }
       }
       if (proto == "xboard") {
@@ -540,7 +540,7 @@ int Engine::iterative(int color) {
         for (int i = 1; i < pvtable[0][0]; i++) {
           std::cout << algebraic(pvtable[0][i]) << " ";
         }
-        std::cout << "\n";
+        std::cout << std::endl;
       }
       depth++;
       if (depth == maxdepth) {
@@ -560,13 +560,13 @@ int Engine::iterative(int color) {
       std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
   if (proto == "uci" && !suppressoutput) {
     int nps = 1000 * (Bitboards.nodecount / std::max(1LL, timetaken.count()));
-    std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps << "\n";
+    std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps << std::endl;
   }
   if (proto == "uci" && !suppressoutput) {
-    std::cout << "bestmove " << algebraic(bestmove1) << "\n";
+    std::cout << "bestmove " << algebraic(bestmove1) << std::endl;
   }
   if (proto == "xboard") {
-    std::cout << "move " << algebraic(bestmove1) << "\n";
+    std::cout << "move " << algebraic(bestmove1) << std::endl;
     Bitboards.makemove(bestmove1, 0);
     if (useNNUE) {
       EUNN.forwardaccumulators(bestmove1);
@@ -806,7 +806,7 @@ void Engine::uci() {
     exit(0);
   }
   if (ucicommand == "isready") {
-    std::cout << "readyok\n";
+    std::cout << "readyok" << std::endl;
   }
   if (ucicommand == "ucinewgame") {
     initializett();
@@ -1066,16 +1066,16 @@ void Engine::uci() {
       if (nnuefile != "<internal>") {
         EUNN.readnnuefile(nnuefile);
         EUNN.initializennue(Bitboards.Bitboards);
-        std::cout << "info string using nnue file " << nnuefile << "\n";
+        std::cout << "info string using nnue file " << nnuefile << std::endl;
       }
     }
     if (option == "SyzygyPath") {
       std::string tbpath = ucicommand.substr(32, ucicommand.length() - 32);
       useTB = (tbpath != "<empty>");
       if (!tb_init(tbpath.c_str())) {
-        std::cout << "info error initializing Syzygy TBs \n";
+        std::cout << "info error initializing Syzygy TBs" << std::endl;
       } else if (useTB) {
-        std::cout << "info string successful init Syzygy TBs \n";
+        std::cout << "info string successful init Syzygy TBs" << std::endl;
       }
     }
     if (option == "UCI_ShowWDL") {
@@ -1124,7 +1124,7 @@ void Engine::xboard() {
   getline(std::cin, xcommand);
   if (xcommand.substr(0, 8) == "protover") {
     std::cout << "feature ping=1 setboard=1 analyze=0 sigint=0 sigterm=0 "
-                 "myname=\"Prolix\" variants=\"shatranj\"\nfeature done=1\n";
+                 "myname=\"Prolix\" variants=\"shatranj\"\nfeature done=1" << std::endl;
   }
   if (xcommand == "new") {
     initializett();
@@ -1205,7 +1205,7 @@ void Engine::xboard() {
       add *= 10;
       reader--;
     }
-    std::cout << "pong " << sum << "\n";
+    std::cout << "pong " << sum << std::endl;
   }
   if ((xcommand.length() == 4) || (xcommand.length() == 5)) {
     int color = Bitboards.position & 1;

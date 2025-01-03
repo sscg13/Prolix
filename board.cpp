@@ -303,7 +303,6 @@ class Board {
   int mobilitye[2] = {0, 0};
   U64 zobrist[1024];
   int history[1024];
-  int last = 0;
   int root = 0;
   const int startpiece[16] = {4, 3, 1, 5, 2, 1, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -385,7 +384,7 @@ void Board::initialize() {
 }
 int Board::repetitions() {
   int repeats = 0;
-  for (int i = gamelength - 2; i >= last; i -= 2) {
+  for (int i = gamelength - 2; i >= 0; i -= 2) {
     if (zobrist[i] == zobrist[gamelength]) {
       repeats++;
       if (i >= root) {
@@ -444,9 +443,6 @@ void Board::makemove(int notation, bool reversible) {
 
   // 1 bit color, 7 bits halfmove, 6 bits ep, 4 bits castling
   gamelength++;
-  if (!reversible) {
-    root = gamelength;
-  }
   int from = notation & 63;
   int to = (notation >> 6) & 63;
   int color = (notation >> 12) & 1;
@@ -468,7 +464,7 @@ void Board::makemove(int notation, bool reversible) {
   if (piece == 2) {
     halfmove = 0;
     if (!reversible) {
-      last = gamelength;
+      gamelength = 0;
     }
   }
   if (notation & (1 << 16)) {
@@ -482,7 +478,7 @@ void Board::makemove(int notation, bool reversible) {
     gamephase[color ^ 1] -= phase[captured - 2];
     halfmove = 0;
     if (!reversible) {
-      last = gamelength;
+      gamelength = 0;
     }
   }
   if (notation & (1 << 20)) {
@@ -498,6 +494,9 @@ void Board::makemove(int notation, bool reversible) {
     gamephase[color] += phase[promoted + 1];
   } else if (notation & (1 << 24)) {
     position ^= ((from + to) << 7);
+  }
+  if (!reversible) {
+    root = gamelength;
   }
   position ^= 1;
   position ^= (halfmove << 1);
@@ -974,7 +973,6 @@ U64 Board::perftnobulk(int depth, int initialdepth, int color) {
 }
 void Board::parseFEN(std::string FEN) {
   gamelength = 0;
-  last = 0;
   root = 0;
   gamephase[0] = 0;
   gamephase[1] = 0;
