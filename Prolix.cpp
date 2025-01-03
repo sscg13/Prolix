@@ -27,7 +27,37 @@ std::string inputfile;
 struct TTentry {
   U64 key;
   U64 data;
+  void update(U64 hash, int gamelength, int depth, int score, int nodetype, int hashmove);
+  int age(int gamelength);
+  int hashmove();
+  int depth();
+  int gamelength();
+  int score();
+  int nodetype();
 };
+void TTentry::update(U64 hash, int gamelength, int depth, int score, int nodetype, int hashmove) {
+  key = hash;
+  data = (U64)((unsigned short int)score);
+  data |= (((U64)hashmove) << 16);
+  data |= (((U64)nodetype) << 42);
+  data |= (((U64)gamelength) << 44);
+  data |= (((U64)depth) << 54);
+}
+int TTentry::age(int gamelength) {
+  return std::max((gamelength - ((int)(data >> 44) & 1023)), 0);
+}
+int TTentry::hashmove() {
+  return (int)(data >> 16) & 0x03FFFFFF;
+}
+int TTentry::depth() {
+  return (int)(data >> 54) & 63;
+}
+int TTentry::score() {
+  return (int)(short int)(data & 0x000000000000FFFF);
+}
+int TTentry::nodetype() {
+  return (int)(data >> 42) & 3;
+}
 struct abinfo {
   int playedmove;
   int eval;
@@ -60,7 +90,6 @@ class Engine {
   std::mt19937 mt;
   std::ofstream dataoutput;
   void initializett();
-  void updatett(int index, int depth, int score, int nodetype, int hashmove);
   void resetauxdata();
   int quiesce(int alpha, int beta, int color, int depth);
   int alphabeta(int depth, int ply, int alpha, int beta, int color, bool nmp);
@@ -83,17 +112,6 @@ void Engine::initializett() {
   for (int i = 0; i < TTsize; i++) {
     TT[i].key = (U64)i + 1ULL;
     TT[i].data = 0;
-  }
-}
-void Engine::updatett(int index, int depth, int score, int nodetype,
-                      int hashmove) {
-  if (index < TTsize) {
-    TT[index].key = Bitboards.zobristhash;
-    TT[index].data = (U64)((unsigned short int)score);
-    TT[index].data |= (((U64)hashmove) << 16);
-    TT[index].data |= (((U64)nodetype) << 42);
-    TT[index].data |= (((U64)Bitboards.gamelength) << 44);
-    TT[index].data |= (((U64)depth) << 54);
   }
 }
 void Engine::resetauxdata() {
@@ -226,9 +244,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   int index = Bitboards.zobristhash % TTsize;
   int ttmove = 0;
   int bestmove1 = -1;
-  int ttdepth = (int)(TT[index].data >> 54) & 63;
-  int ttage =
-      std::max(Bitboards.gamelength - ((int)(TT[index].data >> 44) & 1023), 0);
+  int ttdepth = TT[index].depth();
+  int ttage = TT[index].age(Bitboards.gamelength);
   bool update = (depth >= (ttdepth - ttage / 3));
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (beta - alpha > 1);
@@ -240,9 +257,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   }
   int quiets = 0;
   if (TT[index].key == Bitboards.zobristhash) {
-    score = (int)(short int)(TT[index].data & 0x000000000000FFFF);
-    ttmove = (int)(TT[index].data >> 16) & 0x03FFFFFF;
-    int nodetype = (int)(TT[index].data >> 42) & 3;
+    score = TT[index].score();
+    ttmove = TT[index].hashmove();
+    int nodetype = TT[index].nodetype();
     if (ttdepth >= depth) {
       if (!isPV && Bitboards.repetitions() == 0) {
         if (nodetype == 3) {
@@ -376,7 +393,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
         if (score > alpha) {
           if (score >= beta) {
             if (update && !stopsearch && abs(score) < 29000) {
-              updatett(index, depth, score, 1, mov);
+              TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth, score, 1, mov);
             }
             if (!iscapture(mov) && (killers[ply][0] != mov)) {
               killers[ply][1] = killers[ply][0];
@@ -426,7 +443,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     }
   }
   if (((update || allnode) && !stopsearch) && (abs(bestscore) < 29000)) {
-    updatett(index, depth, bestscore, 2 + allnode,
+    TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth, bestscore, 2 + allnode,
              Bitboards.moves[ply][bestmove1]);
   }
   return bestscore;
