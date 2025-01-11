@@ -12,7 +12,7 @@ Prolix compiles using `clang++`, though in theory `g++` should also be supported
 ## NNUE
 You can download NNUE files from [Google Drive](https://drive.google.com/drive/folders/1d4HROM-7nbSpkQGt4e4TMEcmcVa00XoE?usp=sharing)
 
-The default NNUE file is indicated in the Makefile. If you wish to compile with a different file (provided it is in standard Bullet format), please ensure that the constants in `nnue.cpp` match the architecture of the net.
+The default NNUE file is trained on [bullet-legacy](https://github.com/jw1912/bullet/tree/legacy) using original data (the Google Drive contains more information regarding data). Its name is indicated in the Makefile. If you wish to compile with a different file, please ensure that the constants in `nnue.cpp` match the architecture of the net, and that the weights are binary encoded in the same way bullet-legacy would encode them.
 
 ## Syzygy Tablebases
 Prolix optionally includes support for (Shatranj) Syzygy tablebases (downloadable at ftp://chessdb:chessdb@ftp.chessdb.cn/pub/syzygy/shatranj/). Currently only WDL probing is supported. Using tablebases currently heavily reduces mate finding ability.
