@@ -359,7 +359,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       if (score > bestscore) {
         if (score > alpha) {
           if (score >= beta) {
-            if (update && !stopsearch && abs(score) < 29000) {
+            if (update && !stopsearch) {
               TT[index].update(Bitboards.zobristhash, Bitboards.gamelength,
                                depth, score, 1, mov);
             }
@@ -410,7 +410,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       }
     }
   }
-  if (((update || allnode) && !stopsearch) && (abs(bestscore) < 29000)) {
+  if (((update || allnode) && !stopsearch)) {
     TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth,
                      bestscore, 2 + allnode, Bitboards.moves[ply][bestmove1]);
   }
@@ -565,19 +565,18 @@ void Engine::datagenautoplay() {
   suppressoutput = true;
   initializett();
   resetauxdata();
-  int seed = mt() % 40320;
-  Bitboards.parseFEN(get8294400FEN(seed, seed));
+  int seed = mt() % 360;
+  Bitboards.parseFEN(get129600FEN(seed, seed));
   std::string game = "";
   std::string result = "";
-  int extra = (mt() >> 11) & 1;
-  for (int i = 0; i < 7 + extra; i++) {
+  for (int i = 0; i < 8; i++) {
     int num_moves = Bitboards.generatemoves(i & 1, 0, 0);
     if (num_moves == 0) {
       suppressoutput = false;
       initializett();
       resetauxdata();
-      seed = mt() % 40320;
-      Bitboards.parseFEN(get8294400FEN(seed, seed));
+      seed = mt() % 360;
+      Bitboards.parseFEN(get129600FEN(seed, seed));
       return;
     }
     int rand_move = mt() % num_moves;
@@ -635,9 +634,6 @@ void Engine::datagenautoplay() {
         result = "0.0";
       }
     } else if (Bitboards.halfmovecount() >= 140) {
-      finished = true;
-      result = "0.5";
-    } else if (Bitboards.gamelength >= 900) {
       finished = true;
       result = "0.5";
     }
