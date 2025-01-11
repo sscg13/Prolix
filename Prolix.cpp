@@ -1,7 +1,7 @@
 #include "board.cpp"
-#include "tt.cpp"
 #include "history.cpp"
 #include "nnue.cpp"
+#include "tt.cpp"
 #include <chrono>
 #include <fstream>
 #include <string>
@@ -110,7 +110,7 @@ void initializelmr() {
   for (int i = 0; i < maxmaxdepth; i++) {
     for (int j = 0; j < 256; j++) {
       lmr_reductions[i][j] =
-          (i == 0 || j == 0) ? 0 : floor(0.59 + log(i) * log(j) * 0.46);
+          (i == 0 || j == 0) ? 0 : floor(0.77 + log(i) * log(j) * 0.46);
     }
   }
 }
@@ -321,7 +321,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       /*if (quiets > 7*depth) {
         prune = true;
       }*/
-      r = std::min(depth - 1, lmr_reductions[depth][i]);
+      r = std::min(depth - 1, lmr_reductions[depth][quiets]);
     }
     r = std::max(0, r - isPV - improving);
     if (fewpieces && useTB) {
@@ -360,7 +360,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
         if (score > alpha) {
           if (score >= beta) {
             if (update && !stopsearch && abs(score) < 29000) {
-              TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth, score, 1, mov);
+              TT[index].update(Bitboards.zobristhash, Bitboards.gamelength,
+                               depth, score, 1, mov);
             }
             if (!iscapture(mov) && (killers[ply][0] != mov)) {
               killers[ply][1] = killers[ply][0];
@@ -410,8 +411,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     }
   }
   if (((update || allnode) && !stopsearch) && (abs(bestscore) < 29000)) {
-    TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth, bestscore, 2 + allnode,
-             Bitboards.moves[ply][bestmove1]);
+    TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth,
+                     bestscore, 2 + allnode, Bitboards.moves[ply][bestmove1]);
   }
   return bestscore;
 }
@@ -544,7 +545,8 @@ int Engine::iterative(int color) {
       std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
   if (proto == "uci" && !suppressoutput) {
     int nps = 1000 * (Bitboards.nodecount / std::max(1LL, timetaken.count()));
-    std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps << std::endl;
+    std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps
+              << std::endl;
   }
   if (proto == "uci" && !suppressoutput) {
     std::cout << "bestmove " << algebraic(bestmove1) << std::endl;
@@ -1108,7 +1110,8 @@ void Engine::xboard() {
   getline(std::cin, xcommand);
   if (xcommand.substr(0, 8) == "protover") {
     std::cout << "feature ping=1 setboard=1 analyze=0 sigint=0 sigterm=0 "
-                 "myname=\"Prolix\" variants=\"shatranj\"\nfeature done=1" << std::endl;
+                 "myname=\"Prolix\" variants=\"shatranj\"\nfeature done=1"
+              << std::endl;
   }
   if (xcommand == "new") {
     initializett();
