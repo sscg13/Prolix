@@ -374,7 +374,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
             }
             for (int j = 0; j < i; j++) {
               int mov2 = Bitboards.moves[ply][j];
-              if (!iscapture(mov2)) {
+              if (iscapture(mov2)) {
+                Histories.updatenoisyhistory(mov2, -3 * depth);
+              } else {
                 Histories.updatequiethistory(mov2, -3 * depth);
               }
             }
