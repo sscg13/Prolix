@@ -8,8 +8,8 @@ const int outputbuckets = 8;
 const int evalscale = 400;
 const int evalQA = 255;
 const int evalQB = 64;
-const int material[6] = {1, 1, 1, 1, 1, 0};
-const int bucketdivisor = 32 / outputbuckets;
+const int material[6] = {1, 1, 2, 4, 6, 0};
+const int bucketdivisor = 64 / outputbuckets;
 const int nnuefilesize =
     (1538 * nnuesize + 4 * nnuesize * outputbuckets + 2 * outputbuckets);
 INCBIN(char, NNUE, EUNNfile);
@@ -184,7 +184,7 @@ void NNUE::backwardaccumulators(int notation) {
   }
 }
 int NNUE::evaluate(int color) {
-  int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
+  int bucket = std::min((totalmaterial - 1) / bucketdivisor, outputbuckets - 1);
   int eval = finalbias[bucket] * evalQA;
   if (color == 0) {
     for (int i = 0; i < nnuesize; i++) {
