@@ -258,7 +258,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     return -1 * (28000 - ply);
   }
   if ((!incheck && Bitboards.gamephase[color] > 3) && (depth > 1 && nmp) &&
-      (staticeval >= beta)) {
+      (staticeval >= beta && !isPV)) {
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
     score = -alphabeta(std::max(0, depth - 2 - (depth + 1) / 3), ply + 1, -beta,
