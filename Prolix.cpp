@@ -28,6 +28,7 @@ std::string inputfile;
 struct abinfo {
   int playedmove;
   int eval;
+  int excludedmove;
 };
 class Engine {
   Board Bitboards;
@@ -213,20 +214,22 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   int bestmove1 = -1;
   int ttdepth = TT[index].depth();
   int ttage = TT[index].age(Bitboards.gamelength);
+  int nodetype = 0;
   bool update = (depth >= (ttdepth - ttage / 3));
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (beta - alpha > 1);
   int staticeval = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+  int excluded = searchstack[ply].excludedmove;
   searchstack[ply].eval = staticeval;
   bool improving = false;
   if (ply > 1) {
     improving = (staticeval > searchstack[ply - 2].eval);
   }
   int quiets = 0;
-  if (TT[index].key == Bitboards.zobristhash) {
+  if (TT[index].key == Bitboards.zobristhash && excluded == 0) {
     score = TT[index].score();
     ttmove = TT[index].hashmove();
-    int nodetype = TT[index].nodetype();
+    nodetype = TT[index].nodetype();
     if (ttdepth >= depth) {
       if (!isPV && Bitboards.repetitions() == 0) {
         if (nodetype == 3) {
@@ -248,7 +251,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     }
   }
   int margin = std::max(40, 70 * (depth - improving));
-  if (ply > 0 && score == -30000) {
+  if (ply > 0 && score == -30000 && excluded == 0) {
     if (staticeval - margin >= beta && (abs(beta) < 20000 && !incheck)) {
       return (staticeval + beta) / 2;
     }
@@ -258,7 +261,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     return -1 * (28000 - ply);
   }
   if ((!incheck && Bitboards.gamephase[color] > 3) && (depth > 1 && nmp) &&
-      (staticeval >= beta && !isPV)) {
+      (staticeval >= beta && !isPV) && excluded == 0) {
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
     score = -alphabeta(std::max(0, depth - 2 - (depth + 1) / 3), ply + 1, -beta,
@@ -316,6 +319,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     int r = 0;
     bool prune = false;
     int mov = Bitboards.moves[ply][i];
+    if (mov == excluded) {
+      continue;
+    }
     if (!iscapture(mov)) {
       quiets++;
       /*if (quiets > 7*depth) {
@@ -331,26 +337,37 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       }
       Bitboards.unmakemove(mov);
     }
-    int e = (movcount == 1);
+    int e = 0;
+    if ((ply > 0 && depth >= 8) && (mov == ttmove && excluded == 0) && (ttdepth >= depth - 4) && (nodetype & 1)) {
+      int singularbeta = TT[index].score() - 2 * depth;
+      int singulardepth = (depth - 1) / 2;
+      searchstack[ply].excludedmove = mov;
+      score = alphabeta(singulardepth, ply, singularbeta - 1, singularbeta, color, nmp);
+      searchstack[ply].excludedmove = 0;
+      if (score < singularbeta) {
+        e = 1;
+      }
+    }
     if (!stopsearch && !prune) {
       Bitboards.makemove(mov, true);
       searchstack[ply].playedmove = mov;
+      int newdepth = depth - 1 + e;
       if (useNNUE) {
         EUNN.forwardaccumulators(mov);
       }
       if (nullwindow) {
-        score = -alphabeta(depth - 1 - r, ply + 1, -alpha - 1, -alpha,
+        score = -alphabeta(newdepth - r, ply + 1, -alpha - 1, -alpha,
                            color ^ 1, true);
         if (score > alpha && r > 0) {
-          score = -alphabeta(depth - 1, ply + 1, -alpha - 1, -alpha, color ^ 1,
+          score = -alphabeta(newdepth, ply + 1, -alpha - 1, -alpha, color ^ 1,
                              true);
         }
         if (score > alpha && score < beta) {
           score =
-              -alphabeta(depth - 1, ply + 1, -beta, -alpha, color ^ 1, true);
+              -alphabeta(newdepth, ply + 1, -beta, -alpha, color ^ 1, true);
         }
       } else {
-        score = -alphabeta(depth - 1, ply + 1, -beta, -alpha, color ^ 1, true);
+        score = -alphabeta(newdepth, ply + 1, -beta, -alpha, color ^ 1, true);
       }
       Bitboards.unmakemove(mov);
       if (useNNUE) {
