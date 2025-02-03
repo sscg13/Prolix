@@ -376,7 +376,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       if (score > bestscore) {
         if (score > alpha) {
           if (score >= beta) {
-            if (update && !stopsearch) {
+            if (update && !stopsearch && excluded == 0) {
               TT[index].update(Bitboards.zobristhash, Bitboards.gamelength,
                                depth, score, 1, mov);
             }
@@ -429,7 +429,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       }
     }
   }
-  if (((update || allnode) && !stopsearch)) {
+  if (((update || allnode) && !stopsearch && excluded == 0)) {
     TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth,
                      bestscore, 2 + allnode, Bitboards.moves[ply][bestmove1]);
   }
