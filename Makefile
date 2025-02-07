@@ -1,5 +1,5 @@
 EXE := Prolix
-EVALFILE := shatranj-net14.nnue
+EVALFILE := shatranj-net15.nnue
 
 SOURCES := Prolix.cpp external/Fathom/tbprobe.cpp
 
