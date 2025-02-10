@@ -655,16 +655,16 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
   suppressoutput = true;
   initializett();
   resetauxdata();
-  int seed = mt() % 40320;
-  Bitboards.parseFEN(get8294400FEN(seed, seed));
+  int seed = mt() % 360;
+  Bitboards.parseFEN(get129600FEN(seed, seed));
   for (int i = 0; i < 8; i++) {
     int num_moves = Bitboards.generatemoves(i & 1, 0, 0);
     if (num_moves == 0) {
       suppressoutput = false;
       initializett();
       resetauxdata();
-      seed = mt() % 40320;
-      Bitboards.parseFEN(get8294400FEN(seed, seed));
+      seed = mt() % 360;
+      Bitboards.parseFEN(get129600FEN(seed, seed));
       return;
     }
     int rand_move = mt() % num_moves;
