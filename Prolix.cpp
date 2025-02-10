@@ -1079,6 +1079,12 @@ void Engine::uci() {
       }
     }
   }
+  if (ucicommand == "eval") {
+    int color = Bitboards.position & 1;
+    int eval = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+    std::cout << "Raw eval: " << eval << "\n";
+    std::cout << "Normalized eval: " << normalize(eval) << "\n";
+  }
   if (ucicommand.substr(0, 3) == "see") {
     std::string mov = ucicommand.substr(4, ucicommand.length() - 4);
     int color = Bitboards.position & 1;
