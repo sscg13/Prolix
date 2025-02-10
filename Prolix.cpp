@@ -156,12 +156,12 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
     if (good) {
       Bitboards.makemove(mov, 1);
       if (useNNUE) {
-        EUNN.forwardaccumulators(mov);
+        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
       }
       score = -quiesce(-beta, -alpha, color ^ 1, depth + 1);
       Bitboards.unmakemove(mov);
       if (useNNUE) {
-        EUNN.backwardaccumulators(mov);
+        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (score >= beta) {
         return score;
@@ -336,7 +336,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       Bitboards.makemove(mov, true);
       searchstack[ply].playedmove = mov;
       if (useNNUE) {
-        EUNN.forwardaccumulators(mov);
+        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (nullwindow) {
         score = -alphabeta(depth - 1 - r, ply + 1, -alpha - 1, -alpha,
@@ -354,7 +354,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       }
       Bitboards.unmakemove(mov);
       if (useNNUE) {
-        EUNN.backwardaccumulators(mov);
+        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (score > bestscore) {
         if (score > alpha) {
@@ -557,7 +557,7 @@ int Engine::iterative(int color) {
     std::cout << "move " << algebraic(bestmove1) << std::endl;
     Bitboards.makemove(bestmove1, 0);
     if (useNNUE) {
-      EUNN.forwardaccumulators(bestmove1);
+      EUNN.forwardaccumulators(bestmove1, Bitboards.Bitboards);
     }
   }
   bestmove = bestmove1;
@@ -640,7 +640,7 @@ void Engine::datagenautoplay() {
       result = "0.5";
     }
     if (useNNUE && bestmove > 0) {
-      EUNN.forwardaccumulators(bestmove);
+      EUNN.forwardaccumulators(bestmove, Bitboards.Bitboards);
     }
   }
   for (int i = 0; i < maxmove; i++) {
@@ -698,7 +698,7 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
     } else {
       Bitboards.makemove(bestmove, 0);
       if (useNNUE) {
-        EUNN.forwardaccumulators(bestmove);
+        EUNN.forwardaccumulators(bestmove, Bitboards.Bitboards);
       }
     }
     if (Bitboards.twokings()) {
@@ -1079,6 +1079,12 @@ void Engine::uci() {
       }
     }
   }
+  if (ucicommand == "eval") {
+    int color = Bitboards.position & 1;
+    int eval = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+    std::cout << "Raw eval: " << eval << "\n";
+    std::cout << "Normalized eval: " << normalize(eval) << "\n";
+  }
   if (ucicommand.substr(0, 3) == "see") {
     std::string mov = ucicommand.substr(4, ucicommand.length() - 4);
     int color = Bitboards.position & 1;
@@ -1204,7 +1210,7 @@ void Engine::xboard() {
     if (played >= 0) {
       Bitboards.makemove(Bitboards.moves[0][played], false);
       if (useNNUE) {
-        EUNN.forwardaccumulators(Bitboards.moves[0][played]);
+        EUNN.forwardaccumulators(Bitboards.moves[0][played], Bitboards.Bitboards);
       }
       if (gosent) {
         int color = Bitboards.position & 1;
