@@ -1,10 +1,10 @@
-#include "board.cpp"
+#include "board.h"
+#include "external/Fathom/tbprobe.h"
 #include "history.cpp"
 #include "nnue.cpp"
 #include "tt.cpp"
 #include <chrono>
 #include <fstream>
-#include <string>
 #include <thread>
 #include <time.h>
 std::string proto = "uci";
@@ -25,6 +25,7 @@ int lmr_reductions[maxmaxdepth][256];
 auto start = std::chrono::steady_clock::now();
 std::ifstream datainput;
 std::string inputfile;
+bool iscapture(int notation) { return ((notation >> 16) & 1); }
 struct abinfo {
   int playedmove;
   int eval;
@@ -590,6 +591,10 @@ void Engine::datagenautoplay() {
     EUNN.initializennue(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, 0) == 0) {
+    suppressoutput = false;
+    initializett();
+    resetauxdata();
+    Bitboards.initialize();
     return;
   }
   std::string fens[1024];
@@ -635,10 +640,6 @@ void Engine::datagenautoplay() {
       finished = true;
       result = "0.5";
     }
-    else if (maxmove >= 1000) {
-      finished = true;
-      result = "0.5";
-    }
     if (useNNUE && bestmove > 0) {
       EUNN.forwardaccumulators(bestmove, Bitboards.Bitboards);
     }
@@ -647,6 +648,9 @@ void Engine::datagenautoplay() {
     dataoutput << fens[i] << " | " << scores[i] << " | " << result << "\n";
   }
   suppressoutput = false;
+  initializett();
+  resetauxdata();
+  Bitboards.initialize();
 }
 void Engine::bookgenautoplay(int lowerbound, int upperbound) {
   suppressoutput = true;
@@ -671,6 +675,10 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
     EUNN.initializennue(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, 0) == 0) {
+    suppressoutput = false;
+    initializett();
+    resetauxdata();
+    Bitboards.initialize();
     return;
   }
   bool finished = false;
@@ -707,6 +715,9 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
     }
   }
   suppressoutput = false;
+  initializett();
+  resetauxdata();
+  Bitboards.initialize();
 }
 void Engine::datagen(int n, std::string outputfile) {
   dataoutput.open(outputfile, std::ofstream::app);
