@@ -4,7 +4,6 @@
 #include "nnue.cpp"
 #include "tt.cpp"
 #include <chrono>
-#include <fstream>
 #include <thread>
 #include <time.h>
 std::string proto = "uci";
