@@ -30,11 +30,11 @@ void Marlinboard::pack(const Board &Bitboards, int score) {
 		}
 		if (i > 15) {
 			pieces[1] |= (((U64)color) << (4*i-61));
-			pieces[1] |= (((U64)piece) << (4*i-64));
+			pieces[1] |= (((U64)convert[piece]) << (4*i-64));
 		}
 		else {
-			pieces[1] |= (((U64)color) << (4*i+3));
-			pieces[1] |= (((U64)piece) << (4*i));
+			pieces[0] |= (((U64)color) << (4*i+3));
+			pieces[0] |= (((U64)convert[piece]) << (4*i));
 		}
 		occupied ^= (1ULL << square);
 		i++;
@@ -59,11 +59,11 @@ void Viriformat::initialize(const Board &Bitboards) {
 }
 
 void Viriformat::push(int move, int score) {
-	unsigned int data = (move & 4095) << 16;
+	unsigned int data = (((unsigned int)(short int)score) << 16);
+	data |= (move & 4095);
 	if (move & (1 << 20)) {
-		data |= 0xC0000000;
+		data |= 0xC000;
 	}
-	data |= (short int)score;
 	moves.push_back(data);
 }
 
