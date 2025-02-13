@@ -3,6 +3,7 @@
 #include "history.cpp"
 #include "nnue.cpp"
 #include "tt.cpp"
+#include "viriformat.cpp"
 #include <chrono>
 #include <thread>
 #include <time.h>

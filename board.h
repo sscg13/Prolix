@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <random>
+#pragma once
 using U64 = uint64_t;
 using U8 = uint8_t;
 
