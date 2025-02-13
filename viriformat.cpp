@@ -48,14 +48,13 @@ class Viriformat {
 	Marlinboard initialpos;
 	std::vector<unsigned int> moves;
 	public:
-	void initialize(const Board &Bitboards, int score);
+	void initialize(const Board &Bitboards);
 	void push(int move, int score);
 	void writewithwdl(std::ofstream &output, int wdl);
-
 };
 
-void Viriformat::initialize(const Board &Bitboards, int score) {
-	initialpos.pack(Bitboards, score);
+void Viriformat::initialize(const Board &Bitboards) {
+	initialpos.pack(Bitboards, 0);
 	moves.clear();
 }
 
