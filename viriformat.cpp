@@ -1,16 +1,5 @@
-#include "board.h"
-struct Marlinboard {
-    U64 occupancy;
-	U64 pieces[2];
-	U64 data;
-	//8 bit epsquare
-	//8 bit halfmoveclock
-	//16 bit fullmove
-	//16 bit eval (signed)
-	//8 bit wdl
-	//8 bit extra
-    void pack(const Board &Bitboards, int score);
-};
+#include "viriformat.h"
+
 void Marlinboard::pack(const Board &Bitboards, int score) {
 	U64 occupied = (Bitboards.Bitboards[0] | Bitboards.Bitboards[1]);
 	occupancy = occupied;
@@ -44,14 +33,6 @@ void Marlinboard::pack(const Board &Bitboards, int score) {
 	data |= (((U64)(Bitboards.position >> 1)) << 8);
 	data |= (((U64)(unsigned short int)score) << 32);
 }
-class Viriformat {
-	Marlinboard initialpos;
-	std::vector<unsigned int> moves;
-	public:
-	void initialize(const Board &Bitboards);
-	void push(int move, int score);
-	void writewithwdl(std::ofstream &output, int wdl);
-};
 
 void Viriformat::initialize(const Board &Bitboards) {
 	initialpos.pack(Bitboards, 0);

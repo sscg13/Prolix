@@ -1,33 +1,10 @@
 #include <cmath>
 #include <fstream>
+#include "nnue.h"
 #define INCBIN_PREFIX
 #include "external/incbin/incbin.h"
 
-constexpr int inputbuckets = 4;
-constexpr bool mirrored = true;
-constexpr int mirrordivisor = mirrored ? 2 : 1;
-constexpr int realbuckets = inputbuckets / mirrordivisor;
-constexpr int nnuesize = 128;
-constexpr int outputbuckets = 8;
-constexpr int evalscale = 400;
-constexpr int evalQA = 255;
-constexpr int evalQB = 64;
-//clang-format off
-constexpr int kingbuckets[64] = {
-  0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3
-};
-//clang-format on
-constexpr int material[6] = {1, 1, 1, 1, 1, 0};
-constexpr int bucketdivisor = 32 / outputbuckets;
-constexpr int nnuefilesize = (realbuckets * 1536 * nnuesize + 2 * nnuesize +
-                              4 * nnuesize * outputbuckets + 2 * outputbuckets);
+
 INCBIN(char, NNUE, EUNNfile);
 int screlu(short int x) {
   return std::pow(std::max(std::min((int)x, 255), 0), 2);
@@ -36,27 +13,7 @@ int featureindex(int bucket, int piece, int color, int square) {
   return 64 * piece +
          ((56 * color) ^ square ^ (7 * (mirrored && (bucket % 2 == 1))));
 }
-class NNUE {
-  short int nnuelayer1[realbuckets][768][nnuesize];
-  short int layer1bias[nnuesize];
-  int ourlayer2[outputbuckets][nnuesize];
-  int theirlayer2[outputbuckets][nnuesize];
-  short int accumulator[inputbuckets][2][nnuesize];
-  int finalbias[outputbuckets];
-  int activebucket[2];
-  int totalmaterial;
 
-public:
-  void loaddefaultnet();
-  void readnnuefile(std::string file);
-  void activatepiece(int bucket, int color, int piece, int square);
-  void deactivatepiece(int bucket, int color, int piece, int square);
-  void refreshfromscratch(int bucket, int color, uint64_t *Bitboards);
-  void initializennue(uint64_t *Bitboards);
-  void forwardaccumulators(int notation, uint64_t *Bitboards);
-  void backwardaccumulators(int notation, uint64_t *Bitboards);
-  int evaluate(int color);
-};
 
 void NNUE::loaddefaultnet() {
   int offset = 0;
