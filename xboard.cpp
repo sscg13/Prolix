@@ -1,4 +1,4 @@
-#include "search.h"
+#include "engine.h"
 
 void Engine::xboard() {
     std::string xcommand;

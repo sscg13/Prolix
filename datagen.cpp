@@ -1,7 +1,86 @@
-#include "search.h"
+#include "engine.h"
 #include "viriformat.h"
 std::ifstream datainput;
-void Engine::datagenautoplay() {
+void Engine::datagenautoplayplain() {
+    suppressoutput = true;
+    initializett();
+    resetauxdata();
+    int seed = mt() % 360;
+    Bitboards.parseFEN(get129600FEN(seed, seed));
+    std::string game = "";
+    std::string result = "";
+    for (int i = 0; i < 8; i++) {
+      int num_moves = Bitboards.generatemoves(i & 1, 0, 0);
+      if (num_moves == 0) {
+        return;
+      }
+      int rand_move = mt() % num_moves;
+      Bitboards.makemove(Bitboards.moves[0][rand_move], 0);
+      game += algebraic(Bitboards.moves[0][rand_move]);
+      game += " ";
+    }
+    if (useNNUE) {
+      EUNN.initializennue(Bitboards.Bitboards);
+    }
+    if (Bitboards.generatemoves(0, 0, 0) == 0) {
+      return;
+    }
+    std::string fens[1024];
+    int scores[1024];
+    int maxmove = 0;
+    bool finished = false;
+    while (!finished) {
+      int color = Bitboards.position & 1;
+      int score = iterative(color);
+      if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
+          (Bitboards.checkers(color) == 0ULL) && (abs(score) < 27000)) {
+        fens[maxmove] = Bitboards.getFEN();
+        scores[maxmove] = score * (1 - 2 * color);
+        maxmove++;
+      }
+      if (bestmove == 0) {
+        std::cout << "Null best move? mitigating by using proper null move \n";
+        Bitboards.makenullmove();
+      } else {
+        Bitboards.makemove(bestmove, 0);
+      }
+      if (Bitboards.twokings()) {
+        finished = true;
+        result = "0.5";
+      } else if (Bitboards.bareking(color)) {
+        finished = true;
+        if (color == 0) {
+          result = "0.0";
+        } else {
+          result = "1.0";
+        }
+      } else if (Bitboards.repetitions() >= 2) {
+        finished = true;
+        result = "0.5";
+      } else if (Bitboards.generatemoves(color ^ 1, 0, 0) == 0) {
+        finished = true;
+        if (color == 0) {
+          result = "1.0";
+        } else {
+          result = "0.0";
+        }
+      } else if (Bitboards.halfmovecount() >= 140) {
+        finished = true;
+        result = "0.5";
+      }
+      else if (maxmove >= 1000) {
+        finished = true;
+        result = "0.5";
+      }
+      if (useNNUE && bestmove > 0) {
+        EUNN.forwardaccumulators(bestmove, Bitboards.Bitboards);
+      }
+    }
+    for (int i = 0; i < maxmove; i++) {
+      dataoutput << fens[i] << " | " << scores[i] << " | " << result << "\n";
+    }
+  }
+  void Engine::datagenautoplayviriformat() {
     suppressoutput = true;
     initializett();
     resetauxdata();
@@ -11,11 +90,6 @@ void Engine::datagenautoplay() {
     for (int i = 0; i < 8; i++) {
       int num_moves = Bitboards.generatemoves(i & 1, 0, 0);
       if (num_moves == 0) {
-        suppressoutput = false;
-        initializett();
-        resetauxdata();
-        seed = mt() % 360;
-        Bitboards.parseFEN(get129600FEN(seed, seed));
         return;
       }
       int rand_move = mt() % num_moves;
@@ -70,12 +144,7 @@ void Engine::datagenautoplay() {
       }
     }
     game.writewithwdl(dataoutput, result);
-    suppressoutput = false;
-    initializett();
-    resetauxdata();
-    Bitboards.initialize();
   }
-  
 void Engine::bookgenautoplay(int lowerbound, int upperbound) {
     suppressoutput = true;
     initializett();
@@ -85,11 +154,6 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
     for (int i = 0; i < 8; i++) {
       int num_moves = Bitboards.generatemoves(i & 1, 0, 0);
       if (num_moves == 0) {
-        suppressoutput = false;
-        initializett();
-        resetauxdata();
-        seed = mt() % 360;
-        Bitboards.parseFEN(get129600FEN(seed, seed));
         return;
       }
       int rand_move = mt() % num_moves;
@@ -99,10 +163,6 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
       EUNN.initializennue(Bitboards.Bitboards);
     }
     if (Bitboards.generatemoves(0, 0, 0) == 0) {
-      suppressoutput = false;
-      initializett();
-      resetauxdata();
-      Bitboards.initialize();
       return;
     }
     bool finished = false;
@@ -138,19 +198,20 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
         finished = true;
       }
     }
-    suppressoutput = false;
-    initializett();
-    resetauxdata();
-    Bitboards.initialize();
   }
-  void Engine::datagen(int n, std::string outputfile) {
+  void Engine::datagen(int dataformat, int n, std::string outputfile) {
     dataoutput.open(outputfile, std::ofstream::binary);
     softnodelimit = 16384;
     hardnodelimit = 65536;
     softtimelimit = 0;
     hardtimelimit = 0;
     for (int i = 0; i < n; i++) {
-      datagenautoplay();
+        if (dataformat == 1) {
+            datagenautoplayviriformat();
+        }
+      else {
+        datagenautoplayplain();
+      }
       std::cout << i << "\n";
     }
     dataoutput.close();

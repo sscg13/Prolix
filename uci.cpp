@@ -1,4 +1,4 @@
-#include "search.h"
+#include "engine.h"
 
 //clang-format off
 std::string uciinfostring =

@@ -50,13 +50,14 @@ class Engine {
   int wdlmodel(int eval);
   int normalize(int eval);
   int iterative(int color);
-  void datagenautoplay();
+  void datagenautoplayplain();
+  void datagenautoplayviriformat();
   void bookgenautoplay(int lowerbound, int upperbound);
 
 public:
   void startup();
   void bench();
-  void datagen(int n, std::string outputfile);
+  void datagen(int dataformat, int n, std::string outputfile);
   void bookgen(int lowerbound, int upperbound, int n, std::string outputfile);
   void uci();
   void xboard();
