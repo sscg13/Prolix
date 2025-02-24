@@ -1,15 +1,4 @@
-class History {
-  int quiethistory[2][6][64];
-  int noisyhistory[2][6][6];
-  const int quietlimit = 27000;
-  const int noisylimit = 27000;
-
-public:
-  void reset();
-  int movescore(int move);
-  void updatenoisyhistory(int move, int bonus);
-  void updatequiethistory(int move, int bonus);
-};
+#include "history.h"
 
 void History::reset() {
   for (int i = 0; i < 6; i++) {
@@ -30,7 +19,8 @@ int History::movescore(int move) {
   int piece = (move >> 13) & 7;
   int captured = (move >> 17) & 7;
   if (captured) {
-    return 30000 + 10000 * captured + noisyhistory[color][piece - 2][captured - 2];
+    return 30000 + 10000 * captured +
+           noisyhistory[color][piece - 2][captured - 2];
   } else {
     return quiethistory[color][piece - 2][to];
   }
