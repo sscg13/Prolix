@@ -1,9 +1,8 @@
+#include "nnue.h"
 #include <cmath>
 #include <fstream>
-#include "nnue.h"
 #define INCBIN_PREFIX
 #include "external/incbin/incbin.h"
-
 
 INCBIN(char, NNUE, EUNNfile);
 int screlu(short int x) {
@@ -13,7 +12,6 @@ int featureindex(int bucket, int piece, int color, int square) {
   return 64 * piece +
          ((56 * color) ^ square ^ (7 * (mirrored && (bucket % 2 == 1))));
 }
-
 
 void NNUE::loaddefaultnet() {
   int offset = 0;

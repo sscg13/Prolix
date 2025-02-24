@@ -4,7 +4,8 @@ using U64 = uint64_t;
 struct TTentry {
   U64 key;
   U64 data;
-  void update(U64 hash, int gamelength, int depth, int score, int nodetype, int hashmove);
+  void update(U64 hash, int gamelength, int depth, int score, int nodetype,
+              int hashmove);
   int age(int gamelength);
   int hashmove();
   int depth();

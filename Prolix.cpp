@@ -1,7 +1,7 @@
 #include "board.h"
+#include "engine.h"
 #include "external/Fathom/tbprobe.h"
 #include "nnue.h"
-#include "engine.h"
 #include <thread>
 extern std::string uciinfostring;
 std::string proto = "uci";
@@ -60,7 +60,8 @@ int main(int argc, char *argv[]) {
     }
     if (std::string(argv[1]) == "datagen") {
       if (argc < 5) {
-        std::cerr << "Proper usage: ./(exe) datagen <viriformat|plain> threads games outputfile";
+        std::cerr << "Proper usage: ./(exe) datagen <viriformat|plain> threads "
+                     "games outputfile";
         return 0;
       }
       int dataformat = (std::string(argv[2]) == "viriformat");
@@ -75,8 +76,8 @@ int main(int argc, char *argv[]) {
         std::string outputfile =
             std::string(argv[5]) + std::to_string(i) + extension;
         Engines[i].startup();
-        datagenerators[i] =
-            std::thread(&Engine::datagen, &Engines[i], dataformat, games, outputfile);
+        datagenerators[i] = std::thread(&Engine::datagen, &Engines[i],
+                                        dataformat, games, outputfile);
       }
       for (auto &thread : datagenerators) {
         thread.join();

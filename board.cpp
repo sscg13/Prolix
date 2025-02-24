@@ -1,5 +1,5 @@
-#include "external/Fathom/tbprobe.h"
 #include "board.h"
+#include "external/Fathom/tbprobe.h"
 const U64 FileA = 0x0101010101010101;
 const U64 FileB = FileA << 1;
 const U64 FileC = FileA << 2;
@@ -28,7 +28,7 @@ U64 FileMask[64];
 U64 RankAttacks[512];
 U64 hashes[8][64];
 const U64 colorhash = 0xE344F58E0F3B26E5;
-//clang-format off
+// clang-format off
 const int materialm[6] = {78, 77, 144, 415, 657, 20000};
 const int materiale[6] = {85, 113, 139, 402, 905, 20000};
 const int pstm[6][64] = {
@@ -149,7 +149,7 @@ const int rookmobm[15] = {-21, -22, -14, -18, -12, -5, -1, 2, 5, 9, 11, 12, 15, 
 const int rookmobe[15] = {-40, -32, -22, -15, -9, -5, -1, 3, 7, 13, 20, 23, 28, 32, 37};
 const int kingmobe[9] = {-61, -38, -15, -6, 3, 13, 22, 28, 33};
 const int phase[6] = {0, 1, 2, 4, 6, 0};
-//clang-format on
+// clang-format on
 U64 shift_w(U64 bitboard) { return (bitboard & ~FileA) >> 1; }
 U64 shift_n(U64 bitboard) { return bitboard << 8; }
 U64 shift_s(U64 bitboard) { return bitboard >> 8; }

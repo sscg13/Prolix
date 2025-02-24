@@ -7,7 +7,7 @@ constexpr int outputbuckets = 8;
 constexpr int evalscale = 400;
 constexpr int evalQA = 255;
 constexpr int evalQB = 64;
-//clang-format off
+// clang-format off
 constexpr int kingbuckets[64] = {
   0, 0, 0, 0, 1, 1, 1, 1,
   0, 0, 0, 0, 1, 1, 1, 1,
@@ -18,7 +18,7 @@ constexpr int kingbuckets[64] = {
   2, 2, 2, 2, 3, 3, 3, 3,
   2, 2, 2, 2, 3, 3, 3, 3
 };
-//clang-format on
+// clang-format on
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
 constexpr int bucketdivisor = 32 / outputbuckets;
 constexpr int nnuefilesize = (realbuckets * 1536 * nnuesize + 2 * nnuesize +

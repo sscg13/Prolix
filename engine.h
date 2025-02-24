@@ -1,7 +1,7 @@
 #include "board.h"
 #include "external/Fathom/tbprobe.h"
-#include "nnue.h"
 #include "history.h"
+#include "nnue.h"
 #include "tt.h"
 #include <chrono>
 #include <time.h>

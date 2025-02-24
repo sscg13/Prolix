@@ -19,7 +19,8 @@ int History::movescore(int move) {
   int piece = (move >> 13) & 7;
   int captured = (move >> 17) & 7;
   if (captured) {
-    return 30000 + 10000 * captured + noisyhistory[color][piece - 2][captured - 2];
+    return 30000 + 10000 * captured +
+           noisyhistory[color][piece - 2][captured - 2];
   } else {
     return quiethistory[color][piece - 2][to];
   }
