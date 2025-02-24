@@ -3,7 +3,7 @@
 #define INCBIN_PREFIX
 #include "external/incbin/incbin.h"
 
-constexpr int inputbuckets = 4;
+constexpr int inputbuckets = 2;
 constexpr bool mirrored = true;
 constexpr int mirrordivisor = mirrored ? 2 : 1;
 constexpr int realbuckets = inputbuckets / mirrordivisor;
@@ -17,11 +17,11 @@ constexpr int kingbuckets[64] = {
   0, 0, 0, 0, 1, 1, 1, 1,
   0, 0, 0, 0, 1, 1, 1, 1,
   0, 0, 0, 0, 1, 1, 1, 1,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3
+  0, 0, 0, 0, 1, 1, 1, 1,
+  0, 0, 0, 0, 1, 1, 1, 1,
+  0, 0, 0, 0, 1, 1, 1, 1,
+  0, 0, 0, 0, 1, 1, 1, 1,
+  0, 0, 0, 0, 1, 1, 1, 1
 };
 //clang-format on
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
