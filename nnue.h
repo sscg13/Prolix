@@ -1,4 +1,5 @@
 #include "arch.h"
+#include <string>
 #include <cstdint>
 #pragma once
 class NNUE {
