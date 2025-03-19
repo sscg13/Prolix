@@ -104,22 +104,23 @@ void NNUE::readnnuefile(std::string file) {
   nnueweights.close();
 }
 void NNUE::activatepiece(int bucket, int color, int piece, int square) {
+  short int* accptr = (acc->accumulation)[color];
+  short int* weightsptr = nnuelayer1[bucket / mirrordivisor][featureindex(bucket, piece, color, square)];
   for (int i = 0; i < nnuesize; i++) {
-    accumulator[bucket][color][i] +=
-        nnuelayer1[bucket / mirrordivisor]
-                  [featureindex(bucket, piece, color, square)][i];
+    accptr[i] += weightsptr[i];
   }
 }
 void NNUE::deactivatepiece(int bucket, int color, int piece, int square) {
+  short int* accptr = (acc->accumulation)[color];
+  short int* weightsptr = nnuelayer1[bucket / mirrordivisor][featureindex(bucket, piece, color, square)];
   for (int i = 0; i < nnuesize; i++) {
-    accumulator[bucket][color][i] -=
-        nnuelayer1[bucket / mirrordivisor]
-                  [featureindex(bucket, piece, color, square)][i];
+    accptr[i] -= weightsptr[i];
   }
 }
-void NNUE::refreshfromscratch(int bucket, int color, uint64_t *Bitboards) {
+void NNUE::refreshfromscratch(int bucket, int color, const uint64_t *Bitboards) {
+  short int* accptr = (acc->accumulation)[color];
   for (int i = 0; i < nnuesize; i++) {
-    accumulator[bucket][color][i] = layer1bias[i];
+    accptr[i] = layer1bias[i];
   }
   for (int i = 0; i < 12; i++) {
     uint64_t pieces = (Bitboards[i / 6] & Bitboards[2 + (i % 6)]);
@@ -131,7 +132,7 @@ void NNUE::refreshfromscratch(int bucket, int color, uint64_t *Bitboards) {
     }
   }
 }
-void NNUE::initializennue(uint64_t *Bitboards) {
+void NNUE::initializennue(const uint64_t *Bitboards) {
   totalmaterial = 0;
   for (int i = 0; i < inputbuckets; i++) {
     refreshfromscratch(i, 0, Bitboards);
@@ -147,7 +148,7 @@ void NNUE::initializennue(uint64_t *Bitboards) {
   activebucket[1] =
       kingbuckets[56 ^ __builtin_popcountll((Bitboards[1] & Bitboards[7]) - 1)];
 }
-void NNUE::forwardaccumulators(int notation, uint64_t *Bitboards) {
+void NNUE::forwardaccumulators(int notation, const uint64_t *Bitboards) {
   int from = notation & 63;
   int to = (notation >> 6) & 63;
   int color = (notation >> 12) & 1;
@@ -173,7 +174,7 @@ void NNUE::forwardaccumulators(int notation, uint64_t *Bitboards) {
     }
   }
 }
-void NNUE::backwardaccumulators(int notation, uint64_t *Bitboards) {
+void NNUE::backwardaccumulators(int notation, const uint64_t *Bitboards) {
   int from = notation & 63;
   int to = (notation >> 6) & 63;
   int color = (notation >> 12) & 1;
