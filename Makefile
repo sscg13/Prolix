@@ -1,5 +1,5 @@
 EXE := Prolix
-EVALFILE := shatranj-net17.nnue
+EVALFILE := shatranj-net18.nnue
 
 SOURCES := Prolix.cpp uci.cpp xboard.cpp search.cpp nnue.cpp tt.cpp history.cpp viriformat.cpp board.cpp external/Fathom/tbprobe.cpp
 
