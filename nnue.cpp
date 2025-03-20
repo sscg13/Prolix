@@ -105,7 +105,7 @@ void NNUE::readnnuefile(std::string file) {
 }
 void NNUE::activatepiece(int kingsquare, int color, int piece, int square) {
   int bucket = kingbuckets[(56 * color) ^ kingsquare];
-  short int* accptr = (acc->accumulation)[color];
+  short int* accptr = (accumulators[ply].accumulation)[color];
   const short int* weightsptr = nnuelayer1[bucket / mirrordivisor][featureindex(bucket, piece, color, square)];
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] += weightsptr[i];
@@ -113,14 +113,14 @@ void NNUE::activatepiece(int kingsquare, int color, int piece, int square) {
 }
 void NNUE::deactivatepiece(int kingsquare, int color, int piece, int square) {
   int bucket = kingbuckets[(56 * color) ^ kingsquare];
-  short int* accptr = (acc->accumulation)[color];
+  short int* accptr = (accumulators[ply].accumulation)[color];
   const short int* weightsptr = nnuelayer1[bucket / mirrordivisor][featureindex(bucket, piece, color, square)];
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] -= weightsptr[i];
   }
 }
 void NNUE::refreshfromscratch(int kingsquare, int color, const uint64_t *Bitboards) {
-  short int* accptr = (acc->accumulation)[color];
+  short int* accptr = (accumulators[ply].accumulation)[color];
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] = layer1bias[i];
   }
@@ -136,7 +136,7 @@ void NNUE::refreshfromscratch(int kingsquare, int color, const uint64_t *Bitboar
 }
 void NNUE::initializennue(const uint64_t *Bitboards) {
   totalmaterial = 0;
-  acc = new Accumulator();
+  ply = 0;
   for (int color = 0; color < 2; color++) {
     refreshfromscratch(__builtin_ctzll(Bitboards[7] & Bitboards[color]), color, Bitboards);
   }
@@ -156,13 +156,10 @@ void NNUE::forwardaccumulators(const int notation, const uint64_t *Bitboards) {
   int piece2 = (promoted > 0) ? piece : piece - 2;
   int oppksq = __builtin_ctzll(Bitboards[7] & Bitboards[color ^ 1]);
   int ourksq = __builtin_ctzll(Bitboards[7] & Bitboards[color]);
-  Accumulator* next = new Accumulator();
-  acc->next = next;
-  next->previous = acc;
   for (int i = 0; i < nnuesize; i++) {
-    (next->accumulation)[color^1][i] = (acc->accumulation)[color^1][i];
+    (accumulators[ply+1].accumulation)[color^1][i] = (accumulators[ply].accumulation)[color^1][i];
   }
-  acc = next;
+  ply++;
   activatepiece(oppksq, color ^ 1, 6 + piece2, to);
   deactivatepiece(oppksq, color ^ 1, 4 + piece, from);
   if (captured > 0) {
@@ -174,7 +171,7 @@ void NNUE::forwardaccumulators(const int notation, const uint64_t *Bitboards) {
     refreshfromscratch(ourksq, color, Bitboards);
   } else {
     for (int i = 0; i < nnuesize; i++) {
-      (acc->accumulation)[color][i] = ((acc->previous)->accumulation)[color][i];
+      (accumulators[ply].accumulation)[color][i] = (accumulators[ply-1].accumulation)[color][i];
     }
     activatepiece(ourksq, color, piece2, to);
     deactivatepiece(ourksq, color, piece - 2, from);
@@ -188,14 +185,13 @@ void NNUE::backwardaccumulators(int notation, const uint64_t *Bitboards) {
   if (captured > 0) {
     totalmaterial += material[captured - 2];
   }
-  acc = acc->previous;
-  delete acc->next;
+  ply--;
 }
 int NNUE::evaluate(int color) {
   int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
   int eval = finalbias[bucket] * evalQA;
-  short int* stmaccptr = (acc->accumulation)[color];
-  short int* nstmaccptr = (acc->accumulation)[color ^ 1];
+  short int* stmaccptr = (accumulators[ply].accumulation)[color];
+  short int* nstmaccptr = (accumulators[ply].accumulation)[color ^ 1];
   const int* stmweightsptr = ourlayer2[bucket];
   const int* nstmweightsptr = theirlayer2[bucket];
   for (int i = 0; i < nnuesize; i++) {

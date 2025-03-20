@@ -4,8 +4,6 @@
 #pragma once
 struct Accumulator {
   short int accumulation[2][nnuesize];
-  Accumulator* previous;
-  Accumulator* next;
 };
 
 class NNUE {
@@ -15,7 +13,9 @@ class NNUE {
   int theirlayer2[outputbuckets][nnuesize];
   int finalbias[outputbuckets];
   int totalmaterial;
-  Accumulator* acc;
+  int ply;
+  Accumulator accumulators[64];
+
 
 public:
   void loaddefaultnet();
