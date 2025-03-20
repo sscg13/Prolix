@@ -20,9 +20,9 @@ class NNUE {
 public:
   void loaddefaultnet();
   void readnnuefile(std::string file);
-  void activatepiece(int bucket, int color, int piece, int square);
-  void deactivatepiece(int bucket, int color, int piece, int square);
-  void refreshfromscratch(int bucket, int color, const uint64_t *Bitboards);
+  void activatepiece(int kingsquare, int color, int piece, int square);
+  void deactivatepiece(int kingsquare, int color, int piece, int square);
+  void refreshfromscratch(int kingsquare, int color, const uint64_t *Bitboards);
   void initializennue(const uint64_t *Bitboards);
   void forwardaccumulators(const int notation, const uint64_t *Bitboards);
   void backwardaccumulators(int notation, const uint64_t *Bitboards);

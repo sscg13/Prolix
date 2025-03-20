@@ -103,21 +103,23 @@ void NNUE::readnnuefile(std::string file) {
   delete[] weights;
   nnueweights.close();
 }
-void NNUE::activatepiece(int bucket, int color, int piece, int square) {
+void NNUE::activatepiece(int kingsquare, int color, int piece, int square) {
+  int bucket = kingbuckets[(56 * color) ^ kingsquare];
   short int* accptr = (acc->accumulation)[color];
   const short int* weightsptr = nnuelayer1[bucket / mirrordivisor][featureindex(bucket, piece, color, square)];
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] += weightsptr[i];
   }
 }
-void NNUE::deactivatepiece(int bucket, int color, int piece, int square) {
+void NNUE::deactivatepiece(int kingsquare, int color, int piece, int square) {
+  int bucket = kingbuckets[(56 * color) ^ kingsquare];
   short int* accptr = (acc->accumulation)[color];
   const short int* weightsptr = nnuelayer1[bucket / mirrordivisor][featureindex(bucket, piece, color, square)];
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] -= weightsptr[i];
   }
 }
-void NNUE::refreshfromscratch(int bucket, int color, const uint64_t *Bitboards) {
+void NNUE::refreshfromscratch(int kingsquare, int color, const uint64_t *Bitboards) {
   short int* accptr = (acc->accumulation)[color];
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] = layer1bias[i];
@@ -127,7 +129,7 @@ void NNUE::refreshfromscratch(int bucket, int color, const uint64_t *Bitboards) 
     int piececount = __builtin_popcountll(pieces);
     for (int j = 0; j < piececount; j++) {
       int square = __builtin_popcountll((pieces & -pieces) - 1);
-      activatepiece(bucket, color, (i % 6) + 6 * (color ^ (i / 6)), square);
+      activatepiece(kingsquare, color, (i % 6) + 6 * (color ^ (i / 6)), square);
       pieces ^= (1ULL << square);
     }
   }
@@ -135,9 +137,8 @@ void NNUE::refreshfromscratch(int bucket, int color, const uint64_t *Bitboards) 
 void NNUE::initializennue(const uint64_t *Bitboards) {
   totalmaterial = 0;
   acc = new Accumulator();
-  for (int i = 0; i < inputbuckets; i++) {
-    refreshfromscratch(i, 0, Bitboards);
-    refreshfromscratch(i, 1, Bitboards);
+  for (int color = 0; color < 2; color++) {
+    refreshfromscratch(__builtin_ctzll(Bitboards[7] & Bitboards[color]), color, Bitboards);
   }
   for (int i = 0; i < 12; i++) {
     uint64_t pieces = (Bitboards[i / 6] & Bitboards[2 + (i % 6)]);
@@ -153,6 +154,8 @@ void NNUE::forwardaccumulators(const int notation, const uint64_t *Bitboards) {
   int captured = (notation >> 17) & 7;
   int promoted = (notation >> 21) & 3;
   int piece2 = (promoted > 0) ? piece : piece - 2;
+  int oppksq = __builtin_ctzll(Bitboards[7] & Bitboards[color ^ 1]);
+  int ourksq = __builtin_ctzll(Bitboards[7] & Bitboards[color]);
   Accumulator* next = new Accumulator();
   acc->next = next;
   next->previous = acc;
@@ -160,23 +163,23 @@ void NNUE::forwardaccumulators(const int notation, const uint64_t *Bitboards) {
     (next->accumulation)[color^1][i] = (acc->accumulation)[color^1][i];
   }
   acc = next;
-  activatepiece(kingbuckets[__builtin_ctzll(Bitboards[7] & Bitboards[color ^ 1])], color ^ 1, 6 + piece2, to);
-  deactivatepiece(kingbuckets[__builtin_ctzll(Bitboards[7] & Bitboards[color ^ 1])], color ^ 1, 4 + piece, from);
+  activatepiece(oppksq, color ^ 1, 6 + piece2, to);
+  deactivatepiece(oppksq, color ^ 1, 4 + piece, from);
   if (captured > 0) {
     totalmaterial -= material[captured - 2];
-    deactivatepiece(kingbuckets[__builtin_ctzll(Bitboards[7] & Bitboards[color ^ 1])], color ^ 1, captured - 2, to);
+    deactivatepiece(oppksq, color ^ 1, captured - 2, to);
   }
   if (piece == 7 &&
       kingbuckets[to ^ (56 * color)] != kingbuckets[from ^ (56 * color)]) {
-    refreshfromscratch(kingbuckets[to ^ (56 * color)], color, Bitboards);
+    refreshfromscratch(ourksq, color, Bitboards);
   } else {
     for (int i = 0; i < nnuesize; i++) {
       (acc->accumulation)[color][i] = ((acc->previous)->accumulation)[color][i];
     }
-    activatepiece(kingbuckets[__builtin_ctzll(Bitboards[7] & Bitboards[color])], color, piece2, to);
-    deactivatepiece(kingbuckets[__builtin_ctzll(Bitboards[7] & Bitboards[color])], color, piece - 2, from);
+    activatepiece(ourksq, color, piece2, to);
+    deactivatepiece(ourksq, color, piece - 2, from);
     if (captured > 0) {
-      deactivatepiece(kingbuckets[__builtin_ctzll(Bitboards[7] & Bitboards[color])], color, 4 + captured, to);
+      deactivatepiece(ourksq, color, 4 + captured, to);
     }
   }
 }
