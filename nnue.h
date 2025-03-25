@@ -2,9 +2,6 @@
 #include <string>
 #include <cstdint>
 #pragma once
-struct Accumulator {
-  short int accumulation[2][nnuesize];
-};
 
 class NNUE {
   short int nnuelayer1[realbuckets][768][nnuesize];
@@ -14,7 +11,7 @@ class NNUE {
   int finalbias[outputbuckets];
   int totalmaterial;
   int ply;
-  Accumulator accumulators[64];
+  short int accumulation[128][nnuesize];
 
 
 public:
