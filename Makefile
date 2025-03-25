@@ -7,6 +7,8 @@ CXX := clang++
 
 CXXFLAGS := -O3 -march=native -static -pthread -DEUNNfile=\"$(EVALFILE)\"
 
+DEBUGFLAGS := -g -march=native -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+
 SUFFIX := .exe
 
 OUT := $(EXE)$(SUFFIX)
@@ -14,3 +16,6 @@ OUT := $(EXE)$(SUFFIX)
 
 $(EXE): $(SOURCES)
 	$(CXX) $^ $(CXXFLAGS) -o $(OUT)
+
+debug: $(SOURCES)
+	$(CXX) $^ $(DEBUGFLAGS) -o debug.exe
