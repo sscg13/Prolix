@@ -1,6 +1,6 @@
 #include "arch.h"
-#include <string>
 #include <cstdint>
+#include <string>
 #pragma once
 
 class NNUE {
@@ -13,12 +13,12 @@ class NNUE {
   int ply;
   short int accumulation[128][nnuesize];
 
-
 public:
   void loaddefaultnet();
   void readnnuefile(std::string file);
   int featureindex(int bucket, int color, int piece, int square);
-  const short int* layer1weights(int kingsquare, int color, int piece, int square);
+  const short int *layer1weights(int kingsquare, int color, int piece,
+                                 int square);
   void activatepiece(int kingsquare, int color, int piece, int square);
   void deactivatepiece(int kingsquare, int color, int piece, int square);
   void refreshfromscratch(int kingsquare, int color, const uint64_t *Bitboards);

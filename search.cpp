@@ -52,7 +52,7 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
   }
   bool incheck = Bitboards.checkers(color);
   if (incheck) {
-    movcount = Bitboards.generatemoves(color, 0, maxdepth + depth);
+    movcount = Bitboards.generatemoves(color, 0, maxmaxdepth + depth);
     if (movcount == 0) {
       return -27000;
     }
@@ -64,23 +64,23 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
     if (score >= beta) {
       return score;
     }
-    movcount = Bitboards.generatemoves(color, 1, maxdepth + depth);
+    movcount = Bitboards.generatemoves(color, 1, maxmaxdepth + depth);
   }
 
   if (depth < 1) {
     for (int i = 0; i < movcount - 1; i++) {
       for (int j = i + 1;
-           Histories.movescore(Bitboards.moves[maxdepth + depth][j]) >
-               Histories.movescore(Bitboards.moves[maxdepth + depth][j - 1]) &&
+           Histories.movescore(Bitboards.moves[maxmaxdepth + depth][j]) >
+               Histories.movescore(Bitboards.moves[maxmaxdepth + depth][j - 1]) &&
            j > 0;
            j--) {
-        std::swap(Bitboards.moves[maxdepth + depth][j],
-                  Bitboards.moves[maxdepth + depth][j - 1]);
+        std::swap(Bitboards.moves[maxmaxdepth + depth][j],
+                  Bitboards.moves[maxmaxdepth + depth][j - 1]);
       }
     }
   }
   for (int i = 0; i < movcount; i++) {
-    int mov = Bitboards.moves[maxdepth + depth][i];
+    int mov = Bitboards.moves[maxmaxdepth + depth][i];
     bool good = (incheck || Bitboards.see_exceeds(mov, color, 0));
     if (good) {
       Bitboards.makemove(mov, 1);
