@@ -143,6 +143,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   int ttdepth = TT[index].depth();
   int ttage = TT[index].age(Bitboards.gamelength);
   bool update = (depth >= (ttdepth - ttage / 2));
+  bool tthit = (TT[index].key == Bitboards.zobristhash);
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (beta - alpha > 1);
   int staticeval = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
@@ -152,7 +153,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     improving = (staticeval > searchstack[ply - 2].eval);
   }
   int quiets = 0;
-  if (TT[index].key == Bitboards.zobristhash) {
+  if (tthit) {
     score = TT[index].score();
     ttmove = TT[index].hashmove();
     int nodetype = TT[index].nodetype();
@@ -175,6 +176,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
         return (score + beta) / 2;
       }
     }
+  }
+  if (depth >= 3 && !tthit) {
+    depth--;
   }
   int margin = std::max(40, 70 * (depth - improving));
   if (ply > 0 && score == -30000) {
