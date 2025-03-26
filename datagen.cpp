@@ -72,7 +72,7 @@ void Engine::datagenautoplayplain() {
       result = "0.5";
     }
     if (useNNUE && bestmove > 0) {
-      EUNN.forwardaccumulators(bestmove, Bitboards.Bitboards);
+      EUNN.initializennue(Bitboards.Bitboards);
     }
   }
   for (int i = 0; i < maxmove; i++) {
@@ -140,7 +140,7 @@ void Engine::datagenautoplayviriformat() {
       result = 1;
     }
     if (useNNUE && bestmove > 0) {
-      EUNN.forwardaccumulators(bestmove, Bitboards.Bitboards);
+      EUNN.initializennue(Bitboards.Bitboards);
     }
   }
   game.writewithwdl(dataoutput, result);
@@ -183,7 +183,7 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
     } else {
       Bitboards.makemove(bestmove, 0);
       if (useNNUE) {
-        EUNN.forwardaccumulators(bestmove, Bitboards.Bitboards);
+        EUNN.initializennue(Bitboards.Bitboards);
       }
     }
     if (Bitboards.twokings()) {
