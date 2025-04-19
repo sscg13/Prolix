@@ -419,7 +419,7 @@ int Engine::iterative(int color) {
           int normalscore = normalize(score);
           std::cout << "info depth " << depth << " nodes "
                     << Bitboards.nodecount << " time " << timetaken.count()
-                    << " score cp " << normalscore;
+                    << " score cp " << score;
           if (showWDL) {
             int winrate = wdlmodel(score);
             int lossrate = wdlmodel(-score);
@@ -479,7 +479,7 @@ int Engine::iterative(int color) {
   auto timetaken =
       std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
   if (proto == "uci" && !suppressoutput) {
-    int nps = 1000 * (Bitboards.nodecount / std::max(1LL, timetaken.count()));
+    int nps = 1000 * (Bitboards.nodecount / std::max(1ULL, (uint64_t)timetaken.count()));
     std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps
               << std::endl;
   }
