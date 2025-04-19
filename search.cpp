@@ -479,7 +479,7 @@ int Engine::iterative(int color) {
   auto timetaken =
       std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
   if (proto == "uci" && !suppressoutput) {
-    int nps = 1000 * (Bitboards.nodecount / std::max(1ULL, (uint64_t)timetaken.count()));
+    int nps = 1000 * (Bitboards.nodecount / std::max((uint64_t)1, (uint64_t)timetaken.count()));
     std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps
               << std::endl;
   }
