@@ -101,8 +101,7 @@ void Engine::xboard() {
     if (played >= 0) {
       Bitboards.makemove(Bitboards.moves[0][played], false);
       if (useNNUE) {
-        EUNN.forwardaccumulators(Bitboards.moves[0][played],
-                                 Bitboards.Bitboards);
+        EUNN.initializennue(Bitboards.Bitboards);
       }
       if (gosent) {
         int color = Bitboards.position & 1;
