@@ -1,11 +1,11 @@
 #include "datagen.cpp"
-int lmr_reductions[maxmaxdepth][256];
+int lmr_reductions[maxmaxdepth][maxmoves];
 std::chrono::time_point<std::chrono::steady_clock> start =
     std::chrono::steady_clock::now();
 bool iscapture(int notation) { return ((notation >> 16) & 1); }
 void initializelmr() {
   for (int i = 0; i < maxmaxdepth; i++) {
-    for (int j = 0; j < 256; j++) {
+    for (int j = 0; j < maxmoves; j++) {
       lmr_reductions[i][j] =
           (i == 0 || j == 0) ? 0 : floor(0.77 + log(i) * log(j) * 0.46);
     }
@@ -45,7 +45,7 @@ void Engine::startup() {
 }
 int Engine::quiesce(int alpha, int beta, int color, int depth) {
   int score = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
-  int bestscore = -30000;
+  int bestscore = -SCORE_INF;
   int movcount;
   if (depth > 3) {
     return score;
@@ -54,7 +54,7 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
   if (incheck) {
     movcount = Bitboards.generatemoves(color, 0, maxmaxdepth + depth);
     if (movcount == 0) {
-      return -27000;
+      return -SCORE_WIN;
     }
   } else {
     bestscore = score;
@@ -71,7 +71,8 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
     for (int i = 0; i < movcount - 1; i++) {
       for (int j = i + 1;
            Histories.movescore(Bitboards.moves[maxmaxdepth + depth][j]) >
-               Histories.movescore(Bitboards.moves[maxmaxdepth + depth][j - 1]) &&
+               Histories.movescore(
+                   Bitboards.moves[maxmaxdepth + depth][j - 1]) &&
            j > 0;
            j--) {
         std::swap(Bitboards.moves[maxmaxdepth + depth][j],
@@ -109,16 +110,16 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
                       bool nmp) {
   pvtable[ply][0] = ply + 1;
   if (Bitboards.repetitions() > 1) {
-    return 0;
+    return SCORE_DRAW;
   }
   if (Bitboards.halfmovecount() >= 140) {
-    return 0;
+    return SCORE_DRAW;
   }
   if (Bitboards.twokings()) {
-    return 0;
+    return SCORE_DRAW;
   }
   if (Bitboards.bareking(color ^ 1)) {
-    return (28001 - ply);
+    return (SCORE_MATE + 1 - ply);
   }
   if (depth <= 0 || ply >= maxdepth) {
     return quiesce(alpha, beta, color, 0);
@@ -130,11 +131,11 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   if (fewpieces && useTB) {
     tbwdl = Bitboards.probetbwdl();
     if (!rootinTB) {
-      return tbwdl * (26000 - ply);
+      return tbwdl * (SCORE_TB_WIN - ply);
     }
   }
-  int score = -30000;
-  int bestscore = -30000;
+  int score = -SCORE_INF;
+  int bestscore = -SCORE_INF;
   int allnode = 0;
   int movcount;
   int index = Bitboards.zobristhash % TTsize;
@@ -172,7 +173,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     } else {
       int margin = std::max(40, 70 * (depth - ttdepth - improving));
       if (((nodetype & 1) && (score - margin >= beta)) &&
-          (abs(beta) < 20000 && !incheck) && (ply > 0)) {
+          (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0)) {
         return (score + beta) / 2;
       }
     }
@@ -181,14 +182,15 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     depth--;
   }
   int margin = std::max(40, 70 * (depth - improving));
-  if (ply > 0 && score == -30000) {
-    if (staticeval - margin >= beta && (abs(beta) < 20000 && !incheck)) {
+  if (ply > 0 && score == -SCORE_INF) {
+    if (staticeval - margin >= beta &&
+        (abs(beta) < SCORE_MAX_EVAL && !incheck)) {
       return (staticeval + beta) / 2;
     }
   }
   movcount = Bitboards.generatemoves(color, 0, ply);
   if (movcount == 0) {
-    return -1 * (28000 - ply);
+    return -1 * (SCORE_MATE - ply);
   }
   if ((!incheck && Bitboards.gamephase[color] > 3) && (depth > 1 && nmp) &&
       (staticeval >= beta && !isPV)) {
@@ -217,7 +219,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     previoussquare = (previousmove >> 6) & 63;
     counter = countermoves[previouspiece - 2][previoussquare];
   }
-  int movescore[256];
+  int movescore[maxmoves];
   for (int i = 0; i < movcount; i++) {
     int mov = Bitboards.moves[ply][i];
     if (mov == ttmove) {
@@ -361,7 +363,7 @@ int Engine::wdlmodel(int eval) {
   return int(0.5 + 1000 / (1 + exp((a - double(eval)) / b)));
 }
 int Engine::normalize(int eval) {
-  if (abs(eval) >= 25000) {
+  if (abs(eval) >= SCORE_MAX_EVAL) {
     return eval;
   }
   int material = Bitboards.material();
@@ -411,15 +413,15 @@ int Engine::iterative(int color) {
         (timetaken.count() < hardtimelimit || hardtimelimit <= 0) &&
         depth < maxdepth && bestmove >= 0) {
       returnedscore = score;
-      if (rootinTB && useTB && abs(score) < 27000) {
-        score = 26000 * tbscore;
+      if (rootinTB && useTB && abs(score) < SCORE_WIN) {
+        score = SCORE_TB_WIN * tbscore;
       }
       if (proto == "uci" && !suppressoutput) {
         if (abs(score) <= 27000) {
-          int normalscore = normalize(score);
+          int printedscore = normalizeeval ? normalize(score) : score;
           std::cout << "info depth " << depth << " nodes "
                     << Bitboards.nodecount << " time " << timetaken.count()
-                    << " score cp " << score;
+                    << " score cp " << printedscore;
           if (showWDL) {
             int winrate = wdlmodel(score);
             int lossrate = wdlmodel(-score);
@@ -435,9 +437,9 @@ int Engine::iterative(int color) {
         } else {
           int matescore;
           if (score > 0) {
-            matescore = 1 + (28000 - score) / 2;
+            matescore = 1 + (SCORE_MATE - score) / 2;
           } else {
-            matescore = (-28000 - score) / 2;
+            matescore = (-SCORE_MATE - score) / 2;
           }
           std::cout << "info depth " << depth << " nodes "
                     << Bitboards.nodecount << " time " << timetaken.count()
@@ -455,8 +457,10 @@ int Engine::iterative(int color) {
         }
       }
       if (proto == "xboard") {
-        std::cout << depth << " " << score << " " << timetaken.count() / 10
-                  << " " << Bitboards.nodecount << " ";
+        int printedscore = normalizeeval ? normalize(score) : score;
+        std::cout << depth << " " << printedscore << " "
+                  << timetaken.count() / 10 << " " << Bitboards.nodecount
+                  << " ";
         for (int i = 1; i < pvtable[0][0]; i++) {
           std::cout << algebraic(pvtable[0][i]) << " ";
         }
@@ -479,7 +483,8 @@ int Engine::iterative(int color) {
   auto timetaken =
       std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
   if (proto == "uci" && !suppressoutput) {
-    int nps = 1000 * (Bitboards.nodecount / std::max((uint64_t)1, (uint64_t)timetaken.count()));
+    int nps = 1000 * (Bitboards.nodecount /
+                      std::max((uint64_t)1, (uint64_t)timetaken.count()));
     std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps
               << std::endl;
   }

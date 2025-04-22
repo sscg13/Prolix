@@ -1,4 +1,5 @@
 #include "board.h"
+#include "consts.h"
 #include "external/Fathom/tbprobe.h"
 #include "history.h"
 #include "nnue.h"
@@ -7,9 +8,8 @@
 #include <time.h>
 #pragma once
 extern std::string proto;
-const int maxmaxdepth = 32;
 const int maxtbpieces = 5;
-extern int lmr_reductions[maxmaxdepth][256];
+extern int lmr_reductions[maxmaxdepth][maxmoves];
 extern std::chrono::time_point<std::chrono::steady_clock> start;
 extern std::string inputfile;
 struct abinfo {
@@ -21,6 +21,7 @@ class Engine {
   int TTsize = 2097152;
   std::vector<TTentry> TT;
   bool useNNUE = true;
+  bool normalizeeval = true;
   bool showWDL = true;
   NNUE EUNN;
   History Histories;

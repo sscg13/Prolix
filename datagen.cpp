@@ -202,11 +202,10 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
 void Engine::datagen(int dataformat, int n, std::string outputfile) {
   if (dataformat == 1) {
     dataoutput.open(outputfile, std::ofstream::binary);
-  }
-  else {
+  } else {
     dataoutput.open(outputfile, std::ofstream::app);
   }
-  softnodelimit = 16384;
+  softnodelimit = 12288;
   hardnodelimit = 65536;
   softtimelimit = 0;
   hardtimelimit = 0;
