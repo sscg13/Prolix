@@ -8,6 +8,7 @@ std::string uciinfostring =
     "option name Threads type spin default 1 min 1 max 1 \n"
     "option name Hash type spin default 32 min 1 max 1024 \n"
     "option name Use NNUE type check default true \n"
+    "option name NormalizeEval type check default true \n"
     "option name EvalFile type string default <internal> \n"
     "option name UCI_ShowWDL type check default true \n"
     "option name SyzygyPath type string default <empty> \n"
@@ -301,6 +302,14 @@ void Engine::uci() {
         showWDL = true;
       } else {
         showWDL = false;
+      }
+    }
+    if (option == "NormalizeEval") {
+      std::string value = ucicommand.substr(35, ucicommand.length() - 35);
+      if (value == "true") {
+        normalizeeval = true;
+      } else {
+        normalizeeval = false;
       }
     }
     if (option == "Use") {

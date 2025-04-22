@@ -418,10 +418,10 @@ int Engine::iterative(int color) {
       }
       if (proto == "uci" && !suppressoutput) {
         if (abs(score) <= 27000) {
-          int normalscore = normalize(score);
+          int printedscore = normalizeeval ? normalize(score) : score;
           std::cout << "info depth " << depth << " nodes "
                     << Bitboards.nodecount << " time " << timetaken.count()
-                    << " score cp " << score;
+                    << " score cp " << printedscore;
           if (showWDL) {
             int winrate = wdlmodel(score);
             int lossrate = wdlmodel(-score);
@@ -457,8 +457,10 @@ int Engine::iterative(int color) {
         }
       }
       if (proto == "xboard") {
-        std::cout << depth << " " << score << " " << timetaken.count() / 10
-                  << " " << Bitboards.nodecount << " ";
+        int printedscore = normalizeeval ? normalize(score) : score;
+        std::cout << depth << " " << printedscore << " "
+                  << timetaken.count() / 10 << " " << Bitboards.nodecount
+                  << " ";
         for (int i = 1; i < pvtable[0][0]; i++) {
           std::cout << algebraic(pvtable[0][i]) << " ";
         }

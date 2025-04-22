@@ -21,6 +21,7 @@ class Engine {
   int TTsize = 2097152;
   std::vector<TTentry> TT;
   bool useNNUE = true;
+  bool normalizeeval = true;
   bool showWDL = true;
   NNUE EUNN;
   History Histories;
