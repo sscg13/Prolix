@@ -153,6 +153,13 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     improving = (staticeval > searchstack[ply - 2].eval);
   }
   int quiets = 0;
+  if (!isPV) {
+    alpha = std::max(alpha, -28000 + ply);
+    beta  = std::min(beta,  28000 - ply - 1);
+    if (alpha >= beta) {
+      return alpha;
+    }
+  }
   if (tthit) {
     score = TT[index].score();
     ttmove = TT[index].hashmove();
