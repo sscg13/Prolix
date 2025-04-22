@@ -26,4 +26,4 @@ const int SCORE_TB_WIN = 26000;
 const int SCORE_MAX_EVAL = 20000;
 const int SCORE_DRAW = 0;
 constexpr int maxmaxdepth = 32;
-constexpr int maxmoves = 256;
+constexpr int maxmoves = 128;
