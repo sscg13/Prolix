@@ -1,4 +1,5 @@
 #include "arch.h"
+#include "consts.h"
 #include <cstdint>
 #include <string>
 #pragma once
@@ -11,7 +12,7 @@ class NNUE {
   int finalbias[outputbuckets];
   int totalmaterial;
   int ply;
-  short int accumulation[128][nnuesize];
+  short int accumulation[4 * maxmaxdepth][nnuesize];
 
 public:
   void loaddefaultnet();
