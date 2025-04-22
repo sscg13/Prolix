@@ -155,8 +155,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   }
   int quiets = 0;
   if (!isPV) {
-    alpha = std::max(alpha, -28000 + ply);
-    beta  = std::min(beta,  28000 - ply - 1);
+    alpha = std::max(alpha, -SCORE_MATE + ply);
+    beta  = std::min(beta,  SCORE_MATE - ply - 1);
     if (alpha >= beta) {
       return alpha;
     }
@@ -424,7 +424,7 @@ int Engine::iterative(int color) {
         score = SCORE_TB_WIN * tbscore;
       }
       if (proto == "uci" && !suppressoutput) {
-        if (abs(score) <= 27000) {
+        if (abs(score) <= SCORE_WIN) {
           int printedscore = normalizeeval ? normalize(score) : score;
           std::cout << "info depth " << depth << " nodes "
                     << Bitboards.nodecount << " time " << timetaken.count()
