@@ -47,7 +47,7 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
   int score = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
   int movcount;
-  if (depth > 3) {
+  if (depth > 7) {
     return score;
   }
   bool incheck = Bitboards.checkers(color);
