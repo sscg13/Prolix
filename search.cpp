@@ -261,7 +261,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     if (!iscapture(mov)) {
       quiets++;
       if (quiets > depth * depth + depth + 1) {
-        prune = true;
+        prune = !isPV;
       }
       r = std::min(depth - 1, lmr_reductions[depth][quiets]);
     }
