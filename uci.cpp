@@ -7,7 +7,7 @@ std::string uciinfostring =
     "option name UCI_Variant type combo default shatranj var shatranj \n"
     "option name Threads type spin default 1 min 1 max 1 \n"
     "option name Hash type spin default 32 min 1 max 1024 \n"
-    "option name Use NNUE type check default true \n"
+    "option name Use NNUE type check default false \n"
     "option name NormalizeEval type check default true \n"
     "option name EvalFile type string default <internal> \n"
     "option name UCI_ShowWDL type check default true \n"

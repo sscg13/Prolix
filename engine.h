@@ -20,7 +20,7 @@ class Engine {
   Board Bitboards;
   int TTsize = 2097152;
   std::vector<TTentry> TT;
-  bool useNNUE = true;
+  bool useNNUE = false;
   bool normalizeeval = true;
   bool showWDL = true;
   NNUE EUNN;
