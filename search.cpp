@@ -67,17 +67,14 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
     movcount = Bitboards.generatemoves(color, 1, maxmaxdepth + depth);
   }
 
-  if (depth < 1) {
-    for (int i = 0; i < movcount - 1; i++) {
-      for (int j = i + 1;
-           Histories.movescore(Bitboards.moves[maxmaxdepth + depth][j]) >
-               Histories.movescore(
-                   Bitboards.moves[maxmaxdepth + depth][j - 1]) &&
-           j > 0;
-           j--) {
-        std::swap(Bitboards.moves[maxmaxdepth + depth][j],
-                  Bitboards.moves[maxmaxdepth + depth][j - 1]);
-      }
+  for (int i = 0; i < movcount - 1; i++) {
+    for (int j = i + 1;
+         Histories.movescore(Bitboards.moves[maxmaxdepth + depth][j]) >
+             Histories.movescore(Bitboards.moves[maxmaxdepth + depth][j - 1]) &&
+         j > 0;
+         j--) {
+      std::swap(Bitboards.moves[maxmaxdepth + depth][j],
+                Bitboards.moves[maxmaxdepth + depth][j - 1]);
     }
   }
   for (int i = 0; i < movcount; i++) {
@@ -156,7 +153,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   int quiets = 0;
   if (!isPV) {
     alpha = std::max(alpha, -SCORE_MATE + ply);
-    beta  = std::min(beta,  SCORE_MATE - ply - 1);
+    beta = std::min(beta, SCORE_MATE - ply - 1);
     if (alpha >= beta) {
       return alpha;
     }
@@ -180,7 +177,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     } else {
       int margin = std::max(40, 70 * (depth - ttdepth - improving));
       if (((nodetype & 1) && (score - margin >= beta)) &&
-          (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) && (margin < 500)) {
+          (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) &&
+          (margin < 500)) {
         return (score + beta) / 2;
       }
     }
