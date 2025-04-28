@@ -394,7 +394,7 @@ int Engine::iterative(int color) {
   }
   while (!stopsearch) {
     bestmove = -1;
-    int delta = 30;
+    int delta = 20;
     int alpha = returnedscore - delta;
     int beta = returnedscore + delta;
     bool fail = true;
