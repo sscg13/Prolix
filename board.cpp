@@ -878,6 +878,7 @@ void Board::parseFEN(std::string FEN) {
         evale[0] += materiale[0];
         evalm[0] += pstm[0][order[progress]];
         evale[0] += pste[0][order[progress]];
+        gamephase[0] += phase[0];
       }
       if (hm == 'A' || hm == 'B') {
         Bitboards[3] |= (1ULL << order[progress]);
@@ -885,7 +886,7 @@ void Board::parseFEN(std::string FEN) {
         evale[0] += materiale[1];
         evalm[0] += pstm[1][order[progress]];
         evale[0] += pste[1][order[progress]];
-        gamephase[0] += 1;
+        gamephase[0] += phase[1];
       }
       if (hm == 'F' || hm == 'Q') {
         Bitboards[4] |= (1ULL << order[progress]);
@@ -893,7 +894,7 @@ void Board::parseFEN(std::string FEN) {
         evale[0] += materiale[2];
         evalm[0] += pstm[2][order[progress]];
         evale[0] += pste[2][order[progress]];
-        gamephase[0] += 2;
+        gamephase[0] += phase[2];
       }
       if (hm == 'N') {
         Bitboards[5] |= (1ULL << order[progress]);
@@ -901,7 +902,7 @@ void Board::parseFEN(std::string FEN) {
         evale[0] += materiale[3];
         evalm[0] += pstm[3][order[progress]];
         evale[0] += pste[3][order[progress]];
-        gamephase[0] += 4;
+        gamephase[0] += phase[3];
       }
       if (hm == 'R') {
         Bitboards[6] |= (1ULL << order[progress]);
@@ -909,7 +910,7 @@ void Board::parseFEN(std::string FEN) {
         evale[0] += materiale[4];
         evalm[0] += pstm[4][order[progress]];
         evale[0] += pste[4][order[progress]];
-        gamephase[0] += 6;
+        gamephase[0] += phase[4];
       }
       if (hm == 'K') {
         Bitboards[7] |= (1ULL << order[progress]);
@@ -926,6 +927,7 @@ void Board::parseFEN(std::string FEN) {
         evale[1] += materiale[0];
         evalm[1] += pstm[0][56 ^ order[progress]];
         evale[1] += pste[0][56 ^ order[progress]];
+        gamephase[1] += phase[0];
       }
       if (hm == 'a' || hm == 'b') {
         Bitboards[3] |= (1ULL << order[progress]);
@@ -933,7 +935,7 @@ void Board::parseFEN(std::string FEN) {
         evale[1] += materiale[1];
         evalm[1] += pstm[1][56 ^ order[progress]];
         evale[1] += pste[1][56 ^ order[progress]];
-        gamephase[1] += 1;
+        gamephase[1] += phase[1];
       }
       if (hm == 'f' || hm == 'q') {
         Bitboards[4] |= (1ULL << order[progress]);
@@ -941,7 +943,7 @@ void Board::parseFEN(std::string FEN) {
         evale[1] += materiale[2];
         evalm[1] += pstm[2][56 ^ order[progress]];
         evale[1] += pste[2][56 ^ order[progress]];
-        gamephase[1] += 2;
+        gamephase[1] += phase[2];
       }
       if (hm == 'n') {
         Bitboards[5] |= (1ULL << order[progress]);
@@ -949,7 +951,7 @@ void Board::parseFEN(std::string FEN) {
         evale[1] += materiale[3];
         evalm[1] += pstm[3][56 ^ order[progress]];
         evale[1] += pste[3][56 ^ order[progress]];
-        gamephase[1] += 4;
+        gamephase[1] += phase[3];
       }
       if (hm == 'r') {
         Bitboards[6] |= (1ULL << order[progress]);
@@ -957,7 +959,7 @@ void Board::parseFEN(std::string FEN) {
         evale[1] += materiale[4];
         evalm[1] += pstm[4][56 ^ order[progress]];
         evale[1] += pste[4][56 ^ order[progress]];
-        gamephase[1] += 6;
+        gamephase[1] += phase[4];
       }
       if (hm == 'k') {
         Bitboards[7] |= (1ULL << order[progress]);
