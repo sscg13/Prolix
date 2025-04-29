@@ -1046,14 +1046,14 @@ std::string Board::getFEN() {
   return FEN;
 }
 int Board::evaluate(int color) {
-  int midphase = std::min(64, gamephase[0] + gamephase[1]);
-  int endphase = 64 - midphase;
+  int midphase = std::min(48, gamephase[0] + gamephase[1]);
+  int endphase = 48 - midphase;
   int mideval =
       evalm[color] + mobilitym[color] - evalm[color ^ 1] - mobilitym[color ^ 1];
   int endeval =
       evale[color] + mobilitye[color] - evale[color ^ 1] - mobilitye[color ^ 1];
   int progress = 200 - (position >> 1);
-  int base = (mideval * midphase + endeval * endphase) / 64 + 10;
+  int base = (mideval * midphase + endeval * endphase) / 48 + 10;
   return (base * progress) / 200;
 }
 bool Board::see_exceeds(int mov, int color, int threshold) {

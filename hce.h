@@ -124,5 +124,5 @@ const int knightmobe[9] = {-29, -41, -10, 11, 21, 19, 14, 19, 24};
 const int rookmobm[15] = {-24, -9, -4, -6, -4, 0, 6, 3, 1, 4, 21, 26, 9, 22, 14};
 const int rookmobe[15] = {-51, -27, -15, -4, 1, 6, 11, 16, 21, 26, 31, 29, 41, 31, 29};
 const int kingmobe[9] = {-39, -29, -9, 1, -4, 3, 9, 19, 24};
-const int phase[6] = {1, 1, 2, 4, 6, 0};
+const int phase[6] = {0, 1, 2, 4, 6, 0};
 //clang-format on
