@@ -363,6 +363,7 @@ void Board::makemove(int notation, bool reversible) {
     evale[color] +=
         (materiale[promoted + 1] + pste[promoted + 1][(56 * color) ^ to]);
     gamephase[color] += phase[promoted + 1];
+    gamephase[color] -= phase[0];
   } else if (notation & (1 << 24)) {
     position ^= ((from + to) << 7);
   }
@@ -411,6 +412,7 @@ void Board::unmakemove(int notation) {
     evale[color] -=
         (materiale[promoted + 1] + pste[promoted + 1][(56 * color) ^ to]);
     gamephase[color] -= phase[promoted + 1];
+    gamephase[color] += phase[0];
   }
 }
 int Board::generatemoves(int color, bool capturesonly, int depth) {
