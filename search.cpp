@@ -290,7 +290,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
               -alphabeta(depth - 1, ply + 1, -beta, -alpha, color ^ 1, true);
         }
       } else {
-        score = -alphabeta(depth - 1, ply + 1, -beta, -alpha, color ^ 1, true);
+        score = -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha, color ^ 1, true);
       }
       Bitboards.unmakemove(mov);
       if (useNNUE) {
