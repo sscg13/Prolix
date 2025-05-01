@@ -254,8 +254,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   for (int i = 0; i < movcount; i++) {
     bool nullwindow = (i > 0);
     int r = 0;
-    bool prune = false;
     int mov = Bitboards.moves[ply][i];
+    int threshold = iscapture(mov) ? -30 * depth * depth : -100 * depth;
+    bool prune = (!incheck && (i > 0) && !Bitboards.see_exceeds(mov, color, threshold));
     if (!iscapture(mov)) {
       quiets++;
       if (quiets > depth * depth + depth + 1) {
