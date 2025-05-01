@@ -313,7 +313,7 @@ void Engine::uci() {
       }
     }
     if (option == "UseNNUE") {
-      std::string value = ucicommand.substr(29, ucicommand.length() - 30);
+      std::string value = ucicommand.substr(29, ucicommand.length() - 29);
       if (value == "true") {
         useNNUE = true;
       } else {
