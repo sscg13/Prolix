@@ -201,7 +201,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       (staticeval >= beta && !isPV)) {
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
-    score = -alphabeta(std::max(0, depth - 2 - (depth + 1) / 3), ply + 1, -beta,
+    score = -alphabeta(std::max(0, depth - 2 - improving - depth / 4), ply + 1, -beta,
                        1 - beta, color ^ 1, false);
     Bitboards.unmakenullmove();
     if (score >= beta) {
