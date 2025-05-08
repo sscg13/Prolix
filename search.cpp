@@ -310,9 +310,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
               killers[ply][0] = mov;
             }
             if (iscapture(mov)) {
-              Histories.updatenoisyhistory(mov, depth * depth * depth);
+              Histories.updatenoisyhistory(mov, depth * depth + 1);
             } else {
-              Histories.updatequiethistory(mov, depth * depth);
+              Histories.updatequiethistory(mov, depth * depth + 1);
             }
             for (int j = 0; j < i; j++) {
               int mov2 = Bitboards.moves[ply][j];
