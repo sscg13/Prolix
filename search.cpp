@@ -104,7 +104,7 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
   return bestscore;
 }
 int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
-                      bool nmp) {
+                      bool nmp, int nodetype) {
   pvtable[ply][0] = ply + 1;
   if (Bitboards.repetitions() > 1) {
     return SCORE_DRAW;
@@ -133,7 +133,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   }
   int score = -SCORE_INF;
   int bestscore = -SCORE_INF;
-  int allnode = 0;
+  bool improvedalpha = false;
   int movcount;
   int index = Bitboards.zobristhash % TTsize;
   int ttmove = 0;
@@ -201,8 +201,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       (staticeval >= beta && !isPV)) {
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
+    int childnodetype = EXPECTED_PV_NODE ? EXPECTED_ALL_NODE : 3 - nodetype;
     score = -alphabeta(std::max(0, depth - 2 - (depth + 1) / 3), ply + 1, -beta,
-                       1 - beta, color ^ 1, false);
+                       1 - beta, color ^ 1, false, childnodetype);
     Bitboards.unmakenullmove();
     if (score >= beta) {
       return beta;
@@ -280,17 +281,18 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       }
       if (nullwindow) {
         score = -alphabeta(depth - 1 - r, ply + 1, -alpha - 1, -alpha,
-                           color ^ 1, true);
+                           color ^ 1, true, EXPECTED_CUT_NODE);
         if (score > alpha && r > 0) {
           score = -alphabeta(depth - 1, ply + 1, -alpha - 1, -alpha, color ^ 1,
-                             true);
+                             true, EXPECTED_CUT_NODE);
         }
         if (score > alpha && score < beta) {
           score =
-              -alphabeta(depth - 1, ply + 1, -beta, -alpha, color ^ 1, true);
+              -alphabeta(depth - 1, ply + 1, -beta, -alpha, color ^ 1, true, EXPECTED_PV_NODE);
         }
       } else {
-        score = -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha, color ^ 1, true);
+        int childnode = (nodetype == EXPECTED_PV_NODE) ? EXPECTED_PV_NODE : 3 - nodetype;
+        score = -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha, color ^ 1, true, childnode);
       }
       Bitboards.unmakemove(mov);
       if (useNNUE) {
@@ -301,7 +303,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
           if (score >= beta) {
             if (update && !stopsearch) {
               TT[index].update(Bitboards.zobristhash, Bitboards.gamelength,
-                               depth, score, 1, mov);
+                               depth, score, EXPECTED_CUT_NODE, mov);
             }
             if (!iscapture(mov) && (killers[ply][0] != mov)) {
               killers[ply][1] = killers[ply][0];
@@ -326,7 +328,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
             return score;
           }
           alpha = score;
-          allnode = 1;
+          improvedalpha = 1;
         }
         if (ply == 0) {
           bestmove = mov;
@@ -352,9 +354,10 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       }
     }
   }
-  if (((update || allnode) && !stopsearch)) {
+  int realnodetype = improvedalpha ? EXPECTED_PV_NODE : EXPECTED_ALL_NODE;
+  if (((update || (realnodetype == EXPECTED_PV_NODE)) && !stopsearch)) {
     TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth,
-                     bestscore, 2 + allnode, Bitboards.moves[ply][bestmove1]);
+                     bestscore, realnodetype, Bitboards.moves[ply][bestmove1]);
   }
   return bestscore;
 }
@@ -399,7 +402,7 @@ int Engine::iterative(int color) {
     int beta = returnedscore + delta;
     bool fail = true;
     while (fail) {
-      int score1 = alphabeta(depth, 0, alpha, beta, color, false);
+      int score1 = alphabeta(depth, 0, alpha, beta, color, false, EXPECTED_PV_NODE);
       if (score1 >= beta) {
         beta += delta;
         delta += delta;

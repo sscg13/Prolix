@@ -47,7 +47,7 @@ class Engine {
   void initializett();
   void resetauxdata();
   int quiesce(int alpha, int beta, int color, int depth);
-  int alphabeta(int depth, int ply, int alpha, int beta, int color, bool nmp);
+  int alphabeta(int depth, int ply, int alpha, int beta, int color, bool nmp, int nodetype);
   int wdlmodel(int eval);
   int normalize(int eval);
   int iterative(int color);
