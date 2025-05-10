@@ -148,7 +148,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   searchstack[ply].eval = staticeval;
   bool improving = false;
   if (ply > 1) {
-    improving = (staticeval > searchstack[ply - 2].eval);
+    improving = (!incheck && staticeval > searchstack[ply - 2].eval);
   }
   int quiets = 0;
   if (!isPV) {
