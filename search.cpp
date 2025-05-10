@@ -143,7 +143,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   bool update = (depth >= (ttdepth - ttage / 2));
   bool tthit = (TT[index].key == Bitboards.zobristhash);
   bool incheck = (Bitboards.checkers(color) != 0ULL);
-  bool isPV = (beta - alpha > 1);
+  bool isPV = (nodetype == EXPECTED_PV_NODE);
   int staticeval = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
   searchstack[ply].eval = staticeval;
   bool improving = false;
