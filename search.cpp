@@ -183,7 +183,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       }
     }
   }
-  if (depth >= 3 && !tthit) {
+  if (depth >= 3 && !tthit && nodetype != EXPECTED_ALL_NODE) {
     depth--;
   }
   int margin = std::max(40, 70 * (depth - improving));
