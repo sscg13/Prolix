@@ -1,13 +1,14 @@
 EXE := Prolix
 EVALFILE := shatranj-net23.nnue
+ARCH := native
 
 SOURCES := Prolix.cpp uci.cpp xboard.cpp search.cpp nnue.cpp tt.cpp history.cpp viriformat.cpp board.cpp external/Fathom/tbprobe.cpp
 
 CXX := clang++
 
-CXXFLAGS := -O3 -march=native -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+CXXFLAGS := -O3 -march=$(ARCH) -static -pthread -DEUNNfile=\"$(EVALFILE)\"
 
-DEBUGFLAGS := -g -march=native -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+DEBUGFLAGS := -g -march=$(ARCH) -static -pthread -DEUNNfile=\"$(EVALFILE)\"
 
 SUFFIX :=
 
