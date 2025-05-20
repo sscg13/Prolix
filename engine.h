@@ -47,7 +47,8 @@ class Engine {
   void initializett();
   void resetauxdata();
   int quiesce(int alpha, int beta, int color, int depth);
-  int alphabeta(int depth, int ply, int alpha, int beta, int color, bool nmp, int nodetype);
+  int alphabeta(int depth, int ply, int alpha, int beta, int color, bool nmp,
+                int nodetype);
   int wdlmodel(int eval);
   int normalize(int eval);
   int iterative(int color);
@@ -60,6 +61,8 @@ public:
   void bench();
   void datagen(int dataformat, int n, std::string outputfile);
   void bookgen(int lowerbound, int upperbound, int n, std::string outputfile);
+  void filter(int lowerbound, int upperbound, int softnodes, int hardnodes,
+              std::string inputfile, std::string outputfile);
   void uci();
   void xboard();
 };

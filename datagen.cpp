@@ -230,3 +230,34 @@ void Engine::bookgen(int lowerbound, int upperbound, int n,
     std::cout << i << "\n";
   }
 }
+void Engine::filter(int lowerbound, int upperbound, int softnodes,
+                    int hardnodes, std::string inputfile,
+                    std::string outputfile) {
+  softnodelimit = softnodes;
+  hardnodelimit = hardnodes;
+  softtimelimit = 0;
+  hardtimelimit = 0;
+  suppressoutput = true;
+  std::ifstream epdin;
+  epdin.open(inputfile);
+  std::ofstream epdout;
+  epdout.open(outputfile);
+  TTsize = 65536;
+  TT.resize(TTsize);
+  TT.shrink_to_fit();
+  while (epdin) {
+    std::string fen;
+    getline(epdin, fen);
+    if (fen == "") {
+      return;
+    }
+    Bitboards.parseFEN(fen);
+    EUNN.initializennue(Bitboards.Bitboards);
+    int color = Bitboards.position & 1;
+    int score = iterative(color);
+    if (abs(score) >= lowerbound && abs(score) <= upperbound) {
+      epdout << fen << "\n";
+    }
+    initializett();
+  }
+}

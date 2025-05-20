@@ -287,12 +287,14 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
                              true, EXPECTED_CUT_NODE);
         }
         if (score > alpha && score < beta) {
-          score =
-              -alphabeta(depth - 1, ply + 1, -beta, -alpha, color ^ 1, true, EXPECTED_PV_NODE);
+          score = -alphabeta(depth - 1, ply + 1, -beta, -alpha, color ^ 1, true,
+                             EXPECTED_PV_NODE);
         }
       } else {
-        int childnode = (nodetype == EXPECTED_PV_NODE) ? EXPECTED_PV_NODE : 3 - nodetype;
-        score = -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha, color ^ 1, true, childnode);
+        int childnode =
+            (nodetype == EXPECTED_PV_NODE) ? EXPECTED_PV_NODE : 3 - nodetype;
+        score = -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha, color ^ 1,
+                           true, childnode);
       }
       Bitboards.unmakemove(mov);
       if (useNNUE) {
@@ -402,7 +404,8 @@ int Engine::iterative(int color) {
     int beta = returnedscore + delta;
     bool fail = true;
     while (fail) {
-      int score1 = alphabeta(depth, 0, alpha, beta, color, false, EXPECTED_PV_NODE);
+      int score1 =
+          alphabeta(depth, 0, alpha, beta, color, false, EXPECTED_PV_NODE);
       if (score1 >= beta) {
         beta += delta;
         delta += delta;

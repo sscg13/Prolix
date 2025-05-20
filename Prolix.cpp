@@ -111,6 +111,54 @@ int main(int argc, char *argv[]) {
       }
       return 0;
     }
+    if (std::string(argv[1]) == "filter") {
+      if (argc < 9) {
+        std::cerr << "Proper usage: ./(exe) filter threads softnodelimit "
+                     "hardnodelimit inputfile outputfile low high";
+        return 0;
+      }
+      int threads = atoi(argv[2]);
+      std::string inputfile = std::string(argv[5]);
+      std::cout << "Writing to temp files\n";
+      std::vector<std::string> tempnames(threads);
+      std::vector<std::ofstream> tempfiles(threads);
+      for (int i = 0; i < threads; i++) {
+        tempnames[i] = "temp" + std::to_string(i) + ".epd";
+        tempfiles[i].open(tempnames[i]);
+      }
+      int poscount = 0;
+      std::ifstream epdinput;
+      epdinput.open(inputfile);
+      while (epdinput) {
+        std::string fen;
+        getline(epdinput, fen);
+        tempfiles[poscount % threads] << fen << "\n";
+        poscount++;
+      }
+      for (int i = 0; i < threads; i++) {
+        tempfiles[i].close();
+      }
+      int softnodes = atoi(argv[3]);
+      int hardnodes = atoi(argv[4]);
+      int lowerbound = atoi(argv[7]);
+      int upperbound = atoi(argv[8]);
+      std::cout << "Filtering with lower bound " << lowerbound
+                << " and upper bound " << upperbound << "\n";
+      std::vector<std::thread> workers(threads);
+      std::vector<Engine> Engines(threads);
+      for (int i = 0; i < threads; i++) {
+        std::string outputfile =
+            std::string(argv[6]) + std::to_string(i) + ".epd";
+        Engines[i].startup();
+        workers[i] =
+            std::thread(&Engine::filter, &Engines[i], lowerbound, upperbound,
+                        softnodes, hardnodes, tempnames[i], outputfile);
+      }
+      for (auto &thread : workers) {
+        thread.join();
+      }
+      return 0;
+    }
   }
   Engine Prolix;
   Prolix.startup();
