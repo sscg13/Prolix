@@ -159,7 +159,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     }
   }
   if (tthit) {
-    score = TT[index].score();
+    score = TT[index].score(ply);
     ttmove = TT[index].hashmove();
     int nodetype = TT[index].nodetype();
     if (ttdepth >= depth) {
@@ -305,7 +305,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
           if (score >= beta) {
             if (update && !stopsearch) {
               TT[index].update(Bitboards.zobristhash, Bitboards.gamelength,
-                               depth, score, EXPECTED_CUT_NODE, mov);
+                               depth, ply, score, EXPECTED_CUT_NODE, mov);
             }
             if (!iscapture(mov) && (killers[ply][0] != mov)) {
               killers[ply][1] = killers[ply][0];
@@ -358,7 +358,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   }
   int realnodetype = improvedalpha ? EXPECTED_PV_NODE : EXPECTED_ALL_NODE;
   if (((update || (realnodetype == EXPECTED_PV_NODE)) && !stopsearch)) {
-    TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth,
+    TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
                      bestscore, realnodetype, Bitboards.moves[ply][bestmove1]);
   }
   return bestscore;
