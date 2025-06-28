@@ -175,7 +175,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
         }
       }
     } else {
-      int margin = std::max(40, 70 * (depth - ttdepth - improving));
+      int margin = std::max(40, 70 * depth - 70 * ttdepth - 70 * improving);
       if (((nodetype & 1) && (score - margin >= beta)) &&
           (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) &&
           (margin < 500)) {
@@ -186,7 +186,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   if (depth >= 3 && !tthit) {
     depth--;
   }
-  int margin = std::max(40, 70 * (depth - improving));
+  int margin = std::max(40, 70 * depth - 70 * improving);
   if (ply > 0 && score == -SCORE_INF) {
     if (staticeval - margin >= beta &&
         (abs(beta) < SCORE_MAX_EVAL && !incheck) && (margin < 500)) {
