@@ -23,7 +23,7 @@ void Engine::bench() {
       "8/1Q6/3Q4/3p1p2/2pkq2R/5q2/5K2/8 w - - 2 116",
       "8/4k3/4R3/2PK4/1P3Nn1/P2PPn2/5r2/8 b - - 2 58"};
   suppressoutput = true;
-  maxdepth = 14;
+  maxdepth = 16;
   auto commence = std::chrono::steady_clock::now();
   int nodes = 0;
   softnodelimit = 0;
