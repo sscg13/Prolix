@@ -197,7 +197,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   if (movcount == 0) {
     return -1 * (SCORE_MATE - ply);
   }
-  if ((!incheck && Bitboards.gamephase[color] > 3) && (depth > 1 && nmp) &&
+  if (!incheck && (Bitboards.Bitboards[color] & (Bitboards.Bitboards[5] | Bitboards.Bitboards[6])) && (depth > 1 && nmp) &&
       (staticeval >= beta && !isPV)) {
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
