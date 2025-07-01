@@ -366,8 +366,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
 int Engine::wdlmodel(int eval) {
   int material = Bitboards.material();
   double m = std::max(std::min(material, 64), 4) / 32.0;
-  double as[4] = {12.86611189, -1.56947052, -105.75177291, 247.30758159};
-  double bs[4] = {-7.31901285, 36.79299424, -14.98330140, 64.14426025};
+  double as[4] = {1.68116882, 4.65282732, -59.57468312, 227.74637225};
+  double bs[4] = {-0.87426669, 2.05986232, -1.43046196, 52.66782181};
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   double b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3];
   return int(0.5 + 1000 / (1 + exp((a - double(eval)) / b)));
@@ -378,7 +378,7 @@ int Engine::normalize(int eval) {
   }
   int material = Bitboards.material();
   double m = std::max(std::min(material, 64), 4) / 32.0;
-  double as[4] = {12.86611189, -1.56947052, -105.75177291, 247.30758159};
+  double as[4] = {1.68116882, 4.65282732, -59.57468312, 227.74637225};
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   return round(100 * eval / a);
 }
