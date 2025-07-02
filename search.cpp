@@ -168,6 +168,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
           return score;
         }
         if ((nodetype & 1) && (score >= beta)) {
+          if (!iscapture(ttmove)) {
+            Histories.updatequiethistory(ttmove, depth * depth);
+          }
           return score;
         }
         if ((nodetype & 2) && (score <= alpha)) {
