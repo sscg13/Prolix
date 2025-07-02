@@ -312,7 +312,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
               killers[ply][0] = mov;
             }
             if (iscapture(mov)) {
-              Histories.updatenoisyhistory(mov, depth * depth * depth);
+              Histories.updatenoisyhistory(mov, depth * depth);
             } else {
               Histories.updatequiethistory(mov, depth * depth);
             }
