@@ -234,7 +234,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       movescore[i] = Histories.movescore(mov);
     }
     if (mov == killers[ply][0]) {
-      movescore[i] += 20000;
+      movescore[i] += 10000;
     }
     /*else if (moves[ply][i] == killers[ply][1]) {
       movescore[ply][i] += 10000;
