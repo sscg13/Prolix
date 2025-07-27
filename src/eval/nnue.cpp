@@ -2,7 +2,7 @@
 #include <cmath>
 #include <fstream>
 #define INCBIN_PREFIX
-#include "external/incbin/incbin.h"
+#include "../external/incbin/incbin.h"
 
 INCBIN(char, NNUE, EUNNfile);
 int screlu(short int x) {

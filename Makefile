@@ -1,8 +1,8 @@
 EXE := Prolix
-EVALFILE := shatranj-net27.nnue
+EVALFILE := shatranj-net29.nnue
 ARCH := native
 
-SOURCES := Prolix.cpp uci.cpp xboard.cpp search.cpp nnue.cpp tt.cpp history.cpp viriformat.cpp board.cpp external/Fathom/tbprobe.cpp
+SOURCES := src/Prolix.cpp src/uci.cpp src/xboard.cpp src/search.cpp src/datagen/datagen.cpp src/eval/nnue.cpp src/tt.cpp src/history.cpp src/datagen/viriformat.cpp src/board.cpp src/external/Fathom/tbprobe.cpp
 
 CXX := clang++
 

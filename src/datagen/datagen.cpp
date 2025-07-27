@@ -1,4 +1,4 @@
-#include "engine.h"
+#include "../engine.h"
 #include "viriformat.h"
 std::ifstream datainput;
 void Engine::datagenautoplayplain() {

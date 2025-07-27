@@ -1,4 +1,4 @@
-#include "board.h"
+#include "../board.h"
 #pragma once
 struct Marlinboard {
   U64 occupancy;

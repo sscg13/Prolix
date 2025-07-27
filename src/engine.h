@@ -2,7 +2,7 @@
 #include "consts.h"
 #include "external/Fathom/tbprobe.h"
 #include "history.h"
-#include "nnue.h"
+#include "eval/nnue.h"
 #include "tt.h"
 #include <chrono>
 #include <time.h>
