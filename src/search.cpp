@@ -140,7 +140,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   int bestmove1 = -1;
   int ttdepth = TT[index].depth();
   int ttage = TT[index].age(Bitboards.gamelength);
-  bool update = (depth >= (ttdepth - ttage / 2));
+  bool update = (depth >= ttdepth || ttage != 0);
   bool tthit = (TT[index].key == Bitboards.zobristhash);
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (nodetype == EXPECTED_PV_NODE);
