@@ -184,7 +184,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     }
   }
   if (depth >= 3 && !tthit) {
-    depth--;
+    depth -= (1 + (nodetype == EXPECTED_CUT_NODE));
   }
   int margin = std::max(40, 70 * depth - 70 * improving);
   if (ply > 0 && score == -SCORE_INF) {
