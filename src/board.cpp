@@ -1,7 +1,7 @@
 #include "board.h"
 #include "consts.h"
-#include "external/Fathom/tbprobe.h"
 #include "eval/hce.h"
+#include "external/Fathom/tbprobe.h"
 U64 KingAttacks[64];
 U64 PawnAttacks[2][64];
 U64 AlfilAttacks[64];
