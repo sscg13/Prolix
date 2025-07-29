@@ -1,7 +1,7 @@
 #include "board.h"
 #include "engine.h"
-#include "external/Fathom/tbprobe.h"
 #include "eval/nnue.h"
+#include "external/Fathom/tbprobe.h"
 #include <thread>
 extern std::string uciinfostring;
 std::string proto = "uci";

@@ -33,7 +33,7 @@ void Engine::datagenautoplayplain() {
     int color = Bitboards.position & 1;
     int score = iterative(color);
     if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
-        (Bitboards.checkers(color) == 0ULL) && (abs(score) < 27000)) {
+        (Bitboards.checkers(color) == 0ULL) && (abs(score) < SCORE_WIN)) {
       fens[maxmove] = Bitboards.getFEN();
       scores[maxmove] = score * (1 - 2 * color);
       maxmove++;
@@ -168,7 +168,7 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
   bool finished = false;
   while (!finished) {
     int color = Bitboards.position & 1;
-    softnodelimit = color ? 4096 : 16384;
+    softnodelimit = color ? 2048 : 10240;
     int score = iterative(color);
     if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
         (Bitboards.checkers(color) == 0ULL) && (abs(score) <= upperbound) &&
@@ -205,7 +205,7 @@ void Engine::datagen(int dataformat, int n, std::string outputfile) {
   } else {
     dataoutput.open(outputfile, std::ofstream::app);
   }
-  softnodelimit = 12288;
+  softnodelimit = 10240;
   hardnodelimit = 65536;
   softtimelimit = 0;
   hardtimelimit = 0;

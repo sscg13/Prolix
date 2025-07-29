@@ -17,7 +17,7 @@ void TTentry::update(U64 hash, int gamelength, int depth, int ply, int score,
   data |= (((U64)depth) << 54);
 }
 int TTentry::age(int gamelength) {
-  return std::max((gamelength - ((int)(data >> 44) & 1023)), 0);
+  return (gamelength - ((int)(data >> 44) & 1023));
 }
 int TTentry::hashmove() { return (int)(data >> 16) & 0x03FFFFFF; }
 int TTentry::depth() { return (int)(data >> 54) & 63; }
