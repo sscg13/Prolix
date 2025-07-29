@@ -357,9 +357,10 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     }
   }
   int realnodetype = improvedalpha ? EXPECTED_PV_NODE : EXPECTED_ALL_NODE;
+  int savedmove = improvedalpha ? Bitboards.moves[ply][bestmove1] : 0;
   if (((update || (realnodetype == EXPECTED_PV_NODE)) && !stopsearch)) {
     TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
-                     bestscore, realnodetype, Bitboards.moves[ply][bestmove1]);
+                     bestscore, realnodetype, savedmove);
   }
   return bestscore;
 }
