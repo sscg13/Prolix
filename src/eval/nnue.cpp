@@ -119,23 +119,17 @@ const short int *NNUE::layer1weights(int kingsquare, int color, int piece,
   return nnuelayer1[bucket / mirrordivisor]
                    [featureindex(bucket, color, piece, square)];
 }
-void NNUE::activatepiece(int kingsquare, int color, int piece, int square) {
-  short int *accptr = accumulation[2 * ply + color];
+void NNUE::activatepiece(short int* accptr, int kingsquare, int color, int piece, int square) {
   const short int *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] += weightsptr[i];
   }
-  cachebitboards[getbucket(kingsquare, color)][color][piece / 6] ^= (1ULL << square);
-  cachebitboards[getbucket(kingsquare, color)][color][2 + (piece % 6)] ^= (1ULL << square);
 }
-void NNUE::deactivatepiece(int kingsquare, int color, int piece, int square) {
-  short int *accptr = accumulation[2 * ply + color];
+void NNUE::deactivatepiece(short int* accptr, int kingsquare, int color, int piece, int square) {
   const short int *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] -= weightsptr[i];
   }
-  cachebitboards[getbucket(kingsquare, color)][color][piece / 6] ^= (1ULL << square);
-  cachebitboards[getbucket(kingsquare, color)][color][2 + (piece % 6)] ^= (1ULL << square);
 }
 void NNUE::refreshfromcache(int kingsquare, int color, const uint64_t *Bitboards) {
   uint64_t add[12];
@@ -143,9 +137,6 @@ void NNUE::refreshfromcache(int kingsquare, int color, const uint64_t *Bitboards
   int bucket = getbucket(kingsquare, color);
   short int *accptr = accumulation[2 * ply + color];
   short int *cacheaccptr = cacheaccumulators[bucket][color];
-  for (int i = 0; i < nnuesize; i++) {
-    accptr[i] = cacheaccptr[i];
-  }
   for (int i = 0; i < 12; i++) {
     add[i] = (Bitboards[i/6] & Bitboards[2 + (i % 6)]) & ~(cachebitboards[bucket][color][i/6] & cachebitboards[bucket][color][2 + (i % 6)]);
     remove[i] = (cachebitboards[bucket][color][i/6] & cachebitboards[bucket][color][2 + (i % 6)]) & ~(Bitboards[i/6] & Bitboards[2 + (i % 6)]);
@@ -154,34 +145,56 @@ void NNUE::refreshfromcache(int kingsquare, int color, const uint64_t *Bitboards
     int addcount = __builtin_popcountll(add[i]);
     for (int j = 0; j < addcount; j++) {
       int square = __builtin_ctzll(add[i]);
-      activatepiece(kingsquare, color, i, square);
+      activatepiece(cacheaccptr, kingsquare, color, i, square);
       add[i] ^= (1ULL << square);
     }
     int removecount = __builtin_popcountll(remove[i]);
     for (int j = 0; j < removecount; j++) {
       int square = __builtin_ctzll(remove[i]);
-      deactivatepiece(kingsquare, color, i, square);
+      deactivatepiece(cacheaccptr, kingsquare, color, i, square);
       remove[i] ^= (1ULL << square);
     }
   }
+  for (int i = 0; i < 8; i++) {
+    cachebitboards[bucket][color][i] = Bitboards[i];
+  }
+  for (int i = 0; i < nnuesize; i++) {
+    accptr[i] = cacheaccptr[i];
+  }/*
+  for (int i = 0; i < 12; i++) {
+    uint64_t pieces = (Bitboards[i / 6] & Bitboards[2 + (i % 6)]);
+    int piececount = __builtin_popcountll(pieces);
+    for (int j = 0; j < piececount; j++) {
+      int square = __builtin_popcountll((pieces & -pieces) - 1);
+      deactivatepiece(accptr, kingsquare, color, i, square);
+      pieces ^= (1ULL << square);
+    }
+  }
+  for (int i = 0; i < nnuesize; i++) {
+    assert(accptr[i] == layer1bias[i]);
+  }*/
 }
 void NNUE::refreshfromscratch(int kingsquare, int color,
                               const uint64_t *Bitboards) {
   short int *accptr = accumulation[2 * ply + color];
+  short int *cacheaccptr = cacheaccumulators[getbucket(kingsquare, color)][color];
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] = layer1bias[i];
   }
   for (int i = 0; i < 8; i++) {
-    cachebitboards[getbucket(kingsquare, color)][color][i] = 0ULL;
+    cachebitboards[getbucket(kingsquare, color)][color][i] = Bitboards[i];
   }
   for (int i = 0; i < 12; i++) {
     uint64_t pieces = (Bitboards[i / 6] & Bitboards[2 + (i % 6)]);
     int piececount = __builtin_popcountll(pieces);
     for (int j = 0; j < piececount; j++) {
       int square = __builtin_popcountll((pieces & -pieces) - 1);
-      activatepiece(kingsquare, color, i, square);
+      activatepiece(accptr, kingsquare, color, i, square);
       pieces ^= (1ULL << square);
     }
+  }
+  for (int i = 0; i < nnuesize; i++) {
+    cacheaccptr[i] = accptr[i];
   }
 }
 void NNUE::initializennue(const uint64_t *Bitboards) {
@@ -190,6 +203,14 @@ void NNUE::initializennue(const uint64_t *Bitboards) {
   for (int color = 0; color < 2; color++) {
     refreshfromscratch(__builtin_ctzll(Bitboards[7] & Bitboards[color]), color,
                        Bitboards);
+    for (int bucket = 0; bucket < inputbuckets; bucket++) {
+      for (int i = 0; i < 8; i++) {
+        cachebitboards[bucket][color][i] = 0ULL;
+      }
+      for (int i = 0; i < nnuesize; i++) {
+        cacheaccumulators[bucket][color][i] = layer1bias[i];
+      }
+    }
   }
   for (int i = 0; i < 12; i++) {
     uint64_t pieces = (Bitboards[i / 6] & Bitboards[2 + (i % 6)]);
@@ -219,15 +240,10 @@ void NNUE::forwardaccumulators(const int notation, const uint64_t *Bitboards) {
   ply++;
   if (captured > 0) {
     totalmaterial -= material[captured - 2];
-    deactivatepiece(oppksq, color ^ 1, 6 * (color ^ 1) + captured - 2, to);
+    deactivatepiece(newaccptr, oppksq, color ^ 1, 6 * (color ^ 1) + captured - 2, to);
   }
   if (piece == 7 &&
       getbucket(to, color) != getbucket(from, color)) {
-    /*short int *cacheaccptr = cacheaccumulators[getbucket(from, color)][color];
-    short int *curraccptr = accumulation[2 * ply + color];
-    for (int i = 0; i < nnuesize; i++) {
-      cacheaccptr[i] = curraccptr[i];
-    }
     int scratchrefreshtime = __builtin_popcountll(Bitboards[0]|Bitboards[1]);
     int cacherefreshtime = differencecount(getbucket(to, color), color, Bitboards);
     if (scratchrefreshtime <= cacherefreshtime) {
@@ -235,8 +251,7 @@ void NNUE::forwardaccumulators(const int notation, const uint64_t *Bitboards) {
     }
     else {
       refreshfromcache(to, color, Bitboards);
-    }*/
-    refreshfromscratch(to, color, Bitboards);
+    }
   } else {
     newaccptr = accumulation[2 * ply + color];
     oldaccptr = accumulation[2 * (ply - 1) + color];
@@ -247,7 +262,7 @@ void NNUE::forwardaccumulators(const int notation, const uint64_t *Bitboards) {
       newaccptr[i] = oldaccptr[i] + addweightsus[i] - subweightsus[i];
     }
     if (captured > 0) {
-      deactivatepiece(ourksq, color, 6 * (color ^ 1) + captured - 2, to);
+      deactivatepiece(newaccptr, ourksq, color, 6 * (color ^ 1) + captured - 2, to);
     }
   }
 }

@@ -24,8 +24,8 @@ public:
   int differencecount(int bucket, int color, const uint64_t *Bitboards);
   const short int *layer1weights(int kingsquare, int color, int piece,
                                  int square);
-  void activatepiece(int kingsquare, int color, int piece, int square);
-  void deactivatepiece(int kingsquare, int color, int piece, int square);
+  void activatepiece(short int* accptr, int kingsquare, int color, int piece, int square);
+  void deactivatepiece(short int* accptr, int kingsquare, int color, int piece, int square);
   void refreshfromcache(int kingsquare, int color, const uint64_t *Bitboards);
   void refreshfromscratch(int kingsquare, int color, const uint64_t *Bitboards);
   void initializennue(const uint64_t *Bitboards);
