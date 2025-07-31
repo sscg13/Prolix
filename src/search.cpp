@@ -209,12 +209,12 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       return beta;
     }
   }
-  /*if ((depth < 3) && (staticeval + 200*depth < alpha) && !isPV) {
+  if (!incheck && (std::abs(alpha) < SCORE_MAX_EVAL) && (depth < 4) && (staticeval + 250*depth < alpha) && !isPV) {
       int qsearchscore = quiesce(alpha, beta, color, 0);
       if (qsearchscore <= alpha) {
-          return alpha;
+          return qsearchscore;
       }
-  }*/
+  }
   int counter = 0;
   int previousmove = 0;
   int previouspiece = 0;
