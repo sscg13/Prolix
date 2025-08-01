@@ -259,7 +259,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     int mov = Bitboards.moves[ply][i];
     if (!iscapture(mov)) {
       quiets++;
-      if (quiets > depth * depth + depth + !improving) {
+      if (quiets > depth * depth + depth + 2 * !improving) {
         prune = true;
       }
       r = std::min(depth - 1, lmr_reductions[depth][quiets]);
