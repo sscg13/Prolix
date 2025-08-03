@@ -25,15 +25,15 @@ class Engine {
   bool showWDL = true;
   NNUE EUNN;
   History Histories;
-  int killers[32][2];
+  int killers[maxmaxdepth][2];
   int countermoves[6][64];
   bool gosent = false;
   bool stopsearch = false;
   bool suppressoutput = false;
   bool rootinTB = false;
   bool useTB = false;
-  int maxdepth = 32;
-  abinfo searchstack[64];
+  int maxdepth = maxmaxdepth;
+  abinfo searchstack[maxmaxdepth+32];
   int pvtable[maxmaxdepth + 1][maxmaxdepth + 1];
   int bestmove = 0;
   int movetime = 0;

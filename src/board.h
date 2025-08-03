@@ -24,7 +24,7 @@ public:
   int gamelength = 0;
   int position = 0;
   int nodecount = 0;
-  int moves[2 * maxmaxdepth][maxmoves];
+  int moves[maxmaxdepth + 32][maxmoves];
   int gamephase[2] = {0, 0};
   U64 zobristhash = 0ULL;
   U64 scratchzobrist();

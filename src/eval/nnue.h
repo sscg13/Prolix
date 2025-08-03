@@ -12,7 +12,7 @@ class NNUE {
   int finalbias[outputbuckets];
   int totalmaterial;
   int ply;
-  short int accumulation[4 * maxmaxdepth][nnuesize];
+  short int accumulation[2 * maxmaxdepth + 64][nnuesize];
 
 public:
   void loaddefaultnet();

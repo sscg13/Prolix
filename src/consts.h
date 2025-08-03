@@ -28,5 +28,5 @@ const int SCORE_DRAW = 0;
 const int EXPECTED_PV_NODE = 3;
 const int EXPECTED_ALL_NODE = 2;
 const int EXPECTED_CUT_NODE = 1;
-constexpr int maxmaxdepth = 32;
+constexpr int maxmaxdepth = 64;
 constexpr int maxmoves = 128;
