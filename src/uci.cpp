@@ -34,18 +34,19 @@ void Engine::uci() {
   if (ucicommand.substr(0, 17) == "position startpos") {
     Bitboards.initialize();
     int color = 0;
+    int moves[maxmoves];
     std::string mov = "";
     for (int i = 24; i <= ucicommand.length(); i++) {
       if ((ucicommand[i] == ' ') || (i == ucicommand.length())) {
-        int len = Bitboards.generatemoves(color, 0, 0);
+        int len = Bitboards.generatemoves(color, 0, moves);
         int played = -1;
         for (int j = 0; j < len; j++) {
-          if (algebraic(Bitboards.moves[0][j]) == mov) {
+          if (algebraic(moves[j]) == mov) {
             played = j;
           }
         }
         if (played >= 0) {
-          Bitboards.makemove(Bitboards.moves[0][played], false);
+          Bitboards.makemove(moves[played], false);
           color ^= 1;
         }
         mov = "";
@@ -64,17 +65,18 @@ void Engine::uci() {
     Bitboards.parseFEN(fen);
     int color = Bitboards.position & 1;
     std::string mov = "";
+    int moves[maxmoves];
     for (int i = reader + 6; i <= ucicommand.length(); i++) {
       if ((ucicommand[i] == ' ') || (i == ucicommand.length())) {
-        int len = Bitboards.generatemoves(color, 0, 0);
+        int len = Bitboards.generatemoves(color, 0, moves);
         int played = -1;
         for (int j = 0; j < len; j++) {
-          if (algebraic(Bitboards.moves[0][j]) == mov) {
+          if (algebraic(moves[j]) == mov) {
             played = j;
           }
         }
         if (played >= 0) {
-          Bitboards.makemove(Bitboards.moves[0][played], false);
+          Bitboards.makemove(moves[played], false);
           color ^= 1;
         }
         mov = "";
@@ -330,11 +332,12 @@ void Engine::uci() {
   if (ucicommand.substr(0, 3) == "see") {
     std::string mov = ucicommand.substr(4, ucicommand.length() - 4);
     int color = Bitboards.position & 1;
-    int movcount = Bitboards.generatemoves(color, 0, 0);
+    int moves[maxmoves];
+    int movcount = Bitboards.generatemoves(color, 0, moves);
     int internal = 0;
     for (int i = 0; i < movcount; i++) {
-      if (algebraic(Bitboards.moves[0][i]) == mov) {
-        internal = Bitboards.moves[0][i];
+      if (algebraic(moves[i]) == mov) {
+        internal = moves[i];
       }
     }
     std::cout << algebraic(internal) << " "
@@ -342,10 +345,11 @@ void Engine::uci() {
   }
   if (ucicommand == "moveorder") {
     int color = Bitboards.position & 1;
-    int movcount = Bitboards.generatemoves(color, 0, 0);
+    int moves[maxmoves];
+    int movcount = Bitboards.generatemoves(color, 0, moves);
     std::cout << "Move scores:\n";
     for (int i = 0; i < movcount; i++) {
-      int internal = Bitboards.moves[0][i];
+      int internal = moves[i];
       std::cout << algebraic(internal) << ": " << Histories.movescore(internal)
                 << "\n";
     }

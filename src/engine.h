@@ -33,7 +33,7 @@ class Engine {
   bool rootinTB = false;
   bool useTB = false;
   int maxdepth = maxmaxdepth;
-  abinfo searchstack[maxmaxdepth+32];
+  abinfo searchstack[maxmaxdepth + 32];
   int pvtable[maxmaxdepth + 1][maxmaxdepth + 1];
   int bestmove = 0;
   int movetime = 0;
