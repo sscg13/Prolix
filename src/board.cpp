@@ -51,7 +51,7 @@ void initializemasks() {
   }
 }
 void initializerankattacks() {
-  for (U64 i = 0ULL; i < 0x000000000040; i++) {
+  for (U64 i = 0ULL; i < 64; i++) {
     U64 occupied = i << 1;
     for (int j = 0; j < 8; j++) {
       U64 attacks = 0ULL;
@@ -415,7 +415,7 @@ void Board::unmakemove(int notation) {
     gamephase[color] += phase[0];
   }
 }
-int Board::generatemoves(int color, bool capturesonly, int depth) {
+int Board::generatemoves(int color, bool capturesonly, int *movelist) {
   int movecount = 0;
   mobilitym[color] = 0;
   mobilitye[color] = 0;
@@ -505,7 +505,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
     }
     notation |= (1 << 16);
     notation |= (captured << 17);
-    moves[depth][movecount] = notation;
+    movelist[movecount] = notation;
     movecount++;
     ourcaptures ^= (1ULL << capturesquare);
   }
@@ -517,7 +517,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
       int notation = kingsquare | (movesquare << 6);
       notation |= (color << 12);
       notation |= (7 << 13);
-      moves[depth][movecount] = notation;
+      movelist[movecount] = notation;
       movecount++;
       ourmoves ^= (1ULL << movesquare);
     }
@@ -571,10 +571,10 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
       notation |= (captured << 17);
       if (((color == 0) && (capturesquare & 56) == 56) ||
           ((color == 1) && (capturesquare & 56) == 0)) {
-        moves[depth][movecount] = notation | (3 << 20);
+        movelist[movecount] = notation | (3 << 20);
         movecount++;
       } else {
-        moves[depth][movecount] = notation;
+        movelist[movecount] = notation;
         movecount++;
       }
       ourcaptures ^= (1ULL << capturesquare);
@@ -590,10 +590,10 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
         notation |= (2 << 13);
         if (((color == 0) && (movesquare & 56) == 56) ||
             ((color == 1) && (movesquare & 56) == 0)) {
-          moves[depth][movecount] = notation | (3 << 20);
+          movelist[movecount] = notation | (3 << 20);
           movecount++;
         } else {
-          moves[depth][movecount] = notation;
+          movelist[movecount] = notation;
           movecount++;
         }
         ourmoves ^= (1ULL << movesquare);
@@ -628,7 +628,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
       }
       notation |= (1 << 16);
       notation |= (captured << 17);
-      moves[depth][movecount] = notation;
+      movelist[movecount] = notation;
       movecount++;
       ourcaptures ^= (1ULL << capturesquare);
     }
@@ -640,7 +640,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
         int notation = alfilsquare | (movesquare << 6);
         notation |= (color << 12);
         notation |= (3 << 13);
-        moves[depth][movecount] = notation;
+        movelist[movecount] = notation;
         movecount++;
         ourmoves ^= (1ULL << movesquare);
       }
@@ -674,7 +674,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
       }
       notation |= (1 << 16);
       notation |= (captured << 17);
-      moves[depth][movecount] = notation;
+      movelist[movecount] = notation;
       movecount++;
       ourcaptures ^= (1ULL << capturesquare);
     }
@@ -686,7 +686,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
         int notation = ferzsquare | (movesquare << 6);
         notation |= (color << 12);
         notation |= (4 << 13);
-        moves[depth][movecount] = notation;
+        movelist[movecount] = notation;
         movecount++;
         ourmoves ^= (1ULL << movesquare);
       }
@@ -720,7 +720,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
       }
       notation |= (1 << 16);
       notation |= (captured << 17);
-      moves[depth][movecount] = notation;
+      movelist[movecount] = notation;
       movecount++;
       ourcaptures ^= (1ULL << capturesquare);
     }
@@ -732,7 +732,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
         int notation = knightsquare | (movesquare << 6);
         notation |= (color << 12);
         notation |= (5 << 13);
-        moves[depth][movecount] = notation;
+        movelist[movecount] = notation;
         movecount++;
         ourmoves ^= (1ULL << movesquare);
       }
@@ -772,7 +772,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
       }
       notation |= (1 << 16);
       notation |= (captured << 17);
-      moves[depth][movecount] = notation;
+      movelist[movecount] = notation;
       movecount++;
       ourcaptures ^= (1ULL << capturesquare);
     }
@@ -784,7 +784,7 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
         int notation = rooksquare | (movesquare << 6);
         notation |= (color << 12);
         notation |= (6 << 13);
-        moves[depth][movecount] = notation;
+        movelist[movecount] = notation;
         movecount++;
         ourmoves ^= (1ULL << movesquare);
       }
@@ -794,17 +794,18 @@ int Board::generatemoves(int color, bool capturesonly, int depth) {
   return movecount;
 }
 U64 Board::perft(int depth, int initialdepth, int color) {
-  int movcount = generatemoves(color, 0, depth);
+  int moves[maxmoves];
+  int movcount = generatemoves(color, 0, moves);
   U64 ans = 0;
   if (depth > 1) {
     for (int i = 0; i < movcount; i++) {
-      makemove(moves[depth][i], true);
+      makemove(moves[i], true);
       if (depth == initialdepth) {
-        std::cout << algebraic(moves[depth][i]);
+        std::cout << algebraic(moves[i]);
         std::cout << ": ";
       }
       ans += perft(depth - 1, initialdepth, color ^ 1);
-      unmakemove(moves[depth][i]);
+      unmakemove(moves[i]);
     }
     if (depth == initialdepth - 1) {
       std::cout << ans << " ";
@@ -821,12 +822,13 @@ U64 Board::perft(int depth, int initialdepth, int color) {
   }
 }
 U64 Board::perftnobulk(int depth, int initialdepth, int color) {
-  int movcount = generatemoves(color, 0, depth);
+  int moves[maxmoves];
+  int movcount = generatemoves(color, 0, moves);
   U64 ans = 0;
   for (int i = 0; i < movcount; i++) {
-    makemove(moves[depth][i], true);
+    makemove(moves[i], true);
     if (depth == initialdepth) {
-      std::cout << algebraic(moves[depth][i]);
+      std::cout << algebraic(moves[i]);
       std::cout << ": ";
     }
     if (depth > 1) {
@@ -834,7 +836,7 @@ U64 Board::perftnobulk(int depth, int initialdepth, int color) {
     } else {
       ans++;
     }
-    unmakemove(moves[depth][i]);
+    unmakemove(moves[i]);
   }
   if (depth == initialdepth - 1) {
     std::cout << ans << " ";

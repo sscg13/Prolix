@@ -91,15 +91,16 @@ void Engine::xboard() {
   }
   if ((xcommand.length() == 4) || (xcommand.length() == 5)) {
     int color = Bitboards.position & 1;
-    int len = Bitboards.generatemoves(color, 0, 0);
+    int moves[maxmoves];
+    int len = Bitboards.generatemoves(color, 0, moves);
     int played = -1;
     for (int j = 0; j < len; j++) {
-      if (algebraic(Bitboards.moves[0][j]) == xcommand) {
+      if (algebraic(moves[j]) == xcommand) {
         played = j;
       }
     }
     if (played >= 0) {
-      Bitboards.makemove(Bitboards.moves[0][played], false);
+      Bitboards.makemove(moves[played], false);
       if (useNNUE) {
         EUNN.initializennue(Bitboards.Bitboards);
       }

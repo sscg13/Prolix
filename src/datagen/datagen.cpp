@@ -9,20 +9,21 @@ void Engine::datagenautoplayplain() {
   Bitboards.parseFEN(get129600FEN(seed, seed));
   std::string game = "";
   std::string result = "";
+  int moves[maxmoves];
   for (int i = 0; i < 8; i++) {
-    int num_moves = Bitboards.generatemoves(i & 1, 0, 0);
+    int num_moves = Bitboards.generatemoves(i & 1, 0, moves);
     if (num_moves == 0) {
       return;
     }
     int rand_move = mt() % num_moves;
-    Bitboards.makemove(Bitboards.moves[0][rand_move], 0);
-    game += algebraic(Bitboards.moves[0][rand_move]);
+    Bitboards.makemove(moves[rand_move], 0);
+    game += algebraic(moves[rand_move]);
     game += " ";
   }
   if (useNNUE) {
     EUNN.initializennue(Bitboards.Bitboards);
   }
-  if (Bitboards.generatemoves(0, 0, 0) == 0) {
+  if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
   }
   std::string fens[1024];
@@ -57,7 +58,7 @@ void Engine::datagenautoplayplain() {
     } else if (Bitboards.repetitions() >= 2) {
       finished = true;
       result = "0.5";
-    } else if (Bitboards.generatemoves(color ^ 1, 0, 0) == 0) {
+    } else if (Bitboards.generatemoves(color ^ 1, 0, moves) == 0) {
       finished = true;
       if (color == 0) {
         result = "1.0";
@@ -86,15 +87,16 @@ void Engine::datagenautoplayviriformat() {
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
   int result;
+  int moves[maxmoves];
   for (int i = 0; i < 8; i++) {
-    int num_moves = Bitboards.generatemoves(i & 1, 0, 0);
+    int num_moves = Bitboards.generatemoves(i & 1, 0, moves);
     if (num_moves == 0) {
       return;
     }
     int rand_move = mt() % num_moves;
-    Bitboards.makemove(Bitboards.moves[0][rand_move], 0);
+    Bitboards.makemove(moves[rand_move], 0);
   }
-  if (Bitboards.generatemoves(0, 0, 0) == 0) {
+  if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
   }
   if (useNNUE) {
@@ -128,7 +130,7 @@ void Engine::datagenautoplayviriformat() {
     } else if (Bitboards.repetitions() >= 2) {
       finished = true;
       result = 1;
-    } else if (Bitboards.generatemoves(color ^ 1, 0, 0) == 0) {
+    } else if (Bitboards.generatemoves(color ^ 1, 0, moves) == 0) {
       finished = true;
       if (color == 0) {
         result = 2;
@@ -151,18 +153,19 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
   resetauxdata();
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
+  int moves[maxmoves];
   for (int i = 0; i < 8; i++) {
-    int num_moves = Bitboards.generatemoves(i & 1, 0, 0);
+    int num_moves = Bitboards.generatemoves(i & 1, 0, moves);
     if (num_moves == 0) {
       return;
     }
     int rand_move = mt() % num_moves;
-    Bitboards.makemove(Bitboards.moves[0][rand_move], 0);
+    Bitboards.makemove(moves[rand_move], 0);
   }
   if (useNNUE) {
     EUNN.initializennue(Bitboards.Bitboards);
   }
-  if (Bitboards.generatemoves(0, 0, 0) == 0) {
+  if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
   }
   bool finished = false;
@@ -192,7 +195,7 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
       finished = true;
     } else if (Bitboards.repetitions() >= 2) {
       finished = true;
-    } else if (Bitboards.generatemoves(color ^ 1, 0, 0) == 0) {
+    } else if (Bitboards.generatemoves(color ^ 1, 0, moves) == 0) {
       finished = true;
     } else if (Bitboards.material() < 32) {
       finished = true;

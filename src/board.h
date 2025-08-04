@@ -24,7 +24,6 @@ public:
   int gamelength = 0;
   int position = 0;
   int nodecount = 0;
-  int moves[maxmaxdepth + 32][maxmoves];
   int gamephase[2] = {0, 0};
   U64 zobristhash = 0ULL;
   U64 scratchzobrist();
@@ -39,7 +38,7 @@ public:
   void unmakenullmove();
   void makemove(int notation, bool reversible);
   void unmakemove(int notation);
-  int generatemoves(int color, bool capturesonly, int depth);
+  int generatemoves(int color, bool capturesonly, int *movelist);
   U64 perft(int depth, int initialdepth, int color);
   U64 perftnobulk(int depth, int initialdepth, int color);
   void parseFEN(std::string FEN);
