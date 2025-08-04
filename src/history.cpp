@@ -5,10 +5,10 @@ void History::reset() {
     for (int j = 0; j < 64; j++) {
       quiethistory[0][i][j] = 0;
       quiethistory[1][i][j] = 0;
-    }
-    for (int j = 0; j < 6; j++) {
-      noisyhistory[0][i][j] = 0;
-      noisyhistory[1][i][j] = 0;
+      for (int k = 0; k < 6; k++) {
+        noisyhistory[0][i][k][j] = 0;
+        noisyhistory[1][i][k][j] = 0;
+      }
     }
   }
 }
@@ -20,7 +20,7 @@ int History::movescore(int move) {
   int captured = (move >> 17) & 7;
   if (captured) {
     return 30000 + 10000 * captured +
-           noisyhistory[color][piece - 2][captured - 2];
+           noisyhistory[color][piece - 2][captured - 2][to];
   } else {
     return quiethistory[color][piece - 2][to];
   }
@@ -30,9 +30,10 @@ void History::updatenoisyhistory(int move, int bonus) {
   int piece = (move >> 13) & 7;
   int captured = (move >> 17) & 7;
   int color = (move >> 12) & 1;
-  noisyhistory[color][piece - 2][captured - 2] +=
+  int to = (move >> 6) & 63;
+  noisyhistory[color][piece - 2][captured - 2][to] +=
       (bonus > 0)
-          ? (bonus - (bonus * noisyhistory[color][piece - 2][captured - 2]) /
+          ? (bonus - (bonus * noisyhistory[color][piece - 2][captured - 2][to]) /
                          noisylimit)
           : bonus;
 }
