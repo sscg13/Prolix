@@ -265,6 +265,10 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       r = std::min(depth - 1, lmr_reductions[depth][quiets]);
     }
     r = std::max(0, r - isPV - improving);
+    if (nullwindow && !incheck && !prune && depth < 6) {
+      int threshold = iscapture(mov) ? -30*depth*depth : -100 * depth;
+      prune = !Bitboards.see_exceeds(mov, color, threshold);
+    }
     if (fewpieces && useTB) {
       Bitboards.makemove(mov, true);
       if (Bitboards.probetbwdl() != -tbwdl) {
