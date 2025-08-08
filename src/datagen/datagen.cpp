@@ -208,7 +208,7 @@ void Engine::datagen(int dataformat, int n, std::string outputfile) {
   } else {
     dataoutput.open(outputfile, std::ofstream::app);
   }
-  softnodelimit = 10240;
+  softnodelimit = 12288;
   hardnodelimit = 65536;
   softtimelimit = 0;
   hardtimelimit = 0;
