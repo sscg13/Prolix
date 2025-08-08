@@ -262,6 +262,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       if (i > depth * depth + depth + 4) {
         prune = true;
       }
+      if (depth <= 5 && movescore[i] < -4096 * depth) {
+        prune = true;
+      }
       r = std::min(depth - 1, lmr_reductions[depth][quiets]);
     }
     r = std::max(0, r - isPV - improving);
