@@ -1,8 +1,8 @@
-constexpr int inputbuckets = 2;
+constexpr int inputbuckets = 4;
 constexpr bool mirrored = true;
 constexpr int mirrordivisor = mirrored ? 2 : 1;
 constexpr int realbuckets = inputbuckets / mirrordivisor;
-constexpr int nnuesize = 384;
+constexpr int nnuesize = 256;
 constexpr int outputbuckets = 8;
 constexpr int evalscale = 400;
 constexpr int evalQA = 255;
@@ -12,11 +12,11 @@ constexpr int kingbuckets[64] = {
   0, 0, 0, 0, 1, 1, 1, 1,
   0, 0, 0, 0, 1, 1, 1, 1,
   0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1
+  2, 2, 2, 2, 3, 3, 3, 3,
+  2, 2, 2, 2, 3, 3, 3, 3,
+  2, 2, 2, 2, 3, 3, 3, 3,
+  2, 2, 2, 2, 3, 3, 3, 3,
+  2, 2, 2, 2, 3, 3, 3, 3
 };
 // clang-format on
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
