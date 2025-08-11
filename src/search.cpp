@@ -319,9 +319,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
               killers[ply][0] = mov;
             }
             if (iscapture(mov)) {
-              Histories.updatenoisyhistory(mov, depth * depth);
+              Histories.updatenoisyhistory(mov, 7 * depth);
             } else {
-              Histories.updatequiethistory(mov, depth * depth);
+              Histories.updatequiethistory(mov, 7 * depth);
             }
             for (int j = 0; j < i; j++) {
               int mov2 = moves[j];
