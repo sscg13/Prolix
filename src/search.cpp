@@ -133,6 +133,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   int score = -SCORE_INF;
   int bestscore = -SCORE_INF;
   bool improvedalpha = false;
+  bool ttnmpgood = false;
   int movcount;
   int index = Bitboards.zobristhash % TTsize;
   int ttmove = 0;
@@ -163,30 +164,31 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     int nodetype = TT[index].nodetype();
     if (ttdepth >= depth) {
       if (!isPV && Bitboards.repetitions() == 0) {
-        if (nodetype == 3) {
+        if (nodetype == EXPECTED_PV_NODE) {
           return score;
         }
-        if ((nodetype & 1) && (score >= beta)) {
+        if ((nodetype & EXPECTED_CUT_NODE) && (score >= beta)) {
           return score;
         }
-        if ((nodetype & 2) && (score <= alpha)) {
+        if ((nodetype & EXPECTED_ALL_NODE) && (score <= alpha)) {
           return score;
         }
       }
     } else {
       int margin = std::max(40, 70 * depth - 70 * ttdepth - 70 * improving);
-      if (((nodetype & 1) && (score - margin >= beta)) &&
+      if (((nodetype & EXPECTED_CUT_NODE) && (score - margin >= beta)) &&
           (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) &&
           (margin < 500)) {
         return (score + beta) / 2;
       }
+      ttnmpgood = (score >= beta || nodetype == EXPECTED_CUT_NODE);
     }
   }
   if (depth >= 3 && !tthit) {
     depth--;
   }
   int margin = std::max(40, 70 * depth - 70 * improving);
-  if (ply > 0 && score == -SCORE_INF) {
+  if (ply > 0 && !tthit) {
     if (staticeval - margin >= beta &&
         (abs(beta) < SCORE_MAX_EVAL && !incheck) && (margin < 500)) {
       return (staticeval + beta) / 2;
@@ -198,7 +200,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     return -1 * (SCORE_MATE - ply);
   }
   if ((!incheck && Bitboards.gamephase[color] > 3) && (depth > 1 && nmp) &&
-      (staticeval >= beta && !isPV)) {
+      (staticeval >= beta && !isPV) && ttnmpgood) {
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
     int childnodetype = EXPECTED_PV_NODE ? EXPECTED_ALL_NODE : 3 - nodetype;
