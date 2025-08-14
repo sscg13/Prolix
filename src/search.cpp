@@ -181,7 +181,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
           (margin < 500)) {
         return (score + beta) / 2;
       }
-      ttnmpgood = (score >= beta || nodetype == EXPECTED_CUT_NODE);
+      ttnmpgood = (score >= beta || nodetype != EXPECTED_ALL_NODE);
     }
   }
   if (depth >= 3 && !tthit) {
