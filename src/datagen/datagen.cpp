@@ -197,7 +197,7 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
       finished = true;
     } else if (Bitboards.generatemoves(color ^ 1, 0, moves) == 0) {
       finished = true;
-    } else if (Bitboards.material() < 32) {
+    } else if (Bitboards.material() < 40) {
       finished = true;
     }
   }
