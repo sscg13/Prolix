@@ -6,7 +6,8 @@
 
 INCBIN(char, NNUE, EUNNfile);
 int screlu(short int x) {
-  return std::pow(std::max(std::min((int)x, 255), 0), 2);
+  short int y = std::max(std::min(x, (short int)255), (short int)0);
+  return y * y;
 }
 
 void NNUE::loaddefaultnet() {
@@ -209,8 +210,6 @@ int NNUE::evaluate(int color) {
   const int *nstmweightsptr = theirlayer2[bucket];
   for (int i = 0; i < nnuesize; i++) {
     eval += screlu(stmaccptr[i]) * stmweightsptr[i];
-  }
-  for (int i = 0; i < nnuesize; i++) {
     eval += screlu(nstmaccptr[i]) * nstmweightsptr[i];
   }
   eval /= evalQA;
