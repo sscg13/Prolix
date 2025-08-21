@@ -78,7 +78,7 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
   }
   for (int i = 0; i < movcount; i++) {
     int mov = moves[i];
-    bool good = (incheck || Bitboards.see_exceeds(mov, color, 0));
+    bool good = ((incheck && i == 0) || Bitboards.see_exceeds(mov, color, 0));
     if (good) {
       Bitboards.makemove(mov, 1);
       if (useNNUE) {
