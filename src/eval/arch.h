@@ -1,4 +1,4 @@
-constexpr int inputbuckets = 4;
+constexpr int inputbuckets = 6;
 constexpr bool mirrored = true;
 constexpr int mirrordivisor = mirrored ? 2 : 1;
 constexpr int realbuckets = inputbuckets / mirrordivisor;
@@ -9,9 +9,9 @@ constexpr int evalQA = 255;
 constexpr int evalQB = 64;
 // clang-format off
 constexpr int kingbuckets[64] = {
-  0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
+  4, 4, 0, 0, 1, 1, 5, 5,
+  4, 4, 0, 0, 1, 1, 5, 5,
+  4, 4, 0, 0, 1, 1, 5, 5,
   2, 2, 2, 2, 3, 3, 3, 3,
   2, 2, 2, 2, 3, 3, 3, 3,
   2, 2, 2, 2, 3, 3, 3, 3,

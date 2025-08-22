@@ -29,7 +29,7 @@ void Engine::uci() {
   if (ucicommand == "ucinewgame") {
     initializett();
     Bitboards.initialize();
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (ucicommand.substr(0, 17) == "position startpos") {
     Bitboards.initialize();
@@ -54,7 +54,7 @@ void Engine::uci() {
         mov += ucicommand[i];
       }
     }
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (ucicommand.substr(0, 12) == "position fen") {
     int reader = 13;
@@ -84,7 +84,7 @@ void Engine::uci() {
         mov += ucicommand[i];
       }
     }
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (ucicommand.substr(0, 8) == "go wtime") {
     int wtime;
@@ -284,8 +284,8 @@ void Engine::uci() {
     if (option == "EvalFile") {
       std::string nnuefile = ucicommand.substr(30, ucicommand.length() - 30);
       if (nnuefile != "<internal>") {
-        EUNN.readnnuefile(nnuefile);
-        EUNN.initializennue(Bitboards.Bitboards);
+        EUNN->readnnuefile(nnuefile);
+        EUNN->initializennue(Bitboards.Bitboards);
         std::cout << "info string using nnue file " << nnuefile << std::endl;
       }
     }
@@ -325,7 +325,7 @@ void Engine::uci() {
   }
   if (ucicommand == "eval") {
     int color = Bitboards.position & 1;
-    int eval = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+    int eval = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
     std::cout << "Raw eval: " << eval << "\n";
     std::cout << "Normalized eval: " << normalize(eval) << "\n";
   }

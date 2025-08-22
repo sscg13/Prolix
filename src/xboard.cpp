@@ -11,13 +11,13 @@ void Engine::xboard() {
   if (xcommand == "new") {
     initializett();
     Bitboards.initialize();
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
     gosent = false;
   }
   if (xcommand.substr(0, 8) == "setboard") {
     std::string fen = xcommand.substr(9, xcommand.length() - 9);
     Bitboards.parseFEN(fen);
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (xcommand.substr(0, 4) == "time") {
     int reader = 5;
@@ -102,7 +102,7 @@ void Engine::xboard() {
     if (played >= 0) {
       Bitboards.makemove(moves[played], false);
       if (useNNUE) {
-        EUNN.initializennue(Bitboards.Bitboards);
+        EUNN->initializennue(Bitboards.Bitboards);
       }
       if (gosent) {
         int color = Bitboards.position & 1;
