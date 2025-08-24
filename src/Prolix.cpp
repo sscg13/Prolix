@@ -33,7 +33,7 @@ void Engine::bench() {
   for (int i = 0; i < 14; i++) {
     startup();
     Bitboards.parseFEN(benchfens[i]);
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
     int color = Bitboards.position & 1;
     iterative(color);
     nodes += Bitboards.nodecount;

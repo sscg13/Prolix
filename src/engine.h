@@ -23,7 +23,7 @@ class Engine {
   bool useNNUE = true;
   bool normalizeeval = true;
   bool showWDL = true;
-  NNUE EUNN;
+  NNUE *EUNN = new NNUE;
   History Histories;
   int killers[maxmaxdepth][2];
   int countermoves[6][64];

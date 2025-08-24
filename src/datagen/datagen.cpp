@@ -21,7 +21,7 @@ void Engine::datagenautoplayplain() {
     game += " ";
   }
   if (useNNUE) {
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
@@ -73,7 +73,7 @@ void Engine::datagenautoplayplain() {
       result = "0.5";
     }
     if (useNNUE && bestmove > 0) {
-      EUNN.initializennue(Bitboards.Bitboards);
+      EUNN->initializennue(Bitboards.Bitboards);
     }
   }
   for (int i = 0; i < maxmove; i++) {
@@ -100,7 +100,7 @@ void Engine::datagenautoplayviriformat() {
     return;
   }
   if (useNNUE) {
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
   }
   Viriformat game;
   game.initialize(Bitboards);
@@ -142,7 +142,7 @@ void Engine::datagenautoplayviriformat() {
       result = 1;
     }
     if (useNNUE && bestmove > 0) {
-      EUNN.initializennue(Bitboards.Bitboards);
+      EUNN->initializennue(Bitboards.Bitboards);
     }
   }
   game.writewithwdl(dataoutput, result);
@@ -163,7 +163,7 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
     Bitboards.makemove(moves[rand_move], 0);
   }
   if (useNNUE) {
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
@@ -186,7 +186,7 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
     } else {
       Bitboards.makemove(bestmove, 0);
       if (useNNUE) {
-        EUNN.initializennue(Bitboards.Bitboards);
+        EUNN->initializennue(Bitboards.Bitboards);
       }
     }
     if (Bitboards.twokings()) {
@@ -255,7 +255,7 @@ void Engine::filter(int lowerbound, int upperbound, int softnodes,
       return;
     }
     Bitboards.parseFEN(fen);
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN->initializennue(Bitboards.Bitboards);
     int color = Bitboards.position & 1;
     int score = iterative(color);
     if (abs(score) >= lowerbound && abs(score) <= upperbound) {

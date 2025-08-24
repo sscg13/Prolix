@@ -39,12 +39,12 @@ void Engine::startup() {
   initializett();
   resetauxdata();
   Bitboards.initialize();
-  EUNN.loaddefaultnet();
-  EUNN.initializennue(Bitboards.Bitboards);
+  EUNN->loaddefaultnet();
+  EUNN->initializennue(Bitboards.Bitboards);
   mt.seed(rd());
 }
 int Engine::quiesce(int alpha, int beta, int color, int depth) {
-  int score = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+  int score = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
   int movcount;
   if (depth > 3) {
@@ -82,12 +82,12 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
     if (good) {
       Bitboards.makemove(mov, 1);
       if (useNNUE) {
-        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN->forwardaccumulators(mov, Bitboards.Bitboards);
       }
       score = -quiesce(-beta, -alpha, color ^ 1, depth + 1);
       Bitboards.unmakemove(mov);
       if (useNNUE) {
-        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN->backwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (score >= beta) {
         return score;
@@ -144,7 +144,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   bool tthit = (TT[index].key == Bitboards.zobristhash);
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (nodetype == EXPECTED_PV_NODE);
-  int staticeval = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+  int staticeval = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   searchstack[ply].eval = staticeval;
   bool improving = false;
   if (ply > 1) {
@@ -271,7 +271,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     }
     r = std::max(0, r - isPV - improving);
     if (nullwindow && !incheck && !prune && depth < 6) {
-      int threshold = iscapture(mov) ? -30*depth*depth : -100 * depth;
+      int threshold = iscapture(mov) ? -30 * depth * depth : -100 * depth;
       prune = !Bitboards.see_exceeds(mov, color, threshold);
     }
     if (fewpieces && useTB) {
@@ -286,7 +286,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       Bitboards.makemove(mov, true);
       searchstack[ply].playedmove = mov;
       if (useNNUE) {
-        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN->forwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (nullwindow) {
         score = -alphabeta(depth - 1 - r, ply + 1, -alpha - 1, -alpha,
@@ -307,7 +307,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       }
       Bitboards.unmakemove(mov);
       if (useNNUE) {
-        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN->backwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (score > bestscore) {
         if (score > alpha) {
@@ -396,7 +396,7 @@ int Engine::iterative(int color) {
   Bitboards.nodecount = 0;
   stopsearch = false;
   start = std::chrono::steady_clock::now();
-  int score = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+  int score = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int returnedscore = score;
   int depth = 1;
   int bestmove1 = 0;
@@ -516,7 +516,7 @@ int Engine::iterative(int color) {
     std::cout << "move " << algebraic(bestmove1) << std::endl;
     Bitboards.makemove(bestmove1, 0);
     if (useNNUE) {
-      EUNN.forwardaccumulators(bestmove1, Bitboards.Bitboards);
+      EUNN->forwardaccumulators(bestmove1, Bitboards.Bitboards);
     }
   }
   bestmove = bestmove1;
