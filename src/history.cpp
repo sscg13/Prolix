@@ -1,16 +1,10 @@
 #include "history.h"
+#include <cstring>
 
 void History::reset() {
-  for (int i = 0; i < 6; i++) {
-    for (int j = 0; j < 64; j++) {
-      quiethistory[0][i][j] = 0;
-      quiethistory[1][i][j] = 0;
-    }
-    for (int j = 0; j < 6; j++) {
-      noisyhistory[0][i][j] = 0;
-      noisyhistory[1][i][j] = 0;
-    }
-  }
+  memset(quiethistory, 0, sizeof(quiethistory));
+  memset(noisyhistory, 0, sizeof(noisyhistory));
+  memset(conthist, 0, sizeof(conthist));
 }
 
 int History::movescore(int move) {
@@ -23,6 +17,21 @@ int History::movescore(int move) {
            noisyhistory[color][piece - 2][captured - 2];
   } else {
     return quiethistory[color][piece - 2][to];
+  }
+}
+
+int History::conthistscore(int priormove, int move) {
+  int priorcolor = (priormove >> 12) & 1;
+  int priorto = (priormove >> 6) & 63;
+  int priorpiece = (priormove >> 13) & 7;
+  int color = (move >> 12) & 1;
+  int to = (move >> 6) & 63;
+  int piece = (move >> 13) & 7;
+  int captured = (move >> 17) & 7;
+  if (captured || priormove == 0) {
+    return 0;
+  } else {
+    return conthist[priorcolor][priorpiece - 2][priorto][color][piece - 2][to];
   }
 }
 
@@ -45,4 +54,20 @@ void History::updatequiethistory(int move, int bonus) {
       (bonus > 0) ? (bonus - (bonus * quiethistory[color][piece - 2][target]) /
                                  quietlimit)
                   : bonus;
+}
+
+void History::updateconthist(int priormove, int move, int bonus) {
+  int priorcolor = (priormove >> 12) & 1;
+  int priorto = (priormove >> 6) & 63;
+  int priorpiece = (priormove >> 13) & 7;
+  int color = (move >> 12) & 1;
+  int to = (move >> 6) & 63;
+  int piece = (move >> 13) & 7;
+  int captured = (move >> 17) & 7;
+  if (!captured && priormove) {
+    conthist[priorcolor][priorpiece - 2][priorto][color][piece - 2][to] +=
+      (bonus > 0) ? (bonus - (bonus * conthist[priorcolor][priorpiece - 2][priorto][color][piece - 2][to]) /
+                                 contlimit)
+                  : bonus;
+  }
 }
