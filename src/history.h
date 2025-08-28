@@ -11,7 +11,6 @@ public:
   void reset();
   int movescore(int move);
   int conthistscore(int priormove, int move);
-  void updatenoisyhistory(int move, int bonus);
-  void updatequiethistory(int move, int bonus);
+  void updatemainhistory(int move, int bonus);
   void updateconthist(int priormove, int move, int bonus);
 };

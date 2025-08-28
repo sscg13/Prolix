@@ -35,25 +35,23 @@ int History::conthistscore(int priormove, int move) {
   }
 }
 
-void History::updatenoisyhistory(int move, int bonus) {
+void History::updatemainhistory(int move, int bonus) {
+  int color = (move >> 12) & 1;
+  int to = (move >> 6) & 63;
   int piece = (move >> 13) & 7;
   int captured = (move >> 17) & 7;
-  int color = (move >> 12) & 1;
-  noisyhistory[color][piece - 2][captured - 2] +=
-      (bonus > 0)
-          ? (bonus - (bonus * noisyhistory[color][piece - 2][captured - 2]) /
-                         noisylimit)
-          : bonus;
-}
-
-void History::updatequiethistory(int move, int bonus) {
-  int target = (move >> 6) & 63;
-  int piece = (move >> 13) & 7;
-  int color = (move >> 12) & 1;
-  quiethistory[color][piece - 2][target] +=
-      (bonus > 0) ? (bonus - (bonus * quiethistory[color][piece - 2][target]) /
-                                 quietlimit)
-                  : bonus;
+  if (captured > 0) {
+    noisyhistory[color][piece - 2][captured - 2] +=
+        (bonus > 0)
+            ? (bonus - (bonus * noisyhistory[color][piece - 2][captured - 2]) /
+                           noisylimit)
+            : bonus;
+  } else {
+    quiethistory[color][piece - 2][to] +=
+        (bonus > 0) ? (bonus - (bonus * quiethistory[color][piece - 2][to]) /
+                                   quietlimit)
+                    : bonus;
+  }
 }
 
 void History::updateconthist(int priormove, int move, int bonus) {
@@ -66,8 +64,10 @@ void History::updateconthist(int priormove, int move, int bonus) {
   int captured = (move >> 17) & 7;
   if (!captured && priormove) {
     conthist[priorcolor][priorpiece - 2][priorto][color][piece - 2][to] +=
-      (bonus > 0) ? (bonus - (bonus * conthist[priorcolor][priorpiece - 2][priorto][color][piece - 2][to]) /
-                                 contlimit)
-                  : bonus;
+        (bonus > 0)
+            ? (bonus - (bonus * conthist[priorcolor][priorpiece - 2][priorto]
+                                        [color][piece - 2][to]) /
+                           contlimit)
+            : bonus;
   }
 }

@@ -233,7 +233,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     if (mov == ttmove) {
       movescore[i] = (1 << 20);
     } else {
-      movescore[i] = Histories->movescore(mov) + Histories->conthistscore(previousmove, mov);
+      movescore[i] = Histories->movescore(mov) +
+                     Histories->conthistscore(previousmove, mov);
     }
     if (mov == killers[ply][0]) {
       movescore[i] += 20000;
@@ -320,18 +321,14 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
               killers[ply][1] = killers[ply][0];
               killers[ply][0] = mov;
             }
-            if (iscapture(mov)) {
-              Histories->updatenoisyhistory(mov, depth * depth);
-            } else {
-              Histories->updatequiethistory(mov, depth * depth);
+            Histories->updatemainhistory(mov, depth * depth);
+            if (!iscapture(mov)) {
               Histories->updateconthist(previousmove, mov, depth * depth);
             }
             for (int j = 0; j < i; j++) {
               int mov2 = moves[j];
-              if (iscapture(mov2)) {
-                Histories->updatenoisyhistory(mov2, -3 * depth);
-              } else {
-                Histories->updatequiethistory(mov2, -3 * depth);
+              Histories->updatemainhistory(mov2, -3 * depth);
+              if (!iscapture(mov2)) {
                 Histories->updateconthist(previousmove, mov2, -3 * depth);
               }
             }
