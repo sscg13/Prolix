@@ -350,7 +350,7 @@ void Engine::uci() {
     std::cout << "Move scores:\n";
     for (int i = 0; i < movcount; i++) {
       int internal = moves[i];
-      std::cout << algebraic(internal) << ": " << Histories.movescore(internal)
+      std::cout << algebraic(internal) << ": " << Histories->movescore(internal)
                 << "\n";
     }
   }

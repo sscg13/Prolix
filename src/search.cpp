@@ -33,7 +33,7 @@ void Engine::resetauxdata() {
       pvtable[i][j] = 0;
     }
   }
-  Histories.reset();
+  Histories->reset();
 }
 void Engine::startup() {
   initializett();
@@ -70,7 +70,7 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
 
   for (int i = 0; i < movcount - 1; i++) {
     for (int j = i + 1;
-         Histories.movescore(moves[j]) > Histories.movescore(moves[j - 1]) &&
+         Histories->movescore(moves[j]) > Histories->movescore(moves[j - 1]) &&
          j > 0;
          j--) {
       std::swap(moves[j], moves[j - 1]);
@@ -233,7 +233,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     if (mov == ttmove) {
       movescore[i] = (1 << 20);
     } else {
-      movescore[i] = Histories.movescore(mov);
+      movescore[i] = Histories->movescore(mov) +
+                     Histories->conthistscore(previousmove, mov);
     }
     if (mov == killers[ply][0]) {
       movescore[i] += 20000;
@@ -320,17 +321,15 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
               killers[ply][1] = killers[ply][0];
               killers[ply][0] = mov;
             }
-            if (iscapture(mov)) {
-              Histories.updatenoisyhistory(mov, depth * depth);
-            } else {
-              Histories.updatequiethistory(mov, depth * depth);
+            Histories->updatemainhistory(mov, depth * depth);
+            if (!iscapture(mov)) {
+              Histories->updateconthist(previousmove, mov, depth * depth);
             }
             for (int j = 0; j < i; j++) {
               int mov2 = moves[j];
-              if (iscapture(mov2)) {
-                Histories.updatenoisyhistory(mov2, -3 * depth);
-              } else {
-                Histories.updatequiethistory(mov2, -3 * depth);
+              Histories->updatemainhistory(mov2, -3 * depth);
+              if (!iscapture(mov2)) {
+                Histories->updateconthist(previousmove, mov2, -3 * depth);
               }
             }
             if (ply > 0 && nmp && !iscapture(mov)) {
