@@ -1,5 +1,6 @@
 #include "history.h"
 #include <cstring>
+#include <cmath>
 
 void History::reset() {
   memset(quiethistory, 0, sizeof(quiethistory));
@@ -41,14 +42,16 @@ void History::updatemainhistory(int move, int bonus) {
   int piece = (move >> 13) & 7;
   int captured = (move >> 17) & 7;
   if (captured > 0) {
-    noisyhistory[color][piece - 2][captured - 2] +=
-        (bonus > 0)
-            ? (bonus - (bonus * noisyhistory[color][piece - 2][captured - 2]) /
+    int& value = noisyhistory[color][piece - 2][captured - 2];
+    value +=
+        (bonus * value > 0)
+            ? (bonus - (bonus * std::abs(value)) /
                            noisylimit)
             : bonus;
   } else {
-    quiethistory[color][piece - 2][to] +=
-        (bonus > 0) ? (bonus - (bonus * quiethistory[color][piece - 2][to]) /
+    int& value = quiethistory[color][piece - 2][to];
+    value +=
+        (bonus * value > 0) ? (bonus - (bonus * std::abs(value)) /
                                    quietlimit)
                     : bonus;
   }
@@ -63,10 +66,10 @@ void History::updateconthist(int priormove, int move, int bonus) {
   int piece = (move >> 13) & 7;
   int captured = (move >> 17) & 7;
   if (!captured && priormove) {
-    conthist[priorcolor][priorpiece - 2][priorto][color][piece - 2][to] +=
-        (bonus > 0)
-            ? (bonus - (bonus * conthist[priorcolor][priorpiece - 2][priorto]
-                                        [color][piece - 2][to]) /
+    int &value = conthist[priorcolor][priorpiece - 2][priorto][color][piece - 2][to];
+    value +=
+        (bonus * value > 0)
+            ? (bonus - (bonus * std::abs(value)) /
                            contlimit)
             : bonus;
   }
