@@ -219,6 +219,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   }*/
   int counter = 0;
   int previousmove = 0;
+  int prevprevmove = 0;
   int previouspiece = 0;
   int previoussquare = 0;
   if (ply > 0 && nmp) {
@@ -227,6 +228,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     previoussquare = (previousmove >> 6) & 63;
     counter = countermoves[previouspiece - 2][previoussquare];
   }
+  if (ply > 1) {
+    prevprevmove = searchstack[ply - 2].playedmove;
+  }
   int movescore[maxmoves];
   for (int i = 0; i < movcount; i++) {
     int mov = moves[i];
@@ -234,7 +238,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       movescore[i] = (1 << 20);
     } else {
       movescore[i] = Histories->movescore(mov) +
-                     Histories->conthistscore(previousmove, mov);
+                     Histories->conthistscore(previousmove, mov) +
+                     Histories->conthistscore(prevprevmove, mov);
     }
     if (mov == killers[ply][0]) {
       movescore[i] += 20000;
@@ -324,12 +329,14 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
             Histories->updatemainhistory(mov, depth * depth);
             if (!iscapture(mov)) {
               Histories->updateconthist(previousmove, mov, depth * depth);
+              Histories->updateconthist(prevprevmove, mov, depth * depth);
             }
             for (int j = 0; j < i; j++) {
               int mov2 = moves[j];
               Histories->updatemainhistory(mov2, -3 * depth);
               if (!iscapture(mov2)) {
                 Histories->updateconthist(previousmove, mov2, -3 * depth);
+                Histories->updateconthist(prevprevmove, mov2, -3 * depth);
               }
             }
             if (ply > 0 && nmp && !iscapture(mov)) {
