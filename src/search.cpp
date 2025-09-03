@@ -262,7 +262,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     int mov = moves[i];
     if (!iscapture(mov)) {
       quiets++;
-      if (i > depth * depth + depth + 4) {
+      if (i > depth * depth + depth + 1) {
         prune = true;
       }
       if (!incheck && depth < 5 && movescore[i] < 0) {
