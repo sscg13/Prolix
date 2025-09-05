@@ -52,9 +52,6 @@ class Engine {
   int wdlmodel(int eval);
   int normalize(int eval);
   int iterative(int color);
-  void datagenautoplayplain();
-  void datagenautoplayviriformat();
-  void bookgenautoplay(int lowerbound, int upperbound);
 
 public:
   void startup();
