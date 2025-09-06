@@ -11,6 +11,14 @@ void initializelmr() {
     }
   }
 }
+void Engine::startup() {
+  searchlimits.maxdepth = maxmaxdepth;
+  searchlimits.movetime = 0;
+  initializett();
+  Bitboards.initialize();
+  master.setTT(TT, TTsize);
+  master.setstopsearch(stopsearch);
+}
 void Engine::initializett() {
   TT.resize(TTsize);
   for (int i = 0; i < TTsize; i++) {
@@ -18,7 +26,7 @@ void Engine::initializett() {
     TT[i].data = 0;
   }
 }
-void Engine::resetauxdata() {
+void Searcher::resetauxdata() {
   for (int i = 0; i < 6; i++) {
     for (int j = 0; j < 64; j++) {
       countermoves[i][j] = 0;
@@ -35,15 +43,25 @@ void Engine::resetauxdata() {
   }
   Histories->reset();
 }
-void Engine::startup() {
-  initializett();
-  resetauxdata();
-  Bitboards.initialize();
-  EUNN->loaddefaultnet();
-  EUNN->initializennue(Bitboards.Bitboards);
+void Searcher::seedrng() {
   mt.seed(rd());
 }
-int Engine::quiesce(int alpha, int beta, int color, int depth) {
+void Searcher::setstopsearch(std::atomic<bool> &stopsearchref) {
+  stopsearch = &stopsearchref;
+}
+void Searcher::setTT(std::vector<TTentry> &TTref, int &size) {
+  TT = &TTref;
+  TTsize = &size;
+}
+void Searcher::loadposition(Board board) {
+  resetauxdata();
+  Bitboards = board;
+  EUNN->initializennue(Bitboards.Bitboards);
+}
+void Searcher::loadsearchlimits(Limits limits) {
+  searchlimits = limits;
+}
+int Searcher::quiesce(int alpha, int beta, int color, int depth) {
   int score = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
   int movcount;
@@ -102,7 +120,7 @@ int Engine::quiesce(int alpha, int beta, int color, int depth) {
   }
   return bestscore;
 }
-int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
+int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
                       bool nmp, int nodetype) {
   pvtable[ply][0] = ply + 1;
   if (Bitboards.repetitions() > 1) {
@@ -117,7 +135,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   if (Bitboards.bareking(color ^ 1)) {
     return (SCORE_MATE + 1 - ply);
   }
-  if (depth <= 0 || ply >= maxdepth) {
+  if (depth <= 0 || ply >= searchlimits.maxdepth) {
     return quiesce(alpha, beta, color, 0);
   }
   int tbwdl = 0;
@@ -135,13 +153,14 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
   bool improvedalpha = false;
   bool ttnmpgood = false;
   int movcount;
-  int index = Bitboards.zobristhash % TTsize;
+  int index = Bitboards.zobristhash % *TTsize;
   int ttmove = 0;
   int bestmove1 = -1;
-  int ttdepth = TT[index].depth();
-  int ttage = TT[index].age(Bitboards.gamelength);
+  TTentry &ttentry = (*TT)[index];
+  int ttdepth = ttentry.depth();
+  int ttage = ttentry.age(Bitboards.gamelength);
   bool update = (depth >= ttdepth || ttage != 0);
-  bool tthit = (TT[index].key == Bitboards.zobristhash);
+  bool tthit = (ttentry.key == Bitboards.zobristhash);
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (nodetype == EXPECTED_PV_NODE);
   int staticeval = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
@@ -159,9 +178,9 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     }
   }
   if (tthit) {
-    score = TT[index].score(ply);
-    ttmove = TT[index].hashmove();
-    int nodetype = TT[index].nodetype();
+    score = ttentry.score(ply);
+    ttmove = ttentry.hashmove();
+    int nodetype = ttentry.nodetype();
     if (ttdepth >= depth) {
       if (!isPV && Bitboards.repetitions() == 0) {
         if (nodetype == EXPECTED_PV_NODE) {
@@ -283,7 +302,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       Bitboards.unmakemove(mov);
     }
     int e = (movcount == 1);
-    if (!stopsearch && !prune) {
+    if (!(*stopsearch) && !prune) {
       Bitboards.makemove(mov, true);
       searchstack[ply].playedmove = mov;
       if (useNNUE) {
@@ -313,8 +332,8 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
       if (score > bestscore) {
         if (score > alpha) {
           if (score >= beta) {
-            if (update && !stopsearch) {
-              TT[index].update(Bitboards.zobristhash, Bitboards.gamelength,
+            if (update && !(*stopsearch)) {
+              ttentry.update(Bitboards.zobristhash, Bitboards.gamelength,
                                depth, ply, score, EXPECTED_CUT_NODE, mov);
             }
             if (!iscapture(mov) && (killers[ply][0] != mov)) {
@@ -351,28 +370,28 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
         bestmove1 = i;
         bestscore = score;
       }
-      if (Bitboards.nodecount > hardnodelimit && hardnodelimit > 0) {
-        stopsearch = true;
+      if (ismaster && Bitboards.nodecount > searchlimits.hardnodelimit && searchlimits.hardnodelimit > 0) {
+        *stopsearch = true;
       }
       if ((Bitboards.nodecount & 1023) == 0) {
         auto now = std::chrono::steady_clock::now();
         auto timetaken =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-        if (timetaken.count() > hardtimelimit && hardtimelimit > 0) {
-          stopsearch = true;
+        if (ismaster && timetaken.count() > searchlimits.hardtimelimit && searchlimits.hardtimelimit > 0) {
+          *stopsearch = true;
         }
       }
     }
   }
   int realnodetype = improvedalpha ? EXPECTED_PV_NODE : EXPECTED_ALL_NODE;
   int savedmove = improvedalpha ? moves[bestmove1] : ttmove;
-  if (((update || (realnodetype == EXPECTED_PV_NODE)) && !stopsearch)) {
-    TT[index].update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
+  if (((update || (realnodetype == EXPECTED_PV_NODE)) && !(*stopsearch))) {
+    ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
                      bestscore, realnodetype, savedmove);
   }
   return bestscore;
 }
-int Engine::wdlmodel(int eval) {
+int Searcher::wdlmodel(int eval) {
   int material = Bitboards.material();
   double m = std::max(std::min(material, 64), 4) / 32.0;
   double as[4] = {1.68116882, 4.65282732, -59.57468312, 227.74637225};
@@ -381,7 +400,7 @@ int Engine::wdlmodel(int eval) {
   double b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3];
   return int(0.5 + 1000 / (1 + exp((a - double(eval)) / b)));
 }
-int Engine::normalize(int eval) {
+int Searcher::normalize(int eval) {
   if (abs(eval) >= SCORE_MAX_EVAL) {
     return eval;
   }
@@ -391,9 +410,11 @@ int Engine::normalize(int eval) {
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   return round(100 * eval / a);
 }
-int Engine::iterative(int color) {
+int Searcher::iterative(int color) {
   Bitboards.nodecount = 0;
-  stopsearch = false;
+  if (ismaster) {
+    *stopsearch = false;
+  }
   start = std::chrono::steady_clock::now();
   int score = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int returnedscore = score;
@@ -406,7 +427,7 @@ int Engine::iterative(int color) {
   if (rootinTB && useTB) {
     tbscore = Bitboards.probetbwdl();
   }
-  while (!stopsearch) {
+  while (!(*stopsearch)) {
     bestmove = -1;
     int delta = 20;
     int alpha = returnedscore - delta;
@@ -429,9 +450,9 @@ int Engine::iterative(int color) {
     auto now = std::chrono::steady_clock::now();
     auto timetaken =
         std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-    if ((Bitboards.nodecount < hardnodelimit || hardnodelimit <= 0) &&
-        (timetaken.count() < hardtimelimit || hardtimelimit <= 0) &&
-        depth < maxdepth && bestmove >= 0) {
+    if ((Bitboards.nodecount < searchlimits.hardnodelimit || searchlimits.hardnodelimit <= 0) &&
+        (timetaken.count() < searchlimits.hardtimelimit || searchlimits.hardtimelimit <= 0) &&
+        depth < searchlimits.maxdepth && bestmove >= 0) {
       returnedscore = score;
       if (rootinTB && useTB && abs(score) < SCORE_WIN) {
         score = SCORE_TB_WIN * tbscore;
@@ -487,16 +508,16 @@ int Engine::iterative(int color) {
         std::cout << std::endl;
       }
       depth++;
-      if (depth == maxdepth) {
-        stopsearch = true;
+      if (depth == searchlimits.maxdepth && ismaster) {
+        *stopsearch = true;
       }
       bestmove1 = bestmove;
-    } else {
-      stopsearch = true;
+    } else if (ismaster) {
+      *stopsearch = true;
     }
-    if ((timetaken.count() > softtimelimit && softtimelimit > 0) ||
-        (Bitboards.nodecount > softnodelimit && softnodelimit > 0)) {
-      stopsearch = true;
+    if (ismaster && ((timetaken.count() > searchlimits.softtimelimit && searchlimits.softtimelimit > 0) ||
+        (Bitboards.nodecount > searchlimits.softnodelimit && searchlimits.softnodelimit > 0))) {
+      *stopsearch = true;
     }
   }
   auto now = std::chrono::steady_clock::now();

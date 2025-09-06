@@ -29,7 +29,6 @@ void Engine::uci() {
   if (ucicommand == "ucinewgame") {
     initializett();
     Bitboards.initialize();
-    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (ucicommand.substr(0, 17) == "position startpos") {
     Bitboards.initialize();
@@ -54,7 +53,6 @@ void Engine::uci() {
         mov += ucicommand[i];
       }
     }
-    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (ucicommand.substr(0, 12) == "position fen") {
     int reader = 13;
@@ -84,7 +82,6 @@ void Engine::uci() {
         mov += ucicommand[i];
       }
     }
-    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (ucicommand.substr(0, 8) == "go wtime") {
     int wtime;
@@ -160,16 +157,18 @@ void Engine::uci() {
       binc = sum;
     }
     int color = Bitboards.position & 1;
-    softnodelimit = 0;
-    hardnodelimit = 0;
+    searchlimits.softnodelimit = 0;
+    searchlimits.hardnodelimit = 0;
     if (color == 0) {
-      softtimelimit = wtime / 40 + winc / 3;
-      hardtimelimit = wtime / 10 + winc;
+      searchlimits.softtimelimit = wtime / 40 + winc / 3;
+      searchlimits.hardtimelimit = wtime / 10 + winc;
     } else {
-      softtimelimit = btime / 40 + binc / 3;
-      hardtimelimit = btime / 10 + binc;
+      searchlimits.softtimelimit = btime / 40 + binc / 3;
+      searchlimits.hardtimelimit = btime / 10 + binc;
     }
-    int score = iterative(color);
+    master.loadsearchlimits(searchlimits);
+    master.loadposition(Bitboards);
+    int score = master.iterative(color);
   }
   if (ucicommand.substr(0, 11) == "go movetime") {
     int sum = 0;
@@ -181,11 +180,13 @@ void Engine::uci() {
       reader--;
     }
     int color = Bitboards.position & 1;
-    softnodelimit = 0;
-    hardnodelimit = 0;
-    softtimelimit = sum;
-    hardtimelimit = sum;
-    int score = iterative(color);
+    searchlimits.softnodelimit = 0;
+    searchlimits.hardnodelimit = 0;
+    searchlimits.softtimelimit = sum;
+    searchlimits.hardtimelimit = sum;
+    master.loadsearchlimits(searchlimits);
+    master.loadposition(Bitboards);
+    int score = master.iterative(color);
   }
   if (ucicommand.substr(0, 8) == "go nodes") {
     int sum = 0;
@@ -197,19 +198,23 @@ void Engine::uci() {
       reader--;
     }
     int color = Bitboards.position & 1;
-    softnodelimit = sum;
-    hardnodelimit = sum;
-    softtimelimit = 0;
-    hardtimelimit = 0;
-    int score = iterative(color);
+    searchlimits.softnodelimit = sum;
+    searchlimits.hardnodelimit = sum;
+    searchlimits.softtimelimit = 0;
+    searchlimits.hardtimelimit = 0;
+    master.loadsearchlimits(searchlimits);
+    master.loadposition(Bitboards);
+    int score = master.iterative(color);
   }
   if (ucicommand.substr(0, 11) == "go infinite") {
     int color = Bitboards.position & 1;
-    softnodelimit = 0;
-    hardnodelimit = 0;
-    softtimelimit = 0;
-    hardtimelimit = 0;
-    int score = iterative(color);
+    searchlimits.softnodelimit = 0;
+    searchlimits.hardnodelimit = 0;
+    searchlimits.softtimelimit = 0;
+    searchlimits.hardtimelimit = 0;
+    master.loadsearchlimits(searchlimits);
+    master.loadposition(Bitboards);
+    int score = master.iterative(color);
   }
   if (ucicommand.substr(0, 8) == "go depth") {
     int sum = 0;
@@ -221,13 +226,15 @@ void Engine::uci() {
       reader--;
     }
     int color = Bitboards.position & 1;
-    softnodelimit = 0;
-    hardnodelimit = 0;
-    softtimelimit = 0;
-    hardtimelimit = 0;
-    maxdepth = sum + 1;
-    int score = iterative(color);
-    maxdepth = maxmaxdepth;
+    searchlimits.softnodelimit = 0;
+    searchlimits.hardnodelimit = 0;
+    searchlimits.softtimelimit = 0;
+    searchlimits.hardtimelimit = 0;
+    searchlimits.maxdepth = sum + 1;
+    master.loadsearchlimits(searchlimits);
+    master.loadposition(Bitboards);
+    int score = master.iterative(color);
+    searchlimits.maxdepth = maxmaxdepth;
   }
   if (ucicommand.substr(0, 8) == "go perft") {
     start = std::chrono::steady_clock::now();
@@ -281,6 +288,7 @@ void Engine::uci() {
         TT.shrink_to_fit();
       }
     }
+    /*
     if (option == "EvalFile") {
       std::string nnuefile = ucicommand.substr(30, ucicommand.length() - 30);
       if (nnuefile != "<internal>") {
@@ -288,7 +296,7 @@ void Engine::uci() {
         EUNN->initializennue(Bitboards.Bitboards);
         std::cout << "info string using nnue file " << nnuefile << std::endl;
       }
-    }
+    }*/
     if (option == "SyzygyPath") {
       std::string tbpath = ucicommand.substr(32, ucicommand.length() - 32);
       useTB = (tbpath != "<empty>");
@@ -323,7 +331,7 @@ void Engine::uci() {
       }
     }
   }
-  if (ucicommand == "eval") {
+  /*if (ucicommand == "eval") {
     int color = Bitboards.position & 1;
     int eval = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
     std::cout << "Raw eval: " << eval << "\n";
@@ -353,5 +361,5 @@ void Engine::uci() {
       std::cout << algebraic(internal) << ": " << Histories->movescore(internal)
                 << "\n";
     }
-  }
+  }*/
 }

@@ -22,21 +22,22 @@ void Engine::bench() {
       "1r2q3/R4pn1/1p1pkn2/3p1p2/1PpP2p1/N1P1K1P1/3Q3P/2B1R3 b - - 5 31",
       "8/1Q6/3Q4/3p1p2/2pkq2R/5q2/5K2/8 w - - 2 116",
       "8/4k3/4R3/2PK4/1P3Nn1/P2PPn2/5r2/8 b - - 2 58"};
-  suppressoutput = true;
-  maxdepth = 16;
+  master.suppressoutput = true;
   auto commence = std::chrono::steady_clock::now();
   int nodes = 0;
-  softnodelimit = 0;
-  hardnodelimit = 0;
-  softtimelimit = 0;
-  hardtimelimit = 0;
+  searchlimits.softnodelimit = 0;
+  searchlimits.hardnodelimit = 0;
+  searchlimits.softtimelimit = 0;
+  searchlimits.hardtimelimit = 0;
   for (int i = 0; i < 14; i++) {
     startup();
+    searchlimits.maxdepth = 16;
     Bitboards.parseFEN(benchfens[i]);
-    EUNN->initializennue(Bitboards.Bitboards);
+    master.loadposition(Bitboards);
+    master.loadsearchlimits(searchlimits);
     int color = Bitboards.position & 1;
-    iterative(color);
-    nodes += Bitboards.nodecount;
+    master.iterative(color);
+    nodes += master.Bitboards.nodecount;
   }
   auto conclude = std::chrono::steady_clock::now();
   int timetaken =
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]) {
             std::string(argv[5]) + std::to_string(i) + extension;
         Engines[i].startup();
         datagenerators[i] = std::thread(&Engine::datagen, &Engines[i],
-                                        dataformat, games, outputfile);
+                                        dataformat, 1, games, outputfile);
       }
       for (auto &thread : datagenerators) {
         thread.join();
@@ -103,7 +104,7 @@ int main(int argc, char *argv[]) {
             std::string(argv[4]) + std::to_string(i) + ".txt";
         Engines[i].startup();
         datagenerators[i] =
-            std::thread(&Engine::bookgen, &Engines[i], lowerbound, upperbound,
+            std::thread(&Engine::bookgen, &Engines[i], lowerbound, upperbound, 1,
                         games, outputfile);
       }
       for (auto &thread : datagenerators) {
@@ -152,7 +153,7 @@ int main(int argc, char *argv[]) {
         Engines[i].startup();
         workers[i] =
             std::thread(&Engine::filter, &Engines[i], lowerbound, upperbound,
-                        softnodes, hardnodes, tempnames[i], outputfile);
+                        softnodes, hardnodes, 1, tempnames[i], outputfile);
       }
       for (auto &thread : workers) {
         thread.join();

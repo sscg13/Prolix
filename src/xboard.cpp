@@ -11,13 +11,11 @@ void Engine::xboard() {
   if (xcommand == "new") {
     initializett();
     Bitboards.initialize();
-    EUNN->initializennue(Bitboards.Bitboards);
     gosent = false;
   }
   if (xcommand.substr(0, 8) == "setboard") {
     std::string fen = xcommand.substr(9, xcommand.length() - 9);
     Bitboards.parseFEN(fen);
-    EUNN->initializennue(Bitboards.Bitboards);
   }
   if (xcommand.substr(0, 4) == "time") {
     int reader = 5;
@@ -32,8 +30,8 @@ void Engine::xboard() {
       add *= 10;
       reader--;
     }
-    softtimelimit = sum / 48;
-    hardtimelimit = sum / 16;
+    searchlimits.softtimelimit = sum / 48;
+    searchlimits.hardtimelimit = sum / 16;
   }
   if (xcommand.substr(0, 7) == "level 0") {
     int reader = 8;
@@ -75,8 +73,8 @@ void Engine::xboard() {
     if (incenti) {
       sum2 /= 100;
     }
-    softtimelimit = sum1 / 40 + sum2 / 3;
-    hardtimelimit = sum1 / 10 + sum2;
+    searchlimits.softtimelimit = sum1 / 40 + sum2 / 3;
+    searchlimits.hardtimelimit = sum1 / 10 + sum2;
   }
   if (xcommand.substr(0, 4) == "ping") {
     int sum = 0;
@@ -101,22 +99,23 @@ void Engine::xboard() {
     }
     if (played >= 0) {
       Bitboards.makemove(moves[played], false);
-      if (useNNUE) {
-        EUNN->initializennue(Bitboards.Bitboards);
-      }
       if (gosent) {
         int color = Bitboards.position & 1;
-        softnodelimit = 0;
-        hardnodelimit = 0;
-        int score = iterative(color);
+        searchlimits.softnodelimit = 0;
+        searchlimits.hardnodelimit = 0;
+        master.loadsearchlimits(searchlimits);
+        master.loadposition(Bitboards);
+        int score = master.iterative(color);
       }
     }
   }
   if (xcommand == "go") {
     int color = Bitboards.position & 1;
-    softnodelimit = 0;
-    hardnodelimit = 0;
-    int score = iterative(color);
+    searchlimits.softnodelimit = 0;
+    searchlimits.hardnodelimit = 0;
+    master.loadsearchlimits(searchlimits);
+    master.loadposition(Bitboards);
+    int score = master.iterative(color);
     gosent = true;
   }
 }

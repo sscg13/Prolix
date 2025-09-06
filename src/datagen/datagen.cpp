@@ -1,9 +1,8 @@
 #include "../engine.h"
 #include "viriformat.h"
 std::ifstream datainput;
-void Engine::datagenautoplayplain() {
+void Searcher::datagenautoplayplain() {
   suppressoutput = true;
-  initializett();
   resetauxdata();
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
@@ -80,9 +79,8 @@ void Engine::datagenautoplayplain() {
     dataoutput << fens[i] << " | " << scores[i] << " | " << result << "\n";
   }
 }
-void Engine::datagenautoplayviriformat() {
+void Searcher::datagenautoplayviriformat() {
   suppressoutput = true;
-  initializett();
   resetauxdata();
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
@@ -147,9 +145,8 @@ void Engine::datagenautoplayviriformat() {
   }
   game.writewithwdl(dataoutput, result);
 }
-void Engine::bookgenautoplay(int lowerbound, int upperbound) {
+void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
   suppressoutput = true;
-  initializett();
   resetauxdata();
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
@@ -171,7 +168,7 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
   bool finished = false;
   while (!finished) {
     int color = Bitboards.position & 1;
-    softnodelimit = color ? 2048 : 8192;
+    searchlimits.softnodelimit = color ? 2048 : 8192;
     int score = iterative(color);
     if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
         (Bitboards.checkers(color) == 0ULL) && (abs(score) <= upperbound) &&
@@ -202,45 +199,48 @@ void Engine::bookgenautoplay(int lowerbound, int upperbound) {
     }
   }
 }
-void Engine::datagen(int dataformat, int n, std::string outputfile) {
+void Engine::datagen(int dataformat, int threads, int n, std::string outputfile) {
   if (dataformat == 1) {
     dataoutput.open(outputfile, std::ofstream::binary);
   } else {
     dataoutput.open(outputfile, std::ofstream::app);
   }
-  softnodelimit = 10240;
-  hardnodelimit = 65536;
-  softtimelimit = 0;
-  hardtimelimit = 0;
+  searchlimits.softnodelimit = 10240;
+  searchlimits.hardnodelimit = 65536;
+  searchlimits.softtimelimit = 0;
+  searchlimits.hardtimelimit = 0;
   for (int i = 0; i < n; i++) {
+    initializett();
     if (dataformat == 1) {
-      datagenautoplayviriformat();
+      master.datagenautoplayviriformat();
     } else {
-      datagenautoplayplain();
+      master.datagenautoplayplain();
     }
     std::cout << i << "\n";
   }
   dataoutput.close();
 }
-void Engine::bookgen(int lowerbound, int upperbound, int n,
+void Engine::bookgen(int lowerbound, int upperbound, int threads, int n,
                      std::string outputfile) {
   dataoutput.open(outputfile, std::ofstream::app);
-  hardnodelimit = 65536;
-  softtimelimit = 0;
-  hardtimelimit = 0;
+  searchlimits.hardnodelimit = 65536;
+  searchlimits.softtimelimit = 0;
+  searchlimits.hardtimelimit = 0;
   for (int i = 0; i < n; i++) {
-    bookgenautoplay(lowerbound, upperbound);
+    initializett();
+    master.bookgenautoplay(lowerbound, upperbound);
     std::cout << i << "\n";
   }
 }
 void Engine::filter(int lowerbound, int upperbound, int softnodes,
-                    int hardnodes, std::string inputfile,
+                    int hardnodes, int threads, std::string inputfile,
                     std::string outputfile) {
-  softnodelimit = softnodes;
-  hardnodelimit = hardnodes;
-  softtimelimit = 0;
-  hardtimelimit = 0;
-  suppressoutput = true;
+  searchlimits.softnodelimit = softnodes;
+  searchlimits.hardnodelimit = hardnodes;
+  searchlimits.softtimelimit = 0;
+  searchlimits.hardtimelimit = 0;
+  master.suppressoutput = true;
+  master.loadsearchlimits(searchlimits);
   std::ifstream epdin;
   epdin.open(inputfile);
   std::ofstream epdout;
@@ -255,9 +255,9 @@ void Engine::filter(int lowerbound, int upperbound, int softnodes,
       return;
     }
     Bitboards.parseFEN(fen);
-    EUNN->initializennue(Bitboards.Bitboards);
     int color = Bitboards.position & 1;
-    int score = iterative(color);
+    master.loadposition(Bitboards);
+    int score = master.iterative(color);
     if (abs(score) >= lowerbound && abs(score) <= upperbound) {
       epdout << fen << "\n";
     }
