@@ -251,7 +251,7 @@ void Board::initialize() {
   gamephase[0] = 24;
   gamephase[1] = 24;
   gamelength = 0;
-  zobrist[0] = scratchzobrist();
+  zobrist[0] = zobristhash = scratchzobrist();
 }
 int Board::repetitions() {
   int repeats = 0;
