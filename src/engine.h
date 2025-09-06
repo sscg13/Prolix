@@ -13,20 +13,16 @@ const int maxtbpieces = 5;
 extern int lmr_reductions[maxmaxdepth][maxmoves];
 extern std::chrono::time_point<std::chrono::steady_clock> start;
 extern std::string inputfile;
-struct abinfo {
-  int playedmove;
-  int eval;
-};
 class Engine {
   int TTsize = 2097152;
   std::vector<TTentry> TT;
+  Board Bitboards;
   bool useNNUE = true;
   bool normalizeeval = true;
   bool showWDL = true;
   bool gosent = false;
-  bool stopsearch = false;
+  std::atomic<bool> stopsearch = false;
   bool useTB = false;
-  int maxdepth = maxmaxdepth;
   abinfo searchstack[maxmaxdepth + 32];
   int pvtable[maxmaxdepth + 1][maxmaxdepth + 1];
   int bestmove = 0;
@@ -34,8 +30,8 @@ class Engine {
   std::random_device rd;
   std::mt19937 mt;
   std::ofstream dataoutput;
+  Searcher master;
   void initializett();
-  int iterative(int color);
 
 public:
   void startup();

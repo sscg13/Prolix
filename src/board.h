@@ -17,7 +17,7 @@ class Board {
   U64 zobrist[1024];
   int history[1024];
   int root = 0;
-  const int startpiece[16] = {4, 3, 1, 5, 2, 1, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0};
+  int startpiece[16] = {4, 3, 1, 5, 2, 1, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0};
 
 public:
   U64 Bitboards[8];
