@@ -3,6 +3,7 @@
 #include "eval/nnue.h"
 #include "external/Fathom/tbprobe.h"
 #include "history.h"
+#include "search.h"
 #include "tt.h"
 #include <chrono>
 #include <time.h>
@@ -17,48 +18,31 @@ struct abinfo {
   int eval;
 };
 class Engine {
-  Board Bitboards;
   int TTsize = 2097152;
   std::vector<TTentry> TT;
   bool useNNUE = true;
   bool normalizeeval = true;
   bool showWDL = true;
-  NNUE *EUNN = new NNUE;
-  History *Histories = new History;
-  int killers[maxmaxdepth][2];
-  int countermoves[6][64];
   bool gosent = false;
   bool stopsearch = false;
-  bool suppressoutput = false;
-  bool rootinTB = false;
   bool useTB = false;
   int maxdepth = maxmaxdepth;
   abinfo searchstack[maxmaxdepth + 32];
   int pvtable[maxmaxdepth + 1][maxmaxdepth + 1];
   int bestmove = 0;
-  int movetime = 0;
-  int softnodelimit = 0;
-  int hardnodelimit = 0;
-  int softtimelimit = 0;
-  int hardtimelimit = 0;
+  Limits searchlimits;
   std::random_device rd;
   std::mt19937 mt;
   std::ofstream dataoutput;
   void initializett();
-  void resetauxdata();
-  int quiesce(int alpha, int beta, int color, int depth);
-  int alphabeta(int depth, int ply, int alpha, int beta, int color, bool nmp,
-                int nodetype);
-  int wdlmodel(int eval);
-  int normalize(int eval);
   int iterative(int color);
 
 public:
   void startup();
   void bench();
-  void datagen(int dataformat, int n, std::string outputfile);
-  void bookgen(int lowerbound, int upperbound, int n, std::string outputfile);
-  void filter(int lowerbound, int upperbound, int softnodes, int hardnodes,
+  void datagen(int dataformat, int threads, int n, std::string outputfile);
+  void bookgen(int lowerbound, int upperbound, int threads, int n, std::string outputfile);
+  void filter(int lowerbound, int upperbound, int softnodes, int hardnodes, int threads,
               std::string inputfile, std::string outputfile);
   void uci();
   void xboard();
