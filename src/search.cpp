@@ -204,7 +204,7 @@ int Engine::alphabeta(int depth, int ply, int alpha, int beta, int color,
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
     int childnodetype = EXPECTED_PV_NODE ? EXPECTED_ALL_NODE : 3 - nodetype;
-    score = -alphabeta(std::max(0, depth - 2 - (depth + 1) / 3), ply + 1, -beta,
+    score = -alphabeta(std::max(0, depth - 3 - depth / 3), ply + 1, -beta,
                        1 - beta, color ^ 1, false, childnodetype);
     Bitboards.unmakenullmove();
     if (score >= beta) {
