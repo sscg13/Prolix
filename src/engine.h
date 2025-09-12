@@ -21,7 +21,7 @@ class Engine {
   bool normalizeeval = true;
   bool showWDL = true;
   bool gosent = false;
-  std::atomic<bool> stopsearch = false;
+  std::atomic<bool> stopsearch = ATOMIC_VAR_INIT(false);
   bool useTB = false;
   abinfo searchstack[maxmaxdepth + 32];
   int pvtable[maxmaxdepth + 1][maxmaxdepth + 1];
