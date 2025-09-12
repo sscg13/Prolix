@@ -37,7 +37,7 @@ class Searcher {
   std::random_device rd;
   std::mt19937 mt;
   void resetauxdata();
-  int quiesce(int alpha, int beta, int color, int depth);
+  int quiesce(int alpha, int beta, int color, int depth, bool isPV);
   int alphabeta(int depth, int ply, int alpha, int beta, int color, bool nmp,
                 int nodetype);
   int wdlmodel(int eval);
