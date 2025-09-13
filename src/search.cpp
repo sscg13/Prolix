@@ -64,20 +64,6 @@ void Searcher::loadsearchlimits(Limits limits) {
 int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
-  bool tthit = (ttentry.key == Bitboards.zobristhash);
-  if (!isPV && tthit) {
-    int score = std::min(std::max(ttentry.score(0), -SCORE_WIN), SCORE_WIN);
-    int nodetype = ttentry.nodetype();
-    if (nodetype == EXPECTED_PV_NODE) {
-      return score;
-    }
-    if ((nodetype & EXPECTED_CUT_NODE) && (score >= beta)) {
-      return score;
-    }
-    if ((nodetype & EXPECTED_ALL_NODE) && (score <= alpha)) {
-      return score;
-    }
-  }
   int score = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
   int movcount;
@@ -101,7 +87,20 @@ int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
     }
     movcount = Bitboards.generatemoves(color, 1, moves);
   }
-
+  bool tthit = (ttentry.key == Bitboards.zobristhash);
+  if (!isPV && tthit) {
+    int score = std::min(std::max(ttentry.score(0), -SCORE_WIN), SCORE_WIN);
+    int nodetype = ttentry.nodetype();
+    if (nodetype == EXPECTED_PV_NODE) {
+      return score;
+    }
+    if ((nodetype & EXPECTED_CUT_NODE) && (score >= beta)) {
+      return score;
+    }
+    if ((nodetype & EXPECTED_ALL_NODE) && (score <= alpha)) {
+      return score;
+    }
+  }
   for (int i = 0; i < movcount - 1; i++) {
     for (int j = i + 1;
          Histories->movescore(moves[j]) > Histories->movescore(moves[j - 1]) &&
