@@ -61,7 +61,9 @@ void Searcher::loadposition(Board board) {
 void Searcher::loadsearchlimits(Limits limits) {
   searchlimits = limits;
 }
-int Searcher::quiesce(int alpha, int beta, int color, int depth) {
+int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
+  int index = Bitboards.zobristhash % *TTsize;
+  TTentry &ttentry = (*TT)[index];
   int score = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
   int movcount;
@@ -85,7 +87,20 @@ int Searcher::quiesce(int alpha, int beta, int color, int depth) {
     }
     movcount = Bitboards.generatemoves(color, 1, moves);
   }
-
+  bool tthit = (ttentry.key == Bitboards.zobristhash);
+  if (!isPV && tthit) {
+    int score = std::min(std::max(ttentry.score(0), -SCORE_WIN), SCORE_WIN);
+    int nodetype = ttentry.nodetype();
+    if (nodetype == EXPECTED_PV_NODE) {
+      return score;
+    }
+    if ((nodetype & EXPECTED_CUT_NODE) && (score >= beta)) {
+      return score;
+    }
+    if ((nodetype & EXPECTED_ALL_NODE) && (score <= alpha)) {
+      return score;
+    }
+  }
   for (int i = 0; i < movcount - 1; i++) {
     for (int j = i + 1;
          Histories->movescore(moves[j]) > Histories->movescore(moves[j - 1]) &&
@@ -102,7 +117,7 @@ int Searcher::quiesce(int alpha, int beta, int color, int depth) {
       if (useNNUE) {
         EUNN->forwardaccumulators(mov, Bitboards.Bitboards);
       }
-      score = -quiesce(-beta, -alpha, color ^ 1, depth + 1);
+      score = -quiesce(-beta, -alpha, color ^ 1, depth + 1, isPV);
       Bitboards.unmakemove(mov);
       if (useNNUE) {
         EUNN->backwardaccumulators(mov, Bitboards.Bitboards);
@@ -136,7 +151,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
     return (SCORE_MATE + 1 - ply);
   }
   if (depth <= 0 || ply >= searchlimits.maxdepth) {
-    return quiesce(alpha, beta, color, 0);
+    return quiesce(alpha, beta, color, 0, (nodetype == EXPECTED_PV_NODE));
   }
   int tbwdl = 0;
   bool fewpieces =
