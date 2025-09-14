@@ -307,6 +307,20 @@ void Board::unmakenullmove() {
   position = history[gamelength];
   zobristhash = zobrist[gamelength];
 }
+U64 Board::keyafter(int notation) {
+  int from = notation & 63;
+  int to = (notation >> 6) & 63;
+  int color = (notation >> 12) & 1;
+  int piece = (notation >> 13) & 7;
+  int captured = (notation >> 17) & 7;
+  int promoted = (notation >> 21) & 3;
+  int piece2 = (promoted > 0) ? piece + 2 : piece;
+  U64 change = (colorhash ^ hashes[color][from] ^ hashes[color][to] ^ hashes[piece][from] ^ hashes[piece2][to]);
+  if (captured) {
+    change ^= (hashes[color ^ 1][to] ^ hashes[captured][to]);
+  }
+  return zobristhash ^ change;
+}
 void Board::makemove(int notation, bool reversible) {
   // 6 bits from square, 6 bits to square, 1 bit color, 3 bits piece moved, 1
   // bit capture, 3 bits piece captured, 1 bit promotion, 2 bits promoted piece,

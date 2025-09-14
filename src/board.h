@@ -36,6 +36,7 @@ public:
   U64 checkers(int color);
   void makenullmove();
   void unmakenullmove();
+  U64 keyafter(int notation);
   void makemove(int notation, bool reversible);
   void unmakemove(int notation);
   int generatemoves(int color, bool capturesonly, int *movelist);
