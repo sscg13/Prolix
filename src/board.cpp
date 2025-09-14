@@ -315,7 +315,7 @@ U64 Board::keyafter(int notation) {
   int captured = (notation >> 17) & 7;
   int promoted = (notation >> 21) & 3;
   int piece2 = (promoted > 0) ? piece + 2 : piece;
-  U64 change = (hashes[color][from] ^ hashes[color][to] ^ hashes[piece][from] ^ hashes[piece2][to]);
+  U64 change = (colorhash ^ hashes[color][from] ^ hashes[color][to] ^ hashes[piece][from] ^ hashes[piece2][to]);
   if (captured) {
     change ^= (hashes[color ^ 1][to] ^ hashes[captured][to]);
   }
