@@ -527,8 +527,8 @@ int Searcher::iterative(int color) {
       }
       if (depth >= 6 && ismaster && !iscapture(bestmove) && !incheck && std::abs(score) < SCORE_MAX_EVAL) {
 			  int complexity = std::abs(score - staticeval);
-			  float factor = std::clamp(complexity / (60.0 + std::abs(staticeval)), 0.0, 1.0);
-			  softlimitratio =  (0.8 + 0.5 * factor);
+			  float factor = std::max(std::min(complexity / (100.0 + std::abs(staticeval) / 2), 1.0), 0.0);
+			  softlimitratio =  (0.9 + 0.4 * factor);
       }
       depth++;
       if (depth == searchlimits.maxdepth && ismaster) {
