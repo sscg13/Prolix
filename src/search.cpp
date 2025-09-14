@@ -111,6 +111,8 @@ int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
   }
   for (int i = 0; i < movcount; i++) {
     int mov = moves[i];
+    int nextindex = (Bitboards.keyafter(mov) % *TTsize);
+    __builtin_prefetch((&(*TT)[index]), 0, 0);
     bool good = (incheck || Bitboards.see_exceeds(mov, color, 0));
     if (good) {
       Bitboards.makemove(mov, 1);
@@ -294,6 +296,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
     int r = 0;
     bool prune = false;
     int mov = moves[i];
+    int nextindex = (Bitboards.keyafter(mov) % *TTsize);
+    __builtin_prefetch(&((*TT)[index]), 0, 0);
     if (!iscapture(mov)) {
       quiets++;
       if (i > depth * depth + depth + 4) {
