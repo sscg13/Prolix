@@ -435,7 +435,10 @@ int Searcher::iterative(int color) {
     *stopsearch = false;
   }
   start = std::chrono::steady_clock::now();
-  int score = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+  float softlimitratio = 1;
+  int qsearcheval = quiesce(-SCORE_INF, SCORE_INF, color, 0, true);
+  bool incheck = Bitboards.checkers(color);
+  int score = qsearcheval;
   int returnedscore = score;
   int depth = 1;
   int bestmove1 = 0;
@@ -526,6 +529,11 @@ int Searcher::iterative(int color) {
         }
         std::cout << std::endl;
       }
+      if (depth >= 6 && ismaster && !iscapture(bestmove) && !incheck && std::abs(score) < SCORE_MAX_EVAL) {
+			  int complexity = std::abs(score - qsearcheval);
+			  float factor = std::max(std::min(complexity / 200.0, 1.0), 0.0);
+			  softlimitratio =  (0.9 + 0.4 * factor);
+      }
       depth++;
       if (depth == searchlimits.maxdepth && ismaster) {
         *stopsearch = true;
@@ -534,7 +542,7 @@ int Searcher::iterative(int color) {
     } else if (ismaster) {
       *stopsearch = true;
     }
-    if (ismaster && ((timetaken.count() > searchlimits.softtimelimit && searchlimits.softtimelimit > 0) ||
+    if (ismaster && ((timetaken.count() > (int)(softlimitratio * searchlimits.softtimelimit) && searchlimits.softtimelimit > 0) ||
         (Bitboards.nodecount > searchlimits.softnodelimit && searchlimits.softnodelimit > 0))) {
       *stopsearch = true;
     }
