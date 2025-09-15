@@ -300,7 +300,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
     __builtin_prefetch(&((*TT)[nextindex]), 0, 0);
     if (!iscapture(mov)) {
       quiets++;
-      if (i > depth * depth + depth + 4) {
+      if (i > (depth * depth + depth + 4) / (2 - improving)) {
         prune = true;
       }
       if (!isPV && !incheck && depth < 5 && movescore[i] < 0) {
