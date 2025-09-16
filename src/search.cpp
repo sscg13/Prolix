@@ -359,9 +359,9 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
               killers[ply][1] = killers[ply][0];
               killers[ply][0] = mov;
             }
-            Histories->updatemainhistory(mov, depth * depth);
+            Histories->updatemainhistory(mov, 3 * depth);
             if (!iscapture(mov)) {
-              Histories->updateconthist(previousmove, mov, depth * depth);
+              Histories->updateconthist(previousmove, mov, 3 * depth);
             }
             for (int j = 0; j < i; j++) {
               int mov2 = moves[j];
