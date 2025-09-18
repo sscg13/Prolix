@@ -7,7 +7,7 @@ void initializelmr() {
   for (int i = 0; i < maxmaxdepth; i++) {
     for (int j = 0; j < maxmoves; j++) {
       lmr_reductions[i][j] =
-          (i == 0 || j == 0) ? 0 : floor(0.77 + log(i) * log(j) * 0.46);
+          (i == 0 || j == 0) ? 0 : floor(788.5 + log(i) * log(j) * 471);
     }
   }
 }
@@ -306,9 +306,11 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
       if (!isPV && !incheck && depth < 5 && movescore[i] < 0) {
         prune = true;
       }
-      r = std::min(depth - 1, lmr_reductions[depth][quiets]);
+      r = std::min(1024 * (depth - 1), lmr_reductions[depth][quiets]);
     }
-    r = std::max(0, r - isPV - improving);
+    r -= 1024 * isPV;
+    r -= 1024 * improving;
+    r = std::max(0, r);
     if (nullwindow && !incheck && !prune && depth < 6) {
       int threshold = iscapture(mov) ? -30 * depth * depth : -100 * depth;
       prune = !Bitboards.see_exceeds(mov, color, threshold);
@@ -327,6 +329,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
       if (useNNUE) {
         EUNN->forwardaccumulators(mov, Bitboards.Bitboards);
       }
+      r /= 1024;
       if (nullwindow) {
         score = -alphabeta(depth - 1 - r, ply + 1, -alpha - 1, -alpha,
                            color ^ 1, true, EXPECTED_CUT_NODE);
