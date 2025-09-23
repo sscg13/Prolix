@@ -31,7 +31,7 @@ void Engine::bench() {
   searchlimits.hardtimelimit = 0;
   for (int i = 0; i < 14; i++) {
     startup();
-    searchlimits.maxdepth = 16;
+    searchlimits.maxdepth = 17;
     Bitboards.parseFEN(benchfens[i]);
     master.loadposition(Bitboards);
     master.loadsearchlimits(searchlimits);

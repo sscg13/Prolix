@@ -19,7 +19,7 @@ void Searcher::datagenautoplayplain() {
     game += algebraic(moves[rand_move]);
     game += " ";
   }
-  if (useNNUE) {
+  if (searchoptions.useNNUE) {
     EUNN->initializennue(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
@@ -71,7 +71,7 @@ void Searcher::datagenautoplayplain() {
       finished = true;
       result = "0.5";
     }
-    if (useNNUE && bestmove > 0) {
+    if (searchoptions.useNNUE && bestmove > 0) {
       EUNN->initializennue(Bitboards.Bitboards);
     }
   }
@@ -97,7 +97,7 @@ void Searcher::datagenautoplayviriformat() {
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
   }
-  if (useNNUE) {
+  if (searchoptions.useNNUE) {
     EUNN->initializennue(Bitboards.Bitboards);
   }
   Viriformat game;
@@ -139,7 +139,7 @@ void Searcher::datagenautoplayviriformat() {
       finished = true;
       result = 1;
     }
-    if (useNNUE && bestmove > 0) {
+    if (searchoptions.useNNUE && bestmove > 0) {
       EUNN->initializennue(Bitboards.Bitboards);
     }
   }
@@ -159,7 +159,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     int rand_move = mt() % num_moves;
     Bitboards.makemove(moves[rand_move], 0);
   }
-  if (useNNUE) {
+  if (searchoptions.useNNUE) {
     EUNN->initializennue(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
@@ -182,7 +182,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
       Bitboards.makenullmove();
     } else {
       Bitboards.makemove(bestmove, 0);
-      if (useNNUE) {
+      if (searchoptions.useNNUE) {
         EUNN->initializennue(Bitboards.Bitboards);
       }
     }

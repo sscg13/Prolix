@@ -20,17 +20,19 @@ struct Limits {
   int maxdepth;
   int movetime;
 };
-class Searcher {
+struct Options {
   bool useNNUE = true;
   bool normalizeeval = true;
   bool showWDL = true;
+  bool useTB = false;
+};
+class Searcher {
   NNUE *EUNN = new NNUE;
   History *Histories = new History;
   int killers[maxmaxdepth][2];
   int countermoves[6][64];
   std::atomic<bool> *stopsearch;
   bool rootinTB = false;
-  bool useTB = false;
   abinfo searchstack[maxmaxdepth + 32];
   int pvtable[maxmaxdepth + 1][maxmaxdepth + 1];
   int bestmove = 0;
@@ -48,6 +50,7 @@ public:
   int *TTsize;
   Board Bitboards;
   Limits searchlimits;
+  Options searchoptions;
   std::ofstream dataoutput;
   bool ismaster = true;
   bool suppressoutput = false;

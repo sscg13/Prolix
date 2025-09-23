@@ -318,16 +318,20 @@ void Engine::uci() {
       std::string value = ucicommand.substr(35, ucicommand.length() - 35);
       if (value == "true") {
         normalizeeval = true;
+        master.searchoptions.useNNUE = true;
       } else {
         normalizeeval = false;
+        master.searchoptions.useNNUE = false;
       }
     }
     if (option == "UseNNUE") {
       std::string value = ucicommand.substr(29, ucicommand.length() - 29);
       if (value == "true") {
         useNNUE = true;
+        master.searchoptions.useNNUE = true;
       } else {
         useNNUE = false;
+        master.searchoptions.useNNUE = false;
       }
     }
   }

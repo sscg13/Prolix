@@ -64,7 +64,7 @@ void Searcher::loadsearchlimits(Limits limits) {
 int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
-  int score = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+  int score = searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
   int movcount;
   if (depth > 3) {
@@ -116,12 +116,12 @@ int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
     bool good = (incheck || Bitboards.see_exceeds(mov, color, 0));
     if (good) {
       Bitboards.makemove(mov, 1);
-      if (useNNUE) {
+      if (searchoptions.useNNUE) {
         EUNN->forwardaccumulators(mov, Bitboards.Bitboards);
       }
       score = -quiesce(-beta, -alpha, color ^ 1, depth + 1, isPV);
       Bitboards.unmakemove(mov);
-      if (useNNUE) {
+      if (searchoptions.useNNUE) {
         EUNN->backwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (score >= beta) {
@@ -159,7 +159,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
   bool fewpieces =
       (__builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]) <=
        maxtbpieces);
-  if (fewpieces && useTB) {
+  if (fewpieces && searchoptions.useTB) {
     tbwdl = Bitboards.probetbwdl();
     if (!rootinTB) {
       return tbwdl * (SCORE_TB_WIN - ply);
@@ -180,7 +180,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
   bool tthit = (ttentry.key == Bitboards.zobristhash);
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (nodetype == EXPECTED_PV_NODE);
-  int staticeval = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+  int staticeval = searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   searchstack[ply].eval = staticeval;
   bool improving = false;
   if (ply > 1) {
@@ -313,7 +313,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
       int threshold = iscapture(mov) ? -30 * depth * depth : -100 * depth;
       prune = !Bitboards.see_exceeds(mov, color, threshold);
     }
-    if (fewpieces && useTB) {
+    if (fewpieces && searchoptions.useTB) {
       Bitboards.makemove(mov, true);
       if (Bitboards.probetbwdl() != -tbwdl) {
         prune = true;
@@ -324,7 +324,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
     if (!(*stopsearch) && !prune) {
       Bitboards.makemove(mov, true);
       searchstack[ply].playedmove = mov;
-      if (useNNUE) {
+      if (searchoptions.useNNUE) {
         EUNN->forwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (nullwindow) {
@@ -345,7 +345,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
                            true, childnode);
       }
       Bitboards.unmakemove(mov);
-      if (useNNUE) {
+      if (searchoptions.useNNUE) {
         EUNN->backwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (score > bestscore) {
@@ -435,7 +435,7 @@ int Searcher::iterative(int color) {
     *stopsearch = false;
   }
   start = std::chrono::steady_clock::now();
-  int score = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+  int score = searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int returnedscore = score;
   int depth = 1;
   int bestmove1 = 0;
@@ -443,7 +443,7 @@ int Searcher::iterative(int color) {
   resetauxdata();
   rootinTB = (__builtin_popcountll(Bitboards.Bitboards[0] |
                                    Bitboards.Bitboards[1]) <= maxtbpieces);
-  if (rootinTB && useTB) {
+  if (rootinTB && searchoptions.useTB) {
     tbscore = Bitboards.probetbwdl();
   }
   while (!(*stopsearch)) {
@@ -473,16 +473,16 @@ int Searcher::iterative(int color) {
         (timetaken.count() < searchlimits.hardtimelimit || searchlimits.hardtimelimit <= 0) &&
         depth < searchlimits.maxdepth && bestmove >= 0) {
       returnedscore = score;
-      if (rootinTB && useTB && abs(score) < SCORE_WIN) {
+      if (rootinTB && searchoptions.useTB && abs(score) < SCORE_WIN) {
         score = SCORE_TB_WIN * tbscore;
       }
       if (proto == "uci" && !suppressoutput) {
         if (abs(score) <= SCORE_WIN) {
-          int printedscore = normalizeeval ? normalize(score) : score;
+          int printedscore = searchoptions.normalizeeval ? normalize(score) : score;
           std::cout << "info depth " << depth << " nodes "
                     << Bitboards.nodecount << " time " << timetaken.count()
                     << " score cp " << printedscore;
-          if (showWDL) {
+          if (searchoptions.showWDL) {
             int winrate = wdlmodel(score);
             int lossrate = wdlmodel(-score);
             int drawrate = 1000 - winrate - lossrate;
@@ -504,7 +504,7 @@ int Searcher::iterative(int color) {
           std::cout << "info depth " << depth << " nodes "
                     << Bitboards.nodecount << " time " << timetaken.count()
                     << " score mate " << matescore;
-          if (showWDL) {
+          if (searchoptions.showWDL) {
             int winrate = 1000 * (matescore > 0);
             int lossrate = 1000 * (matescore < 0);
             std::cout << " wdl " << winrate << " 0 " << lossrate;
@@ -517,7 +517,7 @@ int Searcher::iterative(int color) {
         }
       }
       if (proto == "xboard") {
-        int printedscore = normalizeeval ? normalize(score) : score;
+        int printedscore = searchoptions.normalizeeval ? normalize(score) : score;
         std::cout << depth << " " << printedscore << " "
                   << timetaken.count() / 10 << " " << Bitboards.nodecount
                   << " ";
@@ -554,7 +554,7 @@ int Searcher::iterative(int color) {
   if (proto == "xboard") {
     std::cout << "move " << algebraic(bestmove1) << std::endl;
     Bitboards.makemove(bestmove1, 0);
-    if (useNNUE) {
+    if (searchoptions.useNNUE) {
       EUNN->forwardaccumulators(bestmove1, Bitboards.Bitboards);
     }
   }
