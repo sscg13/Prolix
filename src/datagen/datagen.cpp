@@ -2,7 +2,7 @@
 #include "viriformat.h"
 std::ifstream datainput;
 void Searcher::datagenautoplayplain() {
-  suppressoutput = true;
+  searchoptions.suppressoutput = true;
   resetauxdata();
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
@@ -80,7 +80,7 @@ void Searcher::datagenautoplayplain() {
   }
 }
 void Searcher::datagenautoplayviriformat() {
-  suppressoutput = true;
+  searchoptions.suppressoutput = true;
   resetauxdata();
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
@@ -146,7 +146,7 @@ void Searcher::datagenautoplayviriformat() {
   game.writewithwdl(dataoutput, result);
 }
 void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
-  suppressoutput = true;
+  searchoptions.suppressoutput = true;
   resetauxdata();
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
@@ -199,7 +199,8 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     }
   }
 }
-void Engine::datagen(int dataformat, int threads, int n, std::string outputfile) {
+void Engine::datagen(int dataformat, int threads, int n,
+                     std::string outputfile) {
   if (dataformat == 1) {
     dataoutput.open(outputfile, std::ofstream::binary);
   } else {
@@ -239,7 +240,7 @@ void Engine::filter(int lowerbound, int upperbound, int softnodes,
   searchlimits.hardnodelimit = hardnodes;
   searchlimits.softtimelimit = 0;
   searchlimits.hardtimelimit = 0;
-  master.suppressoutput = true;
+  master.searchoptions.suppressoutput = true;
   master.loadsearchlimits(searchlimits);
   std::ifstream epdin;
   epdin.open(inputfile);

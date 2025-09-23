@@ -24,6 +24,7 @@ struct Options {
   bool useNNUE = true;
   bool normalizeeval = true;
   bool showWDL = true;
+  bool suppressoutput = false;
   bool useTB = false;
 };
 class Searcher {
@@ -53,7 +54,6 @@ public:
   Options searchoptions;
   std::ofstream dataoutput;
   bool ismaster = true;
-  bool suppressoutput = false;
   void seedrng();
   void setstopsearch(std::atomic<bool> &stopsearchref);
   void setTT(std::vector<TTentry> &TTref, int &size);

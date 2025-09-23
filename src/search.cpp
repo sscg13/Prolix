@@ -43,9 +43,7 @@ void Searcher::resetauxdata() {
   }
   Histories->reset();
 }
-void Searcher::seedrng() {
-  mt.seed(rd());
-}
+void Searcher::seedrng() { mt.seed(rd()); }
 void Searcher::setstopsearch(std::atomic<bool> &stopsearchref) {
   stopsearch = &stopsearchref;
 }
@@ -58,13 +56,12 @@ void Searcher::loadposition(Board board) {
   Bitboards = board;
   EUNN->initializennue(Bitboards.Bitboards);
 }
-void Searcher::loadsearchlimits(Limits limits) {
-  searchlimits = limits;
-}
+void Searcher::loadsearchlimits(Limits limits) { searchlimits = limits; }
 int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
-  int score = searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+  int score =
+      searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
   int movcount;
   if (depth > 3) {
@@ -138,7 +135,7 @@ int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
   return bestscore;
 }
 int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
-                      bool nmp, int nodetype) {
+                        bool nmp, int nodetype) {
   pvtable[ply][0] = ply + 1;
   if (Bitboards.repetitions() > 1) {
     return SCORE_DRAW;
@@ -180,7 +177,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
   bool tthit = (ttentry.key == Bitboards.zobristhash);
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (nodetype == EXPECTED_PV_NODE);
-  int staticeval = searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+  int staticeval =
+      searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   searchstack[ply].eval = staticeval;
   bool improving = false;
   if (ply > 1) {
@@ -355,8 +353,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
         if (score > alpha) {
           if (score >= beta) {
             if (update && !(*stopsearch)) {
-              ttentry.update(Bitboards.zobristhash, Bitboards.gamelength,
-                               depth, ply, score, EXPECTED_CUT_NODE, mov);
+              ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth,
+                             ply, score, EXPECTED_CUT_NODE, mov);
             }
             if (!iscapture(mov) && (killers[ply][0] != mov)) {
               killers[ply][1] = killers[ply][0];
@@ -392,14 +390,16 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
         bestmove1 = i;
         bestscore = score;
       }
-      if (ismaster && Bitboards.nodecount > searchlimits.hardnodelimit && searchlimits.hardnodelimit > 0) {
+      if (ismaster && Bitboards.nodecount > searchlimits.hardnodelimit &&
+          searchlimits.hardnodelimit > 0) {
         *stopsearch = true;
       }
       if ((Bitboards.nodecount & 1023) == 0) {
         auto now = std::chrono::steady_clock::now();
         auto timetaken =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-        if (ismaster && timetaken.count() > searchlimits.hardtimelimit && searchlimits.hardtimelimit > 0) {
+        if (ismaster && timetaken.count() > searchlimits.hardtimelimit &&
+            searchlimits.hardtimelimit > 0) {
           *stopsearch = true;
         }
       }
@@ -409,7 +409,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
   int savedmove = improvedalpha ? moves[bestmove1] : ttmove;
   if (((update || (realnodetype == EXPECTED_PV_NODE)) && !(*stopsearch))) {
     ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
-                     bestscore, realnodetype, savedmove);
+                   bestscore, realnodetype, savedmove);
   }
   return bestscore;
 }
@@ -438,7 +438,8 @@ int Searcher::iterative(int color) {
     *stopsearch = false;
   }
   start = std::chrono::steady_clock::now();
-  int score = searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+  int score =
+      searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int returnedscore = score;
   int depth = 1;
   int bestmove1 = 0;
@@ -472,62 +473,68 @@ int Searcher::iterative(int color) {
     auto now = std::chrono::steady_clock::now();
     auto timetaken =
         std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-    if ((Bitboards.nodecount < searchlimits.hardnodelimit || searchlimits.hardnodelimit <= 0) &&
-        (timetaken.count() < searchlimits.hardtimelimit || searchlimits.hardtimelimit <= 0) &&
+    if ((Bitboards.nodecount < searchlimits.hardnodelimit ||
+         searchlimits.hardnodelimit <= 0) &&
+        (timetaken.count() < searchlimits.hardtimelimit ||
+         searchlimits.hardtimelimit <= 0) &&
         depth < searchlimits.maxdepth && bestmove >= 0) {
       returnedscore = score;
       if (rootinTB && searchoptions.useTB && abs(score) < SCORE_WIN) {
         score = SCORE_TB_WIN * tbscore;
       }
-      if (proto == "uci" && !suppressoutput) {
-        if (abs(score) <= SCORE_WIN) {
-          int printedscore = searchoptions.normalizeeval ? normalize(score) : score;
-          std::cout << "info depth " << depth << " nodes "
-                    << Bitboards.nodecount << " time " << timetaken.count()
-                    << " score cp " << printedscore;
-          if (searchoptions.showWDL) {
-            int winrate = wdlmodel(score);
-            int lossrate = wdlmodel(-score);
-            int drawrate = 1000 - winrate - lossrate;
-            std::cout << " wdl " << winrate << " " << drawrate << " "
-                      << lossrate;
-          }
-          std::cout << " pv ";
-          for (int i = 1; i < pvtable[0][0]; i++) {
-            std::cout << algebraic(pvtable[0][i]) << " ";
-          }
-          std::cout << std::endl;
-        } else {
-          int matescore;
-          if (score > 0) {
-            matescore = 1 + (SCORE_MATE - score) / 2;
+      if (ismaster) {
+        if (proto == "uci" && !searchoptions.suppressoutput) {
+          if (abs(score) <= SCORE_WIN) {
+            int printedscore =
+                searchoptions.normalizeeval ? normalize(score) : score;
+            std::cout << "info depth " << depth << " nodes "
+                      << Bitboards.nodecount << " time " << timetaken.count()
+                      << " score cp " << printedscore;
+            if (searchoptions.showWDL) {
+              int winrate = wdlmodel(score);
+              int lossrate = wdlmodel(-score);
+              int drawrate = 1000 - winrate - lossrate;
+              std::cout << " wdl " << winrate << " " << drawrate << " "
+                        << lossrate;
+            }
+            std::cout << " pv ";
+            for (int i = 1; i < pvtable[0][0]; i++) {
+              std::cout << algebraic(pvtable[0][i]) << " ";
+            }
+            std::cout << std::endl;
           } else {
-            matescore = (-SCORE_MATE - score) / 2;
+            int matescore;
+            if (score > 0) {
+              matescore = 1 + (SCORE_MATE - score) / 2;
+            } else {
+              matescore = (-SCORE_MATE - score) / 2;
+            }
+            std::cout << "info depth " << depth << " nodes "
+                      << Bitboards.nodecount << " time " << timetaken.count()
+                      << " score mate " << matescore;
+            if (searchoptions.showWDL) {
+              int winrate = 1000 * (matescore > 0);
+              int lossrate = 1000 * (matescore < 0);
+              std::cout << " wdl " << winrate << " 0 " << lossrate;
+            }
+            std::cout << " pv ";
+            for (int i = 1; i < pvtable[0][0]; i++) {
+              std::cout << algebraic(pvtable[0][i]) << " ";
+            }
+            std::cout << std::endl;
           }
-          std::cout << "info depth " << depth << " nodes "
-                    << Bitboards.nodecount << " time " << timetaken.count()
-                    << " score mate " << matescore;
-          if (searchoptions.showWDL) {
-            int winrate = 1000 * (matescore > 0);
-            int lossrate = 1000 * (matescore < 0);
-            std::cout << " wdl " << winrate << " 0 " << lossrate;
-          }
-          std::cout << " pv ";
+        }
+        if (proto == "xboard") {
+          int printedscore =
+              searchoptions.normalizeeval ? normalize(score) : score;
+          std::cout << depth << " " << printedscore << " "
+                    << timetaken.count() / 10 << " " << Bitboards.nodecount
+                    << " ";
           for (int i = 1; i < pvtable[0][0]; i++) {
             std::cout << algebraic(pvtable[0][i]) << " ";
           }
           std::cout << std::endl;
         }
-      }
-      if (proto == "xboard") {
-        int printedscore = searchoptions.normalizeeval ? normalize(score) : score;
-        std::cout << depth << " " << printedscore << " "
-                  << timetaken.count() / 10 << " " << Bitboards.nodecount
-                  << " ";
-        for (int i = 1; i < pvtable[0][0]; i++) {
-          std::cout << algebraic(pvtable[0][i]) << " ";
-        }
-        std::cout << std::endl;
       }
       depth++;
       if (depth == searchlimits.maxdepth && ismaster) {
@@ -537,25 +544,31 @@ int Searcher::iterative(int color) {
     } else if (ismaster) {
       *stopsearch = true;
     }
-    if (ismaster && ((timetaken.count() > searchlimits.softtimelimit && searchlimits.softtimelimit > 0) ||
-        (Bitboards.nodecount > searchlimits.softnodelimit && searchlimits.softnodelimit > 0))) {
+    if (ismaster && ((timetaken.count() > searchlimits.softtimelimit &&
+                      searchlimits.softtimelimit > 0) ||
+                     (Bitboards.nodecount > searchlimits.softnodelimit &&
+                      searchlimits.softnodelimit > 0))) {
       *stopsearch = true;
     }
   }
   auto now = std::chrono::steady_clock::now();
   auto timetaken =
       std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-  if (proto == "uci" && !suppressoutput) {
-    int nps = 1000 * (Bitboards.nodecount /
-                      std::max((uint64_t)1, (uint64_t)timetaken.count()));
-    std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps
-              << std::endl;
-  }
-  if (proto == "uci" && !suppressoutput) {
-    std::cout << "bestmove " << algebraic(bestmove1) << std::endl;
+  if (ismaster) {
+    if (proto == "uci" && !searchoptions.suppressoutput) {
+      int nps = 1000 * (Bitboards.nodecount /
+                        std::max((uint64_t)1, (uint64_t)timetaken.count()));
+      std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps
+                << std::endl;
+    }
+    if (proto == "uci" && !searchoptions.suppressoutput) {
+      std::cout << "bestmove " << algebraic(bestmove1) << std::endl;
+    }
   }
   if (proto == "xboard") {
-    std::cout << "move " << algebraic(bestmove1) << std::endl;
+    if (ismaster) {
+      std::cout << "move " << algebraic(bestmove1) << std::endl;
+    }
     Bitboards.makemove(bestmove1, 0);
     if (searchoptions.useNNUE) {
       EUNN->forwardaccumulators(bestmove1, Bitboards.Bitboards);

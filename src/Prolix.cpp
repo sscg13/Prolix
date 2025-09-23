@@ -22,7 +22,7 @@ void Engine::bench() {
       "1r2q3/R4pn1/1p1pkn2/3p1p2/1PpP2p1/N1P1K1P1/3Q3P/2B1R3 b - - 5 31",
       "8/1Q6/3Q4/3p1p2/2pkq2R/5q2/5K2/8 w - - 2 116",
       "8/4k3/4R3/2PK4/1P3Nn1/P2PPn2/5r2/8 b - - 2 58"};
-  master.suppressoutput = true;
+  master.searchoptions.suppressoutput = true;
   auto commence = std::chrono::steady_clock::now();
   int nodes = 0;
   searchlimits.softnodelimit = 0;
@@ -104,8 +104,8 @@ int main(int argc, char *argv[]) {
             std::string(argv[4]) + std::to_string(i) + ".txt";
         Engines[i].startup();
         datagenerators[i] =
-            std::thread(&Engine::bookgen, &Engines[i], lowerbound, upperbound, 1,
-                        games, outputfile);
+            std::thread(&Engine::bookgen, &Engines[i], lowerbound, upperbound,
+                        1, games, outputfile);
       }
       for (auto &thread : datagenerators) {
         thread.join();
