@@ -2,7 +2,6 @@
 #include "engine.h"
 #include "eval/nnue.h"
 #include "external/Fathom/tbprobe.h"
-#include <thread>
 extern std::string uciinfostring;
 std::string proto = "uci";
 std::string inputfile;
@@ -22,7 +21,7 @@ void Engine::bench() {
       "1r2q3/R4pn1/1p1pkn2/3p1p2/1PpP2p1/N1P1K1P1/3Q3P/2B1R3 b - - 5 31",
       "8/1Q6/3Q4/3p1p2/2pkq2R/5q2/5K2/8 w - - 2 116",
       "8/4k3/4R3/2PK4/1P3Nn1/P2PPn2/5r2/8 b - - 2 58"};
-  master.searchoptions.suppressoutput = true;
+  searchoptions.suppressoutput = true;
   auto commence = std::chrono::steady_clock::now();
   int nodes = 0;
   searchlimits.softnodelimit = 0;
@@ -33,8 +32,7 @@ void Engine::bench() {
     startup();
     searchlimits.maxdepth = 17;
     Bitboards.parseFEN(benchfens[i]);
-    master.loadposition(Bitboards);
-    master.loadsearchlimits(searchlimits);
+    master.syncwith(*this);
     int color = Bitboards.position & 1;
     master.iterative(color);
     nodes += master.Bitboards.nodecount;

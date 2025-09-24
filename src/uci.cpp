@@ -6,7 +6,7 @@ std::string uciinfostring =
     "id name Prolix \n"
     "id author sscg13 \n"
     "option name UCI_Variant type combo default shatranj var shatranj \n"
-    "option name Threads type spin default 1 min 1 max 1 \n"
+    "option name Threads type spin default 1 min 1 max 8 \n"
     "option name Hash type spin default 32 min 1 max 1024 \n"
     "option name UseNNUE type check default true \n"
     "option name NormalizeEval type check default true \n"
@@ -74,6 +74,9 @@ void Engine::uci() {
     tokens >> option;
     tokens >> token;
     tokens >> value;
+    if (option == "Threads") {
+      threads = std::stoi(value);
+    }
     if (option == "Hash") {
       int sum = std::stoi(value);
       if (sum <= 1024) {
@@ -165,10 +168,22 @@ void Engine::uci() {
       searchlimits.softtimelimit = ourtime / 40 + ourinc / 3;
       searchlimits.hardtimelimit = ourtime / 10 + ourinc;
     }
-    master.loadsearchoptions(searchoptions);
-    master.loadsearchlimits(searchlimits);
-    master.loadposition(Bitboards);
-    int score = master.iterative(color);
+    master.syncwith(*this);
+    if (threads > 1) {
+      std::vector<std::thread> workers(threads - 1);
+      for (int i = 0; i < threads - 1; i++) {
+        workers[i] = std::thread(&Engine::spawnworker, this);
+      }
+      int score = master.iterative(color);
+      for (auto& thread : workers) {
+          if (thread.joinable()) {
+              thread.join();
+          }
+      }
+    }
+    else {
+      int score = master.iterative(color);
+    }
   }
   if (token == "perft") {
     tokens >> token;

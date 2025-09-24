@@ -6,6 +6,7 @@
 #include "search.h"
 #include "tt.h"
 #include <chrono>
+#include <thread>
 #include <time.h>
 #pragma once
 extern std::string proto;
@@ -27,12 +28,15 @@ class Engine {
   std::random_device rd;
   std::mt19937 mt;
   std::ofstream dataoutput;
+  int threads = 1;
   Searcher master;
   void initializett();
 
 public:
+  friend class Searcher;
   void startup();
   void bench();
+  void spawnworker();
   void datagen(int dataformat, int threads, int n, std::string outputfile);
   void bookgen(int lowerbound, int upperbound, int threads, int n,
                std::string outputfile);
