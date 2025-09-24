@@ -17,16 +17,13 @@ class Engine {
   int TTsize = 2097152;
   std::vector<TTentry> TT;
   Board Bitboards;
-  bool useNNUE = true;
-  bool normalizeeval = true;
-  bool showWDL = true;
   bool gosent = false;
   std::atomic<bool> stopsearch = ATOMIC_VAR_INIT(false);
-  bool useTB = false;
   abinfo searchstack[maxmaxdepth + 32];
   int pvtable[maxmaxdepth + 1][maxmaxdepth + 1];
   int bestmove = 0;
   Limits searchlimits;
+  Options searchoptions;
   std::random_device rd;
   std::mt19937 mt;
   std::ofstream dataoutput;

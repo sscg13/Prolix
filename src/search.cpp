@@ -13,7 +13,6 @@ void initializelmr() {
 }
 void Engine::startup() {
   searchlimits.maxdepth = maxmaxdepth;
-  searchlimits.movetime = 0;
   initializett();
   Bitboards.initialize();
   master.setTT(TT, TTsize);
@@ -57,6 +56,7 @@ void Searcher::loadposition(Board board) {
   EUNN->initializennue(Bitboards.Bitboards);
 }
 void Searcher::loadsearchlimits(Limits limits) { searchlimits = limits; }
+void Searcher::loadsearchoptions(Options options) { searchoptions = options; }
 int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];

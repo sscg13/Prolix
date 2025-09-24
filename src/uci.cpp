@@ -1,4 +1,5 @@
 #include "engine.h"
+#include <sstream>
 
 // clang-format off
 std::string uciinfostring =
@@ -14,62 +15,47 @@ std::string uciinfostring =
     "option name SyzygyPath type string default <empty> \n"
     "uciok\n";
 // clang-format on
+Limits infinitesearch = {0, 0, 0, 0, maxmaxdepth};
 void Engine::uci() {
   std::string ucicommand;
   getline(std::cin, ucicommand);
-  if (ucicommand == "uci") {
+  std::stringstream tokens(ucicommand);
+  std::string token;
+  tokens >> token;
+  if (token == "uci") {
     std::cout << uciinfostring;
   }
-  if (ucicommand == "quit") {
+  if (token == "quit") {
     exit(0);
   }
-  if (ucicommand == "isready") {
+  if (token == "isready") {
     std::cout << "readyok" << std::endl;
   }
-  if (ucicommand == "ucinewgame") {
+  if (token == "ucinewgame") {
     initializett();
     Bitboards.initialize();
   }
-  if (ucicommand.substr(0, 17) == "position startpos") {
-    Bitboards.initialize();
-    int color = 0;
-    int moves[maxmoves];
-    std::string mov = "";
-    for (int i = 24; i <= ucicommand.length(); i++) {
-      if ((ucicommand[i] == ' ') || (i == ucicommand.length())) {
-        int len = Bitboards.generatemoves(color, 0, moves);
-        int played = -1;
-        for (int j = 0; j < len; j++) {
-          if (algebraic(moves[j]) == mov) {
-            played = j;
-          }
-        }
-        if (played >= 0) {
-          Bitboards.makemove(moves[played], false);
-          color ^= 1;
-        }
-        mov = "";
-      } else {
-        mov += ucicommand[i];
+  if (token == "position") {
+    std::string fen;
+    tokens >> token;
+    if (token == "startpos") {
+      fen = "rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR w - - 0 1";
+    }
+    if (token == "fen") {
+      for (int i = 0; i < 6; i++) {
+        tokens >> token;
+        fen += token;
       }
     }
-  }
-  if (ucicommand.substr(0, 12) == "position fen") {
-    int reader = 13;
-    while (ucicommand[reader] != 'm' && reader < ucicommand.length()) {
-      reader++;
-    }
-    std::string fen = ucicommand.substr(13, reader - 12);
     Bitboards.parseFEN(fen);
     int color = Bitboards.position & 1;
-    std::string mov = "";
     int moves[maxmoves];
-    for (int i = reader + 6; i <= ucicommand.length(); i++) {
-      if ((ucicommand[i] == ' ') || (i == ucicommand.length())) {
+    while (tokens >> token) {
+      if (token != "moves") {
         int len = Bitboards.generatemoves(color, 0, moves);
         int played = -1;
         for (int j = 0; j < len; j++) {
-          if (algebraic(moves[j]) == mov) {
+          if (algebraic(moves[j]) == token) {
             played = j;
           }
         }
@@ -77,210 +63,18 @@ void Engine::uci() {
           Bitboards.makemove(moves[played], false);
           color ^= 1;
         }
-        mov = "";
-      } else {
-        mov += ucicommand[i];
       }
     }
   }
-  if (ucicommand.substr(0, 8) == "go wtime") {
-    int wtime;
-    int btime;
-    int winc = 0;
-    int binc = 0;
-    int sum;
-    int add;
-    int reader = 8;
-    while (ucicommand[reader] != 'b') {
-      reader++;
-    }
-    reader--;
-    while (ucicommand[reader] == ' ') {
-      reader--;
-    }
-    sum = 0;
-    add = 1;
-    while (ucicommand[reader] != ' ') {
-      sum += ((int)(ucicommand[reader] - 48)) * add;
-      add *= 10;
-      reader--;
-    }
-    if (sum < 100) {
-      sum = 100;
-    }
-    wtime = sum;
-    while (ucicommand[reader] != 'w' && reader < ucicommand.length()) {
-      reader++;
-    }
-    reader--;
-    while (ucicommand[reader] == ' ') {
-      reader--;
-    }
-    sum = 0;
-    add = 1;
-    while (ucicommand[reader] != ' ') {
-      sum += ((int)(ucicommand[reader] - 48)) * add;
-      add *= 10;
-      reader--;
-    }
-    if (sum < 100) {
-      sum = 100;
-    }
-    btime = sum;
-    while (ucicommand[reader] != 'b' && reader < ucicommand.length()) {
-      reader++;
-    }
-    reader--;
-    while (ucicommand[reader] == ' ') {
-      reader--;
-    }
-    if (reader < ucicommand.length() - 1) {
-      sum = 0;
-      add = 1;
-      while (ucicommand[reader] != ' ') {
-        sum += ((int)(ucicommand[reader] - 48)) * add;
-        add *= 10;
-        reader--;
-      }
-      winc = sum;
-      reader = ucicommand.length() - 1;
-      while (ucicommand[reader] == ' ') {
-        reader--;
-      }
-      sum = 0;
-      add = 1;
-      while (ucicommand[reader] != ' ') {
-        sum += ((int)(ucicommand[reader] - 48)) * add;
-        add *= 10;
-        reader--;
-      }
-      binc = sum;
-    }
-    int color = Bitboards.position & 1;
-    searchlimits.softnodelimit = 0;
-    searchlimits.hardnodelimit = 0;
-    if (color == 0) {
-      searchlimits.softtimelimit = wtime / 40 + winc / 3;
-      searchlimits.hardtimelimit = wtime / 10 + winc;
-    } else {
-      searchlimits.softtimelimit = btime / 40 + binc / 3;
-      searchlimits.hardtimelimit = btime / 10 + binc;
-    }
-    master.loadsearchlimits(searchlimits);
-    master.loadposition(Bitboards);
-    int score = master.iterative(color);
-  }
-  if (ucicommand.substr(0, 11) == "go movetime") {
-    int sum = 0;
-    int add = 1;
-    int reader = ucicommand.length() - 1;
-    while (ucicommand[reader] != ' ') {
-      sum += ((int)(ucicommand[reader] - 48)) * add;
-      add *= 10;
-      reader--;
-    }
-    int color = Bitboards.position & 1;
-    searchlimits.softnodelimit = 0;
-    searchlimits.hardnodelimit = 0;
-    searchlimits.softtimelimit = sum;
-    searchlimits.hardtimelimit = sum;
-    master.loadsearchlimits(searchlimits);
-    master.loadposition(Bitboards);
-    int score = master.iterative(color);
-  }
-  if (ucicommand.substr(0, 8) == "go nodes") {
-    int sum = 0;
-    int add = 1;
-    int reader = ucicommand.length() - 1;
-    while (ucicommand[reader] != ' ') {
-      sum += ((int)(ucicommand[reader] - 48)) * add;
-      add *= 10;
-      reader--;
-    }
-    int color = Bitboards.position & 1;
-    searchlimits.softnodelimit = sum;
-    searchlimits.hardnodelimit = sum;
-    searchlimits.softtimelimit = 0;
-    searchlimits.hardtimelimit = 0;
-    master.loadsearchlimits(searchlimits);
-    master.loadposition(Bitboards);
-    int score = master.iterative(color);
-  }
-  if (ucicommand.substr(0, 11) == "go infinite") {
-    int color = Bitboards.position & 1;
-    searchlimits.softnodelimit = 0;
-    searchlimits.hardnodelimit = 0;
-    searchlimits.softtimelimit = 0;
-    searchlimits.hardtimelimit = 0;
-    master.loadsearchlimits(searchlimits);
-    master.loadposition(Bitboards);
-    int score = master.iterative(color);
-  }
-  if (ucicommand.substr(0, 8) == "go depth") {
-    int sum = 0;
-    int add = 1;
-    int reader = ucicommand.length() - 1;
-    while (ucicommand[reader] != ' ') {
-      sum += ((int)(ucicommand[reader] - 48)) * add;
-      add *= 10;
-      reader--;
-    }
-    int color = Bitboards.position & 1;
-    searchlimits.softnodelimit = 0;
-    searchlimits.hardnodelimit = 0;
-    searchlimits.softtimelimit = 0;
-    searchlimits.hardtimelimit = 0;
-    searchlimits.maxdepth = sum + 1;
-    master.loadsearchlimits(searchlimits);
-    master.loadposition(Bitboards);
-    int score = master.iterative(color);
-    searchlimits.maxdepth = maxmaxdepth;
-  }
-  if (ucicommand.substr(0, 8) == "go perft") {
-    start = std::chrono::steady_clock::now();
-    int color = Bitboards.position & 1;
-    int sum = 0;
-    int add = 1;
-    int reader = ucicommand.length() - 1;
-    while (ucicommand[reader] != ' ') {
-      sum += ((int)(ucicommand[reader] - 48)) * add;
-      add *= 10;
-      reader--;
-    }
-    Bitboards.perft(sum, sum, color);
-  }
-  if (ucicommand.substr(0, 9) == "go sperft") {
-    start = std::chrono::steady_clock::now();
-    int color = Bitboards.position & 1;
-    int sum = 0;
-    int add = 1;
-    int reader = ucicommand.length() - 1;
-    while (ucicommand[reader] != ' ') {
-      sum += ((int)(ucicommand[reader] - 48)) * add;
-      add *= 10;
-      reader--;
-    }
-    Bitboards.perftnobulk(sum, sum, color);
-  }
-  if (ucicommand.substr(0, 9) == "set input") {
-    inputfile = ucicommand.substr(10, ucicommand.length() - 10);
-  }
-  if (ucicommand.substr(0, 14) == "setoption name") {
-    int reader = 15;
-    std::string option = "";
-    while (ucicommand[reader] != ' ') {
-      option += ucicommand[reader];
-      reader++;
-    }
+  if (token == "setoption") {
+    std::string option;
+    std::string value;
+    tokens >> token;
+    tokens >> option;
+    tokens >> token;
+    tokens >> value;
     if (option == "Hash") {
-      reader = ucicommand.length() - 1;
-      int sum = 0;
-      int add = 1;
-      while (ucicommand[reader] != ' ') {
-        sum += ((int)(ucicommand[reader] - 48)) * add;
-        add *= 10;
-        reader--;
-      }
+      int sum = std::stoi(value);
       if (sum <= 1024) {
         int oldTTsize = TTsize;
         TTsize = 65536 * sum;
@@ -298,42 +92,96 @@ void Engine::uci() {
       }
     }*/
     if (option == "SyzygyPath") {
-      std::string tbpath = ucicommand.substr(32, ucicommand.length() - 32);
-      useTB = (tbpath != "<empty>");
-      if (!tb_init(tbpath.c_str())) {
+      searchoptions.useTB = (value != "<empty>");
+      if (!tb_init(value.c_str())) {
         std::cout << "info error initializing Syzygy TBs" << std::endl;
-      } else if (useTB) {
+      } else if (searchoptions.useTB) {
         std::cout << "info string successful init Syzygy TBs" << std::endl;
       }
     }
     if (option == "UCI_ShowWDL") {
-      std::string value = ucicommand.substr(33, ucicommand.length() - 33);
       if (value == "true") {
-        showWDL = true;
+        searchoptions.showWDL = true;
       } else {
-        showWDL = false;
+        searchoptions.showWDL = false;
       }
     }
     if (option == "NormalizeEval") {
-      std::string value = ucicommand.substr(35, ucicommand.length() - 35);
       if (value == "true") {
-        normalizeeval = true;
-        master.searchoptions.normalizeeval = true;
+        searchoptions.normalizeeval = true;
       } else {
-        normalizeeval = false;
-        master.searchoptions.normalizeeval = false;
+        searchoptions.normalizeeval = false;
       }
     }
     if (option == "UseNNUE") {
-      std::string value = ucicommand.substr(29, ucicommand.length() - 29);
       if (value == "true") {
-        useNNUE = true;
-        master.searchoptions.useNNUE = true;
+        searchoptions.useNNUE = true;
       } else {
-        useNNUE = false;
-        master.searchoptions.useNNUE = false;
+        searchoptions.useNNUE = false;
       }
     }
+  }
+  if (token == "go") {
+    int wtime = 0;
+    int btime = 0;
+    int winc = 0;
+    int binc = 0;
+    searchlimits = infinitesearch;
+    while (tokens >> token) {
+      if (token == "wtime") {
+        tokens >> token;
+        wtime = std::stoi(token);
+      }
+      if (token == "winc") {
+        tokens >> token;
+        winc = std::stoi(token);
+      }
+      if (token == "btime") {
+        tokens >> token;
+        btime = std::stoi(token);
+      }
+      if (token == "binc") {
+        tokens >> token;
+        binc = std::stoi(token);
+      }
+      if (token == "movetime") {
+        tokens >> token;
+        searchlimits.hardtimelimit = std::stoi(token);
+      }
+      if (token == "depth") {
+        tokens >> token;
+        searchlimits.maxdepth = 1 + std::stoi(token);
+      }
+      if (token == "nodes") {
+        tokens >> token;
+        searchlimits.hardnodelimit = std::stoi(token);
+      }
+    }
+    int color = Bitboards.position & 1;
+    int ourtime = color ? btime : wtime;
+    int ourinc = color ? binc : winc;
+    if (ourtime > 0) {
+      searchlimits.softtimelimit = ourtime / 40 + ourinc / 3;
+      searchlimits.hardtimelimit = ourtime / 10 + ourinc;
+    }
+    master.loadsearchoptions(searchoptions);
+    master.loadsearchlimits(searchlimits);
+    master.loadposition(Bitboards);
+    int score = master.iterative(color);
+  }
+  if (token == "perft") {
+    tokens >> token;
+    int depth = std::stoi(token);
+    start = std::chrono::steady_clock::now();
+    int color = Bitboards.position & 1;
+    Bitboards.perft(depth, depth, color);
+  }
+  if (token == "sperft") {
+    tokens >> token;
+    int depth = std::stoi(token);
+    start = std::chrono::steady_clock::now();
+    int color = Bitboards.position & 1;
+    Bitboards.perftnobulk(depth, depth, color);
   }
   /*if (ucicommand == "eval") {
     int color = Bitboards.position & 1;

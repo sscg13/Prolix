@@ -18,7 +18,6 @@ struct Limits {
   int softtimelimit;
   int hardtimelimit;
   int maxdepth;
-  int movetime;
 };
 struct Options {
   bool useNNUE = true;
@@ -59,6 +58,7 @@ public:
   void setTT(std::vector<TTentry> &TTref, int &size);
   void loadposition(Board board);
   void loadsearchlimits(Limits limits);
+  void loadsearchoptions(Options options);
   int iterative(int color);
   void datagenautoplayplain();
   void datagenautoplayviriformat();
