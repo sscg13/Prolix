@@ -13,11 +13,9 @@ void initializelmr() {
 }
 void Engine::startup() {
   searchlimits.maxdepth = maxmaxdepth;
-  searchlimits.movetime = 0;
   initializett();
   Bitboards.initialize();
-  master.setTT(TT, TTsize);
-  master.setstopsearch(stopsearch);
+  master.syncwith(*this);
 }
 void Engine::initializett() {
   TT.resize(TTsize);
@@ -44,6 +42,16 @@ void Searcher::resetauxdata() {
   Histories->reset();
 }
 void Searcher::seedrng() { mt.seed(rd()); }
+void Searcher::syncwith(Engine &engine) {
+  resetauxdata();
+  stopsearch = &(engine.stopsearch);
+  TT = &(engine.TT);
+  TTsize = &(engine.TTsize);
+  Bitboards = engine.Bitboards;
+  searchlimits = engine.searchlimits;
+  searchoptions = engine.searchoptions;
+  EUNN->initializennue(Bitboards.Bitboards);
+}
 void Searcher::setstopsearch(std::atomic<bool> &stopsearchref) {
   stopsearch = &stopsearchref;
 }
@@ -57,6 +65,7 @@ void Searcher::loadposition(Board board) {
   EUNN->initializennue(Bitboards.Bitboards);
 }
 void Searcher::loadsearchlimits(Limits limits) { searchlimits = limits; }
+void Searcher::loadsearchoptions(Options options) { searchoptions = options; }
 int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
@@ -575,5 +584,16 @@ int Searcher::iterative(int color) {
     }
   }
   bestmove = bestmove1;
+  if (!ismaster) {
+    delete Histories;
+    delete EUNN;
+  }
   return returnedscore;
+}
+void Engine::spawnworker() {
+  Searcher worker;
+  worker.ismaster = false;
+  worker.syncwith(*this);
+  int color = worker.Bitboards.position & 1;
+  int score = worker.iterative(color);
 }

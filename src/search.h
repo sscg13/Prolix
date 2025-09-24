@@ -8,6 +8,7 @@
 #include <chrono>
 #include <time.h>
 #pragma once
+class Engine;
 struct abinfo {
   int playedmove;
   int eval;
@@ -18,7 +19,6 @@ struct Limits {
   int softtimelimit;
   int hardtimelimit;
   int maxdepth;
-  int movetime;
 };
 struct Options {
   bool useNNUE = true;
@@ -30,6 +30,9 @@ struct Options {
 class Searcher {
   NNUE *EUNN = new NNUE;
   History *Histories = new History;
+  std::vector<TTentry> *TT;
+  int *TTsize;
+  int *signal;
   int killers[maxmaxdepth][2];
   int countermoves[6][64];
   std::atomic<bool> *stopsearch;
@@ -47,18 +50,18 @@ class Searcher {
   int normalize(int eval);
 
 public:
-  std::vector<TTentry> *TT;
-  int *TTsize;
   Board Bitboards;
   Limits searchlimits;
   Options searchoptions;
   std::ofstream dataoutput;
   bool ismaster = true;
   void seedrng();
+  void syncwith(Engine &engine);
   void setstopsearch(std::atomic<bool> &stopsearchref);
   void setTT(std::vector<TTentry> &TTref, int &size);
   void loadposition(Board board);
   void loadsearchlimits(Limits limits);
+  void loadsearchoptions(Options options);
   int iterative(int color);
   void datagenautoplayplain();
   void datagenautoplayviriformat();
