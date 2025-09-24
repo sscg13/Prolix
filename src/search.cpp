@@ -584,6 +584,10 @@ int Searcher::iterative(int color) {
     }
   }
   bestmove = bestmove1;
+  if (!ismaster) {
+    delete Histories;
+    delete EUNN;
+  }
   return returnedscore;
 }
 void Engine::spawnworker() {
