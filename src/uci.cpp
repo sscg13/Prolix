@@ -45,6 +45,7 @@ void Engine::uci() {
       for (int i = 0; i < 6; i++) {
         tokens >> token;
         fen += token;
+        fen += " ";
       }
     }
     Bitboards.parseFEN(fen);
