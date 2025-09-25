@@ -91,7 +91,7 @@ void Engine::uci() {
       std::string nnuefile = ucicommand.substr(30, ucicommand.length() - 30);
       if (nnuefile != "<internal>") {
         EUNN->readnnuefile(nnuefile);
-        EUNN->initializennue(Bitboards.Bitboards);
+        EUNN.initializennue(Bitboards.Bitboards);
         std::cout << "info string using nnue file " << nnuefile << std::endl;
       }
     }*/
@@ -200,7 +200,7 @@ void Engine::uci() {
   }
   /*if (ucicommand == "eval") {
     int color = Bitboards.position & 1;
-    int eval = useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+    int eval = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
     std::cout << "Raw eval: " << eval << "\n";
     std::cout << "Normalized eval: " << normalize(eval) << "\n";
   }

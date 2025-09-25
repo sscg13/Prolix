@@ -4,20 +4,26 @@
 #include <string>
 #pragma once
 
-class NNUE {
+class Searcher;
+struct NNUEWeights {
   short int nnuelayer1[realbuckets][768][nnuesize];
   short int layer1bias[nnuesize];
   int ourlayer2[outputbuckets][nnuesize];
   int theirlayer2[outputbuckets][nnuesize];
   int finalbias[outputbuckets];
+
+  void loaddefaultnet(); 
+  NNUEWeights() { loaddefaultnet(); }
+  void readnnuefile(std::string file);
+};
+
+class NNUE {
+  NNUEWeights* weights;
   int totalmaterial;
   int ply;
   short int accumulation[2 * maxmaxdepth + 64][nnuesize];
 
 public:
-  void loaddefaultnet();
-  NNUE() { loaddefaultnet(); }
-  void readnnuefile(std::string file);
   int featureindex(int bucket, int color, int piece, int square);
   const short int *layer1weights(int kingsquare, int color, int piece,
                                  int square);
@@ -28,4 +34,6 @@ public:
   void forwardaccumulators(const int notation, const uint64_t *Bitboards);
   void backwardaccumulators(int notation, const uint64_t *Bitboards);
   int evaluate(int color);
+
+  friend class Searcher;
 };

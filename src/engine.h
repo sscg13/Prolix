@@ -18,6 +18,7 @@ class Engine {
   int TTsize = 2097152;
   std::vector<TTentry> TT;
   Board Bitboards;
+  NNUEWeights *nnueweights = new NNUEWeights;
   bool gosent = false;
   std::atomic<bool> stopsearch = ATOMIC_VAR_INIT(false);
   abinfo searchstack[maxmaxdepth + 32];

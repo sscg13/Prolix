@@ -20,7 +20,7 @@ void Searcher::datagenautoplayplain() {
     game += " ";
   }
   if (searchoptions.useNNUE) {
-    EUNN->initializennue(Bitboards.Bitboards);
+    EUNN.initializennue(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
@@ -72,7 +72,7 @@ void Searcher::datagenautoplayplain() {
       result = "0.5";
     }
     if (searchoptions.useNNUE && bestmove > 0) {
-      EUNN->initializennue(Bitboards.Bitboards);
+      EUNN.initializennue(Bitboards.Bitboards);
     }
   }
   for (int i = 0; i < maxmove; i++) {
@@ -98,7 +98,7 @@ void Searcher::datagenautoplayviriformat() {
     return;
   }
   if (searchoptions.useNNUE) {
-    EUNN->initializennue(Bitboards.Bitboards);
+    EUNN.initializennue(Bitboards.Bitboards);
   }
   Viriformat game;
   game.initialize(Bitboards);
@@ -140,7 +140,7 @@ void Searcher::datagenautoplayviriformat() {
       result = 1;
     }
     if (searchoptions.useNNUE && bestmove > 0) {
-      EUNN->initializennue(Bitboards.Bitboards);
+      EUNN.initializennue(Bitboards.Bitboards);
     }
   }
   game.writewithwdl(dataoutput, result);
@@ -160,7 +160,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     Bitboards.makemove(moves[rand_move], 0);
   }
   if (searchoptions.useNNUE) {
-    EUNN->initializennue(Bitboards.Bitboards);
+    EUNN.initializennue(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
@@ -183,7 +183,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     } else {
       Bitboards.makemove(bestmove, 0);
       if (searchoptions.useNNUE) {
-        EUNN->initializennue(Bitboards.Bitboards);
+        EUNN.initializennue(Bitboards.Bitboards);
       }
     }
     if (Bitboards.twokings()) {
@@ -240,8 +240,7 @@ void Engine::filter(int lowerbound, int upperbound, int softnodes,
   searchlimits.hardnodelimit = hardnodes;
   searchlimits.softtimelimit = 0;
   searchlimits.hardtimelimit = 0;
-  master.searchoptions.suppressoutput = true;
-  master.loadsearchlimits(searchlimits);
+  searchoptions.suppressoutput = true;
   std::ifstream epdin;
   epdin.open(inputfile);
   std::ofstream epdout;
@@ -257,7 +256,7 @@ void Engine::filter(int lowerbound, int upperbound, int softnodes,
     }
     Bitboards.parseFEN(fen);
     int color = Bitboards.position & 1;
-    master.loadposition(Bitboards);
+    master.syncwith(*this);
     int score = master.iterative();
     if (abs(score) >= lowerbound && abs(score) <= upperbound) {
       epdout << fen << "\n";

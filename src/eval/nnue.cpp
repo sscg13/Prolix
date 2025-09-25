@@ -10,7 +10,7 @@ int screlu(short int x) {
   return y * y;
 }
 
-void NNUE::loaddefaultnet() {
+void NNUEWeights::loaddefaultnet() {
   int offset = 0;
   for (int k = 0; k < realbuckets; k++) {
     for (int i = 0; i < 768; i++) {
@@ -52,7 +52,7 @@ void NNUE::loaddefaultnet() {
     offset += 2;
   }
 }
-void NNUE::readnnuefile(std::string file) {
+void NNUEWeights::readnnuefile(std::string file) {
   std::ifstream nnueweights;
   nnueweights.open(file, std::ifstream::binary);
   char *weights = new char[nnuefilesize];
@@ -107,7 +107,7 @@ int NNUE::featureindex(int bucket, int color, int piece, int square) {
 const short int *NNUE::layer1weights(int kingsquare, int color, int piece,
                                      int square) {
   int bucket = kingbuckets[(56 * color) ^ kingsquare];
-  return nnuelayer1[bucket / mirrordivisor]
+  return weights->nnuelayer1[bucket / mirrordivisor]
                    [featureindex(bucket, color, piece, square)];
 }
 void NNUE::activatepiece(int kingsquare, int color, int piece, int square) {
@@ -128,7 +128,7 @@ void NNUE::refreshfromscratch(int kingsquare, int color,
                               const uint64_t *Bitboards) {
   short int *accptr = accumulation[2 * ply + color];
   for (int i = 0; i < nnuesize; i++) {
-    accptr[i] = layer1bias[i];
+    accptr[i] = weights->layer1bias[i];
   }
   for (int i = 0; i < 12; i++) {
     uint64_t pieces = (Bitboards[i / 6] & Bitboards[2 + (i % 6)]);
@@ -203,11 +203,11 @@ void NNUE::backwardaccumulators(int notation, const uint64_t *Bitboards) {
 }
 int NNUE::evaluate(int color) {
   int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
-  int eval = finalbias[bucket] * evalQA;
+  int eval = weights->finalbias[bucket] * evalQA;
   short int *stmaccptr = accumulation[2 * ply + color];
   short int *nstmaccptr = accumulation[2 * ply + (color ^ 1)];
-  const int *stmweightsptr = ourlayer2[bucket];
-  const int *nstmweightsptr = theirlayer2[bucket];
+  const int *stmweightsptr = weights->ourlayer2[bucket];
+  const int *nstmweightsptr = weights->theirlayer2[bucket];
   for (int i = 0; i < nnuesize; i++) {
     eval += screlu(stmaccptr[i]) * stmweightsptr[i];
     eval += screlu(nstmaccptr[i]) * nstmweightsptr[i];

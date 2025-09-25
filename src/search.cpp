@@ -47,31 +47,18 @@ void Searcher::syncwith(Engine &engine) {
   stopsearch = &(engine.stopsearch);
   TT = &(engine.TT);
   TTsize = &(engine.TTsize);
+  EUNN.weights = engine.nnueweights;
   Bitboards = engine.Bitboards;
   searchlimits = engine.searchlimits;
   searchoptions = engine.searchoptions;
-  EUNN->initializennue(Bitboards.Bitboards);
+  EUNN.initializennue(Bitboards.Bitboards);
 }
-void Searcher::setstopsearch(std::atomic<bool> &stopsearchref) {
-  stopsearch = &stopsearchref;
-}
-void Searcher::setTT(std::vector<TTentry> &TTref, int &size) {
-  TT = &TTref;
-  TTsize = &size;
-}
-void Searcher::loadposition(Board board) {
-  resetauxdata();
-  Bitboards = board;
-  EUNN->initializennue(Bitboards.Bitboards);
-}
-void Searcher::loadsearchlimits(Limits limits) { searchlimits = limits; }
-void Searcher::loadsearchoptions(Options options) { searchoptions = options; }
 int Searcher::quiesce(int alpha, int beta, int depth, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
   int color = Bitboards.position & 1;
   int score =
-      searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+      searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
   int movcount;
   if (depth > 3) {
@@ -124,12 +111,12 @@ int Searcher::quiesce(int alpha, int beta, int depth, bool isPV) {
     if (good) {
       Bitboards.makemove(mov, 1);
       if (searchoptions.useNNUE) {
-        EUNN->forwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
       }
       score = -quiesce(-beta, -alpha, depth + 1, isPV);
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
-        EUNN->backwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (score >= beta) {
         return score;
@@ -189,7 +176,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (nodetype == EXPECTED_PV_NODE);
   int staticeval =
-      searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+      searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
   searchstack[ply].eval = staticeval;
   bool improving = false;
   if (ply > 1) {
@@ -337,7 +324,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       Bitboards.makemove(mov, true);
       searchstack[ply].playedmove = mov;
       if (searchoptions.useNNUE) {
-        EUNN->forwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
       }
       r /= 1024;
       if (nullwindow) {
@@ -359,7 +346,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       }
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
-        EUNN->backwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (score > bestscore) {
         if (score > alpha) {
@@ -452,7 +439,7 @@ int Searcher::iterative() {
   start = std::chrono::steady_clock::now();
   int color = Bitboards.position & 1;
   int score =
-      searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
+      searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
   int returnedscore = score;
   int depth = 1;
   int bestmove1 = 0;
@@ -583,13 +570,12 @@ int Searcher::iterative() {
     }
     Bitboards.makemove(bestmove1, 0);
     if (searchoptions.useNNUE) {
-      EUNN->forwardaccumulators(bestmove1, Bitboards.Bitboards);
+      EUNN.forwardaccumulators(bestmove1, Bitboards.Bitboards);
     }
   }
   bestmove = bestmove1;
   if (!ismaster) {
     delete Histories;
-    delete EUNN;
   }
   return returnedscore;
 }

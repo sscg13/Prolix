@@ -28,7 +28,7 @@ struct Options {
   bool useTB = false;
 };
 class Searcher {
-  NNUE *EUNN = new NNUE;
+  NNUE EUNN;
   History *Histories = new History;
   std::vector<TTentry> *TT;
   int *TTsize;
@@ -57,11 +57,6 @@ public:
   bool ismaster = true;
   void seedrng();
   void syncwith(Engine &engine);
-  void setstopsearch(std::atomic<bool> &stopsearchref);
-  void setTT(std::vector<TTentry> &TTref, int &size);
-  void loadposition(Board board);
-  void loadsearchlimits(Limits limits);
-  void loadsearchoptions(Options options);
   int iterative();
   void datagenautoplayplain();
   void datagenautoplayviriformat();

@@ -102,8 +102,7 @@ void Engine::xboard() {
       if (gosent) {
         searchlimits.softnodelimit = 0;
         searchlimits.hardnodelimit = 0;
-        master.loadsearchlimits(searchlimits);
-        master.loadposition(Bitboards);
+        master.syncwith(*this);
         int score = master.iterative();
       }
     }
@@ -111,8 +110,7 @@ void Engine::xboard() {
   if (xcommand == "go") {
     searchlimits.softnodelimit = 0;
     searchlimits.hardnodelimit = 0;
-    master.loadsearchlimits(searchlimits);
-    master.loadposition(Bitboards);
+    master.syncwith(*this);
     int score = master.iterative();
     gosent = true;
   }
