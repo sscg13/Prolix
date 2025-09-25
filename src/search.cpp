@@ -144,8 +144,8 @@ int Searcher::quiesce(int alpha, int beta, int depth, bool isPV) {
   }
   return bestscore;
 }
-int Searcher::alphabeta(int depth, int ply, int alpha, int beta,
-                        bool nmp, int nodetype) {
+int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
+                        int nodetype) {
   pvtable[ply][0] = ply + 1;
   if (Bitboards.repetitions() > 1) {
     return SCORE_DRAW;
@@ -341,11 +341,11 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta,
       }
       r /= 1024;
       if (nullwindow) {
-        score = -alphabeta(depth - 1 - r, ply + 1, -alpha - 1, -alpha,
-                           true, EXPECTED_CUT_NODE);
+        score = -alphabeta(depth - 1 - r, ply + 1, -alpha - 1, -alpha, true,
+                           EXPECTED_CUT_NODE);
         if (score > alpha && r > 0) {
-          score = -alphabeta(depth - 1, ply + 1, -alpha - 1, -alpha,
-                             true, EXPECTED_CUT_NODE);
+          score = -alphabeta(depth - 1, ply + 1, -alpha - 1, -alpha, true,
+                             EXPECTED_CUT_NODE);
         }
         if (score > alpha && score < beta) {
           score = -alphabeta(depth - 1, ply + 1, -beta, -alpha, true,
@@ -354,8 +354,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta,
       } else {
         int childnode =
             (nodetype == EXPECTED_PV_NODE) ? EXPECTED_PV_NODE : 3 - nodetype;
-        score = -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha,
-                           true, childnode);
+        score =
+            -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha, true, childnode);
       }
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
@@ -470,8 +470,7 @@ int Searcher::iterative() {
     int beta = returnedscore + delta;
     bool fail = true;
     while (fail) {
-      int score1 =
-          alphabeta(depth, 0, alpha, beta, false, EXPECTED_PV_NODE);
+      int score1 = alphabeta(depth, 0, alpha, beta, false, EXPECTED_PV_NODE);
       if (score1 >= beta) {
         beta += delta;
         delta += delta;

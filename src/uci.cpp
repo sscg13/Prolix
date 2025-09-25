@@ -175,13 +175,12 @@ void Engine::uci() {
         workers[i] = std::thread(&Engine::spawnworker, this);
       }
       int score = master.iterative();
-      for (auto& thread : workers) {
-          if (thread.joinable()) {
-              thread.join();
-          }
+      for (auto &thread : workers) {
+        if (thread.joinable()) {
+          thread.join();
+        }
       }
-    }
-    else {
+    } else {
       int score = master.iterative();
     }
   }
