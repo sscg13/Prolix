@@ -100,22 +100,20 @@ void Engine::xboard() {
     if (played >= 0) {
       Bitboards.makemove(moves[played], false);
       if (gosent) {
-        int color = Bitboards.position & 1;
         searchlimits.softnodelimit = 0;
         searchlimits.hardnodelimit = 0;
         master.loadsearchlimits(searchlimits);
         master.loadposition(Bitboards);
-        int score = master.iterative(color);
+        int score = master.iterative();
       }
     }
   }
   if (xcommand == "go") {
-    int color = Bitboards.position & 1;
     searchlimits.softnodelimit = 0;
     searchlimits.hardnodelimit = 0;
     master.loadsearchlimits(searchlimits);
     master.loadposition(Bitboards);
-    int score = master.iterative(color);
+    int score = master.iterative();
     gosent = true;
   }
 }

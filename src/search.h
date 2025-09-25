@@ -43,8 +43,8 @@ class Searcher {
   std::random_device rd;
   std::mt19937 mt;
   void resetauxdata();
-  int quiesce(int alpha, int beta, int color, int depth, bool isPV);
-  int alphabeta(int depth, int ply, int alpha, int beta, int color, bool nmp,
+  int quiesce(int alpha, int beta, int depth, bool isPV);
+  int alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
                 int nodetype);
   int wdlmodel(int eval);
   int normalize(int eval);
@@ -62,7 +62,7 @@ public:
   void loadposition(Board board);
   void loadsearchlimits(Limits limits);
   void loadsearchoptions(Options options);
-  int iterative(int color);
+  int iterative();
   void datagenautoplayplain();
   void datagenautoplayviriformat();
   void bookgenautoplay(int lowerbound, int upperbound);

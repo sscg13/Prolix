@@ -66,9 +66,10 @@ void Searcher::loadposition(Board board) {
 }
 void Searcher::loadsearchlimits(Limits limits) { searchlimits = limits; }
 void Searcher::loadsearchoptions(Options options) { searchoptions = options; }
-int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
+int Searcher::quiesce(int alpha, int beta, int depth, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
+  int color = Bitboards.position & 1;
   int score =
       searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
@@ -125,7 +126,7 @@ int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
       if (searchoptions.useNNUE) {
         EUNN->forwardaccumulators(mov, Bitboards.Bitboards);
       }
-      score = -quiesce(-beta, -alpha, color ^ 1, depth + 1, isPV);
+      score = -quiesce(-beta, -alpha, depth + 1, isPV);
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
         EUNN->backwardaccumulators(mov, Bitboards.Bitboards);
@@ -143,7 +144,7 @@ int Searcher::quiesce(int alpha, int beta, int color, int depth, bool isPV) {
   }
   return bestscore;
 }
-int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
+int Searcher::alphabeta(int depth, int ply, int alpha, int beta,
                         bool nmp, int nodetype) {
   pvtable[ply][0] = ply + 1;
   if (Bitboards.repetitions() > 1) {
@@ -155,11 +156,12 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
   if (Bitboards.twokings()) {
     return SCORE_DRAW;
   }
+  int color = Bitboards.position & 1;
   if (Bitboards.bareking(color ^ 1)) {
     return (SCORE_MATE + 1 - ply);
   }
   if (depth <= 0 || ply >= searchlimits.maxdepth) {
-    return quiesce(alpha, beta, color, 0, (nodetype == EXPECTED_PV_NODE));
+    return quiesce(alpha, beta, 0, (nodetype == EXPECTED_PV_NODE));
   }
   int tbwdl = 0;
   bool fewpieces =
@@ -248,7 +250,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
     searchstack[ply].playedmove = 0;
     int childnodetype = EXPECTED_PV_NODE ? EXPECTED_ALL_NODE : 3 - nodetype;
     score = -alphabeta(std::max(0, depth - 2 - (depth + 1) / 3), ply + 1, -beta,
-                       1 - beta, color ^ 1, false, childnodetype);
+                       1 - beta, false, childnodetype);
     Bitboards.unmakenullmove();
     if (score >= beta) {
       return beta;
@@ -340,19 +342,19 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, int color,
       r /= 1024;
       if (nullwindow) {
         score = -alphabeta(depth - 1 - r, ply + 1, -alpha - 1, -alpha,
-                           color ^ 1, true, EXPECTED_CUT_NODE);
+                           true, EXPECTED_CUT_NODE);
         if (score > alpha && r > 0) {
-          score = -alphabeta(depth - 1, ply + 1, -alpha - 1, -alpha, color ^ 1,
+          score = -alphabeta(depth - 1, ply + 1, -alpha - 1, -alpha,
                              true, EXPECTED_CUT_NODE);
         }
         if (score > alpha && score < beta) {
-          score = -alphabeta(depth - 1, ply + 1, -beta, -alpha, color ^ 1, true,
+          score = -alphabeta(depth - 1, ply + 1, -beta, -alpha, true,
                              EXPECTED_PV_NODE);
         }
       } else {
         int childnode =
             (nodetype == EXPECTED_PV_NODE) ? EXPECTED_PV_NODE : 3 - nodetype;
-        score = -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha, color ^ 1,
+        score = -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha,
                            true, childnode);
       }
       Bitboards.unmakemove(mov);
@@ -442,12 +444,13 @@ int Searcher::normalize(int eval) {
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   return round(100 * eval / a);
 }
-int Searcher::iterative(int color) {
+int Searcher::iterative() {
   Bitboards.nodecount = 0;
   if (ismaster) {
     *stopsearch = false;
   }
   start = std::chrono::steady_clock::now();
+  int color = Bitboards.position & 1;
   int score =
       searchoptions.useNNUE ? EUNN->evaluate(color) : Bitboards.evaluate(color);
   int returnedscore = score;
@@ -468,7 +471,7 @@ int Searcher::iterative(int color) {
     bool fail = true;
     while (fail) {
       int score1 =
-          alphabeta(depth, 0, alpha, beta, color, false, EXPECTED_PV_NODE);
+          alphabeta(depth, 0, alpha, beta, false, EXPECTED_PV_NODE);
       if (score1 >= beta) {
         beta += delta;
         delta += delta;
@@ -595,6 +598,5 @@ void Engine::spawnworker() {
   Searcher worker;
   worker.ismaster = false;
   worker.syncwith(*this);
-  int color = worker.Bitboards.position & 1;
-  int score = worker.iterative(color);
+  int score = worker.iterative();
 }

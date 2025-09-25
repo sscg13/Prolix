@@ -174,7 +174,7 @@ void Engine::uci() {
       for (int i = 0; i < threads - 1; i++) {
         workers[i] = std::thread(&Engine::spawnworker, this);
       }
-      int score = master.iterative(color);
+      int score = master.iterative();
       for (auto& thread : workers) {
           if (thread.joinable()) {
               thread.join();
@@ -182,7 +182,7 @@ void Engine::uci() {
       }
     }
     else {
-      int score = master.iterative(color);
+      int score = master.iterative();
     }
   }
   if (token == "perft") {

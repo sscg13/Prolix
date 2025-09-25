@@ -33,8 +33,7 @@ void Engine::bench() {
     searchlimits.maxdepth = 17;
     Bitboards.parseFEN(benchfens[i]);
     master.syncwith(*this);
-    int color = Bitboards.position & 1;
-    master.iterative(color);
+    master.iterative();
     nodes += master.Bitboards.nodecount;
   }
   auto conclude = std::chrono::steady_clock::now();

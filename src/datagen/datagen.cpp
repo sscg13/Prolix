@@ -31,7 +31,7 @@ void Searcher::datagenautoplayplain() {
   bool finished = false;
   while (!finished) {
     int color = Bitboards.position & 1;
-    int score = iterative(color);
+    int score = iterative();
     if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
         (Bitboards.checkers(color) == 0ULL) && (abs(score) < SCORE_WIN)) {
       fens[maxmove] = Bitboards.getFEN();
@@ -105,7 +105,7 @@ void Searcher::datagenautoplayviriformat() {
   bool finished = false;
   while (!finished) {
     int color = Bitboards.position & 1;
-    int score = iterative(color);
+    int score = iterative();
     // Filter criteria: best (next) move non-capture, score not mate score, not
     // in check
     game.push(bestmove, score * (1 - 2 * color));
@@ -169,7 +169,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
   while (!finished) {
     int color = Bitboards.position & 1;
     searchlimits.softnodelimit = color ? 2048 : 8192;
-    int score = iterative(color);
+    int score = iterative();
     if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
         (Bitboards.checkers(color) == 0ULL) && (abs(score) <= upperbound) &&
         (abs(score) >= lowerbound)) {
@@ -258,7 +258,7 @@ void Engine::filter(int lowerbound, int upperbound, int softnodes,
     Bitboards.parseFEN(fen);
     int color = Bitboards.position & 1;
     master.loadposition(Bitboards);
-    int score = master.iterative(color);
+    int score = master.iterative();
     if (abs(score) >= lowerbound && abs(score) <= upperbound) {
       epdout << fen << "\n";
     }
