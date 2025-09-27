@@ -16,6 +16,7 @@ void Engine::startup() {
   initializett();
   Bitboards.initialize();
   master.syncwith(*this);
+  master.seedrng();
 }
 void Engine::initializett() {
   TT.resize(TTsize);
