@@ -53,7 +53,7 @@ void Searcher::syncwith(Engine &engine) {
   searchoptions = engine.searchoptions;
   EUNN.initializennue(Bitboards.Bitboards);
 }
-int Searcher::quiesce(int alpha, int beta, int depth, bool isPV) {
+int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
   int color = Bitboards.position & 1;
@@ -61,7 +61,7 @@ int Searcher::quiesce(int alpha, int beta, int depth, bool isPV) {
       searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
   int movcount;
-  if (depth > 3) {
+  if (ply > maxmaxdepth+30) {
     return score;
   }
   bool incheck = Bitboards.checkers(color);
@@ -113,7 +113,7 @@ int Searcher::quiesce(int alpha, int beta, int depth, bool isPV) {
       if (searchoptions.useNNUE) {
         EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
       }
-      score = -quiesce(-beta, -alpha, depth + 1, isPV);
+      score = -quiesce(-beta, -alpha, ply + 1, isPV);
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
         EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
@@ -148,7 +148,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     return (SCORE_MATE + 1 - ply);
   }
   if (depth <= 0 || ply >= searchlimits.maxdepth) {
-    return quiesce(alpha, beta, 0, (nodetype == EXPECTED_PV_NODE));
+    return quiesce(alpha, beta, ply, (nodetype == EXPECTED_PV_NODE));
   }
   int tbwdl = 0;
   bool fewpieces =
