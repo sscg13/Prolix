@@ -453,7 +453,7 @@ int Searcher::iterative() {
   }
   while (!(*stopsearch)) {
     bestmove = -1;
-    int delta = 20;
+    int delta = 10 + std::abs(returnedscore) / 10;
     int alpha = returnedscore - delta;
     int beta = returnedscore + delta;
     bool fail = true;
