@@ -26,9 +26,6 @@ class Engine {
   int bestmove = 0;
   Limits searchlimits;
   Options searchoptions;
-  std::random_device rd;
-  std::mt19937 mt;
-  std::ofstream dataoutput;
   int threads = 1;
   Searcher master;
   void initializett();

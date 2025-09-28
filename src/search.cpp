@@ -172,8 +172,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   TTentry &ttentry = (*TT)[index];
   int ttdepth = ttentry.depth();
   int ttage = ttentry.age(Bitboards.gamelength);
-  bool update = (depth >= ttdepth || ttage != 0);
   bool tthit = (ttentry.key == Bitboards.zobristhash);
+  bool update = (depth >= ttdepth || ttage != 0 || !tthit);
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (nodetype == EXPECTED_PV_NODE);
   int staticeval =
