@@ -298,10 +298,10 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     if (!iscapture(mov)) {
       quiets++;
       if (i > depth * depth + depth + 4) {
-        prune = true;
+        break;
       }
       if (!isPV && !incheck && depth < 5 && movescore[i] < 0) {
-        prune = true;
+        break;
       }
       r = std::min(1024 * (depth - 1), lmr_reductions[depth][quiets]);
     }
