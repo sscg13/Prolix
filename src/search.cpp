@@ -303,7 +303,9 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       if (!isPV && !incheck && depth < 5 && movescore[i] < 0) {
         break;
       }
-      r = std::min(1024 * (depth - 1), lmr_reductions[depth][quiets]);
+      if (quiets > 1+2*isPV) {
+        r = std::min(1024 * (depth - 1), lmr_reductions[depth][quiets]);
+      }
     }
     r -= 1024 * isPV;
     r -= 1024 * improving;
