@@ -1,7 +1,7 @@
 #include "tt.h"
 #include "consts.h"
 #include <algorithm>
-void TTentry::update(U64 hash, int gamelength, int depth, int ply, int score,
+void TTentry::update(U64 hash, int gamelength, int depth, int ply, bool ttpv, int score,
                      int nodetype, int hashmove) {
   key = hash;
   if (score > SCORE_MAX_EVAL) {
@@ -15,6 +15,7 @@ void TTentry::update(U64 hash, int gamelength, int depth, int ply, int score,
   data |= (((U64)nodetype) << 42);
   data |= (((U64)gamelength) << 44);
   data |= (((U64)depth) << 54);
+  data |= (((U64)ttpv) << 60);
 }
 int TTentry::age(int gamelength) {
   return (gamelength - ((int)(data >> 44) & 1023));
@@ -32,3 +33,4 @@ int TTentry::score(int ply) {
   return score;
 }
 int TTentry::nodetype() { return (int)(data >> 42) & 3; }
+bool TTentry::isttPV() { return (data >> 60) & 1; }
