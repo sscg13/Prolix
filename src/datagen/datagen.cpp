@@ -8,7 +8,7 @@ void Searcher::datagenautoplayplain() {
   std::string game = "";
   std::string result = "";
   int moves[maxmoves];
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 16; i++) {
     int num_moves = Bitboards.generatemoves(i & 1, 0, moves);
     if (num_moves == 0) {
       return;
@@ -22,6 +22,10 @@ void Searcher::datagenautoplayplain() {
     EUNN.initializennue(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
+    return;
+  }
+  int score = quiesce(-SCORE_INF, SCORE_INF, 0, true);
+  if (std::abs(score) > 400) {
     return;
   }
   std::string fens[1024];
