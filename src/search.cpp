@@ -309,10 +309,9 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         r = std::min(1024 * (depth - 1), lmr_reductions[depth][quiets]);
       }
     }
-    r -= 1024 * isPV;
+    r -= 1024 * isttPV;
     r -= 1024 * improving;
     r += 512 * (nodetype == EXPECTED_CUT_NODE);
-    r -= 512 * isttPV;
     r = std::max(0, r);
     if (nullwindow && !incheck && !prune && depth < 6) {
       int threshold = iscapture(mov) ? -30 * depth * depth : -100 * depth;
