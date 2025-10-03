@@ -47,7 +47,15 @@ void Searcher::datagenautoplayplain() {
     } else {
       Bitboards.makemove(bestmove, 0);
     }
-    if (Bitboards.twokings()) {
+    if (abs(score) >= SCORE_WIN) {
+      finished = true;
+      if (score * (1 - 2 * color) >= SCORE_WIN) {
+        result = "1.0";
+      } else {
+        result = "0.0";
+      }
+    }
+    else if (Bitboards.twokings()) {
       finished = true;
       result = "0.5";
     } else if (Bitboards.bareking(color)) {
@@ -74,7 +82,7 @@ void Searcher::datagenautoplayplain() {
       finished = true;
       result = "0.5";
     }
-    if (searchoptions.useNNUE && bestmove > 0) {
+    if (!finished && searchoptions.useNNUE && bestmove > 0) {
       EUNN.initializennue(Bitboards.Bitboards);
     }
   }
