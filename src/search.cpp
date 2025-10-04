@@ -44,7 +44,6 @@ void Searcher::resetauxdata() {
 }
 void Searcher::seedrng() { mt.seed(rd()); }
 void Searcher::syncwith(Engine &engine) {
-  resetauxdata();
   stopsearch = &(engine.stopsearch);
   TT = &(engine.TT);
   TTsize = &(engine.TTsize);
