@@ -111,12 +111,12 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
     if (good) {
       Bitboards.makemove(mov, 1);
       if (searchoptions.useNNUE) {
-        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.forwardaccumulators(mov, Bitboards.Bitboards, Bitboards.pieces);
       }
       score = -quiesce(-beta, -alpha, ply + 1, isPV);
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
-        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.backwardaccumulators(mov);
       }
       if (score >= beta) {
         return score;
@@ -326,9 +326,9 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     int e = (movcount == 1);
     if (!(*stopsearch) && !prune) {
       Bitboards.makemove(mov, true);
-      searchstack[ply].playedmove = mov;
+      searchstack[ply].playedmove = Bitboards.expandedmove(mov);
       if (searchoptions.useNNUE) {
-        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.forwardaccumulators(mov, Bitboards.Bitboards, Bitboards.pieces);
       }
       r /= 1024;
       if (nullwindow) {
@@ -350,7 +350,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       }
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
-        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.backwardaccumulators(mov);
       }
       if (score > bestscore) {
         if (score > alpha) {
@@ -574,7 +574,7 @@ int Searcher::iterative() {
     }
     Bitboards.makemove(bestmove1, 0);
     if (searchoptions.useNNUE) {
-      EUNN.forwardaccumulators(bestmove1, Bitboards.Bitboards);
+      EUNN.forwardaccumulators(bestmove1, Bitboards.Bitboards, Bitboards.pieces);
     }
   }
   bestmove = bestmove1;

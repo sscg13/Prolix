@@ -9,6 +9,14 @@
 using U64 = uint64_t;
 using U8 = uint8_t;
 
+struct PieceChange {
+  int piecefrom;
+  int from;
+  int pieceto;
+  int to;
+  int captured;
+};
+
 class Board {
   int evalm[2] = {0, 0};
   int evale[2] = {0, 0};
@@ -21,6 +29,7 @@ class Board {
 
 public:
   U64 Bitboards[8];
+  int pieces[64];
   int gamelength = 0;
   int position = 0;
   int nodecount = 0;
@@ -36,6 +45,7 @@ public:
   U64 checkers(int color);
   void makenullmove();
   void unmakenullmove();
+  int expandedmove(int notation);
   U64 keyafter(int notation);
   void makemove(int notation, bool reversible);
   void unmakemove(int notation);
