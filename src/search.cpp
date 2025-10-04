@@ -2,7 +2,7 @@
 int lmr_reductions[maxmaxdepth][maxmoves];
 std::chrono::time_point<std::chrono::steady_clock> start =
     std::chrono::steady_clock::now();
-bool iscapture(int notation) { return ((notation >> 16) & 1); }
+bool iscapture(int notation) { return ((notation >> 12) & 7); }
 void initializelmr() {
   for (int i = 0; i < maxmaxdepth; i++) {
     for (int j = 0; j < maxmoves; j++) {
@@ -97,7 +97,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   }
   for (int i = 0; i < movcount - 1; i++) {
     for (int j = i + 1;
-         Histories->movescore(moves[j]) > Histories->movescore(moves[j - 1]) &&
+         Histories->movescore(Bitboards.expand(moves[j])) > Histories->movescore(Bitboards.expand(moves[j - 1])) &&
          j > 0;
          j--) {
       std::swap(moves[j], moves[j - 1]);
@@ -109,9 +109,10 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
     __builtin_prefetch((&(*TT)[nextindex]), 0, 0);
     bool good = (incheck || Bitboards.see_exceeds(mov, color, 0));
     if (good) {
+      int expand = Bitboards.expand(mov);
       Bitboards.makemove(mov, 1);
       if (searchoptions.useNNUE) {
-        EUNN.forwardaccumulators(mov, Bitboards.Bitboards, Bitboards.pieces);
+        EUNN.forwardaccumulators(expand, Bitboards.Bitboards);
       }
       score = -quiesce(-beta, -alpha, ply + 1, isPV);
       Bitboards.unmakemove(mov);
@@ -267,8 +268,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     if (mov == ttmove) {
       movescore[i] = (1 << 20);
     } else {
-      movescore[i] = Histories->movescore(mov) +
-                     Histories->conthistscore(previousmove, mov);
+      movescore[i] = Histories->movescore(Bitboards.expand(mov)) +
+                     Histories->conthistscore(previousmove, Bitboards.expand(mov));
     }
     if (mov == killers[ply][0]) {
       movescore[i] += 20000;
@@ -325,10 +326,11 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     }
     int e = (movcount == 1);
     if (!(*stopsearch) && !prune) {
+      int expand = Bitboards.expand(mov);
+      searchstack[ply].playedmove = expand;
       Bitboards.makemove(mov, true);
-      searchstack[ply].playedmove = Bitboards.expandedmove(mov);
       if (searchoptions.useNNUE) {
-        EUNN.forwardaccumulators(mov, Bitboards.Bitboards, Bitboards.pieces);
+        EUNN.forwardaccumulators(expand, Bitboards.Bitboards);
       }
       r /= 1024;
       if (nullwindow) {
@@ -363,14 +365,14 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
               killers[ply][1] = killers[ply][0];
               killers[ply][0] = mov;
             }
-            Histories->updatemainhistory(mov, depth * depth);
+            Histories->updatemainhistory(expand, depth * depth);
             if (!iscapture(mov)) {
-              Histories->updateconthist(previousmove, mov, depth * depth);
+              Histories->updateconthist(previousmove, expand, depth * depth);
             }
             for (int j = 0; j < i; j++) {
-              int mov2 = moves[j];
+              int mov2 = Bitboards.expand(moves[j]);
               Histories->updatemainhistory(mov2, -3 * depth);
-              if (!iscapture(mov2)) {
+              if (!iscapture(moves[j])) {
                 Histories->updateconthist(previousmove, mov2, -3 * depth);
               }
             }
@@ -572,9 +574,10 @@ int Searcher::iterative() {
     if (ismaster) {
       std::cout << "move " << algebraic(bestmove1) << std::endl;
     }
+    int expandedbestmove = Bitboards.expand(bestmove1);
     Bitboards.makemove(bestmove1, 0);
     if (searchoptions.useNNUE) {
-      EUNN.forwardaccumulators(bestmove1, Bitboards.Bitboards, Bitboards.pieces);
+      EUNN.forwardaccumulators(expandedbestmove, Bitboards.Bitboards);
     }
   }
   bestmove = bestmove1;

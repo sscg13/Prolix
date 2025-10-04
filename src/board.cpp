@@ -110,7 +110,7 @@ std::string algebraic(int notation) {
       "e6", "f6", "g6", "h6", "a7", "b7", "c7", "d7", "e7", "f7", "g7",
       "h7", "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"};
   std::string header = convert[notation & 63] + convert[(notation >> 6) & 63];
-  if (notation & (1 << 20)) {
+  if (notation & (1 << 15)) {
     header = header + "q";
   }
   return header;
@@ -219,9 +219,9 @@ U64 Board::scratchzobrist() {
   }*/
   for (int i = 0; i < 64; i++) {
     int piece = pieces[i];
-    if (piece >= 0) {
+    if (piece > 0) {
       scratch ^= hashes[piece / 8][i];
-      scratch ^= hashes[2 + piece % 8][i];
+      scratch ^= hashes[piece % 8][i];
     }
   }
   if (position & 1) {
@@ -320,7 +320,7 @@ void Board::unmakenullmove() {
   position = history[gamelength];
   zobristhash = zobrist[gamelength];
 }
-int Board::expandedmove(int notation) {
+int Board::expand(int notation) {
   int from = notation & 63;
   int to = (notation >> 6) & 63;
   int color = pieces[from] / 8;
@@ -851,7 +851,7 @@ void Board::parseFEN(std::string FEN) {
     if ('0' <= hm && hm <= '9') {
       int repeat = (int)hm - 48;
       for (int i = 0; i < repeat; i++) {
-        pieces[56 ^ progress] = 0;
+        pieces[order[progress]] = 0;
         progress++;
       }
     }
@@ -859,7 +859,7 @@ void Board::parseFEN(std::string FEN) {
       Bitboards[0] |= (1ULL << order[progress]);
       if (hm == 'P') {
         Bitboards[2] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 2;
+        pieces[order[progress]] = 2;
         evalm[0] += materialm[0];
         evale[0] += materiale[0];
         evalm[0] += pstm[0][order[progress]];
@@ -868,7 +868,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'A' || hm == 'B') {
         Bitboards[3] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 3;
+        pieces[order[progress]] = 3;
         evalm[0] += materialm[1];
         evale[0] += materiale[1];
         evalm[0] += pstm[1][order[progress]];
@@ -877,7 +877,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'F' || hm == 'Q') {
         Bitboards[4] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 4;
+        pieces[order[progress]] = 4;
         evalm[0] += materialm[2];
         evale[0] += materiale[2];
         evalm[0] += pstm[2][order[progress]];
@@ -886,7 +886,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'N') {
         Bitboards[5] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 5;
+        pieces[order[progress]] = 5;
         evalm[0] += materialm[3];
         evale[0] += materiale[3];
         evalm[0] += pstm[3][order[progress]];
@@ -895,7 +895,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'R') {
         Bitboards[6] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 6;
+        pieces[order[progress]] = 6;
         evalm[0] += materialm[4];
         evale[0] += materiale[4];
         evalm[0] += pstm[4][order[progress]];
@@ -904,7 +904,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'K') {
         Bitboards[7] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 7;
+        pieces[order[progress]] = 7;
         evalm[0] += pstm[5][order[progress]];
         evale[0] += pste[5][order[progress]];
       }
@@ -914,7 +914,7 @@ void Board::parseFEN(std::string FEN) {
       Bitboards[1] |= (1ULL << order[progress]);
       if (hm == 'p') {
         Bitboards[2] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 10;
+        pieces[order[progress]] = 10;
         evalm[1] += materialm[0];
         evale[1] += materiale[0];
         evalm[1] += pstm[0][56 ^ order[progress]];
@@ -923,7 +923,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'a' || hm == 'b') {
         Bitboards[3] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 11;
+        pieces[order[progress]] = 11;
         evalm[1] += materialm[1];
         evale[1] += materiale[1];
         evalm[1] += pstm[1][56 ^ order[progress]];
@@ -932,7 +932,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'f' || hm == 'q') {
         Bitboards[4] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 12;
+        pieces[order[progress]] = 12;
         evalm[1] += materialm[2];
         evale[1] += materiale[2];
         evalm[1] += pstm[2][56 ^ order[progress]];
@@ -941,7 +941,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'n') {
         Bitboards[5] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 13;
+        pieces[order[progress]] = 13;
         evalm[1] += materialm[3];
         evale[1] += materiale[3];
         evalm[1] += pstm[3][56 ^ order[progress]];
@@ -950,7 +950,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'r') {
         Bitboards[6] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 14;
+        pieces[order[progress]] = 14;
         evalm[1] += materialm[4];
         evale[1] += materiale[4];
         evalm[1] += pstm[4][56 ^ order[progress]];
@@ -959,7 +959,7 @@ void Board::parseFEN(std::string FEN) {
       }
       if (hm == 'k') {
         Bitboards[7] |= (1ULL << order[progress]);
-        pieces[56 ^ progress] = 15;
+        pieces[order[progress]] = 15;
         evalm[1] += pstm[5][56 ^ order[progress]];
         evale[1] += pste[5][56 ^ order[progress]];
       }
@@ -1055,9 +1055,10 @@ int Board::evaluate(int color) {
 }
 bool Board::see_exceeds(int mov, int color, int threshold) {
   int see_values[6] = {100, 100, 170, 370, 640, 20000};
+  int from = mov & 63;
   int target = (mov >> 6) & 63;
-  int victim = (mov >> 17) & 7;
-  int attacker = (mov >> 13) & 7;
+  int victim = (mov >> 12) & 7;
+  int attacker = pieces[from] % 8;
   int value = (victim > 0) ? see_values[victim - 2] - threshold : -threshold;
   if (value < 0) {
     return false;
@@ -1065,7 +1066,7 @@ bool Board::see_exceeds(int mov, int color, int threshold) {
   if (value - see_values[attacker - 2] >= 0) {
     return true;
   }
-  int pieces[2][6] = {{0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}};
+  int piececounts[2][6] = {{0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}};
   U64 occupied = Bitboards[0] | Bitboards[1];
   occupied ^= (1ULL << (mov & 63));
   U64 us = Bitboards[color];
@@ -1075,33 +1076,33 @@ bool Board::see_exceeds(int mov, int color, int threshold) {
   U64 knights = KnightAttacks[target] & Bitboards[5];
   U64 kings = KingAttacks[target] & Bitboards[7];
   occupied ^= (enemy & Bitboards[6]);
-  pieces[0][0] =
+  piececounts[0][0] =
       __builtin_popcountll((PawnAttacks[color][target] & Bitboards[2] & enemy));
-  pieces[0][1] = __builtin_popcountll(alfils & enemy);
-  pieces[0][2] = __builtin_popcountll(ferzes & enemy);
-  pieces[0][3] = __builtin_popcountll(knights & enemy);
-  pieces[0][4] = __builtin_popcountll(
+  piececounts[0][1] = __builtin_popcountll(alfils & enemy);
+  piececounts[0][2] = __builtin_popcountll(ferzes & enemy);
+  piececounts[0][3] = __builtin_popcountll(knights & enemy);
+  piececounts[0][4] = __builtin_popcountll(
       (FileAttacks(occupied, target) | GetRankAttacks(occupied, target)) &
       Bitboards[6] & enemy);
-  pieces[0][5] = __builtin_popcountll(kings & enemy);
+  piececounts[0][5] = __builtin_popcountll(kings & enemy);
   occupied ^= (Bitboards[6]);
-  pieces[1][0] = __builtin_popcountll(
+  piececounts[1][0] = __builtin_popcountll(
       (PawnAttacks[color ^ 1][target] & Bitboards[2] & us));
-  pieces[1][1] = __builtin_popcountll(alfils & us);
-  pieces[1][2] = __builtin_popcountll(ferzes & us);
-  pieces[1][3] = __builtin_popcountll(knights & us);
-  pieces[1][4] = __builtin_popcountll(
+  piececounts[1][1] = __builtin_popcountll(alfils & us);
+  piececounts[1][2] = __builtin_popcountll(ferzes & us);
+  piececounts[1][3] = __builtin_popcountll(knights & us);
+  piececounts[1][4] = __builtin_popcountll(
       (FileAttacks(occupied, target) | GetRankAttacks(occupied, target)) &
       Bitboards[6] & us);
-  pieces[1][5] = __builtin_popcountll(kings & us);
+  piececounts[1][5] = __builtin_popcountll(kings & us);
   if (attacker > 2) {
-    pieces[1][attacker - 2]--;
+    piececounts[1][attacker - 2]--;
   }
   int next[2] = {0, 0};
   int previous[2] = {0, attacker - 2};
   int i = 0;
   while (true) {
-    while (pieces[i][next[i]] == 0 && next[i] < 6) {
+    while (piececounts[i][next[i]] == 0 && next[i] < 6) {
       next[i]++;
     }
     if (next[i] > 5) {
@@ -1112,7 +1113,7 @@ bool Board::see_exceeds(int mov, int color, int threshold) {
       return i;
     }
     previous[i] = next[i];
-    pieces[i][next[i]]--;
+    piececounts[i][next[i]]--;
     i ^= 1;
   }
 }

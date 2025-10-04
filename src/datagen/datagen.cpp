@@ -35,7 +35,7 @@ void Searcher::datagenautoplayplain() {
   while (!finished) {
     int color = Bitboards.position & 1;
     int score = iterative();
-    if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
+    if ((bestmove > 0) && (((bestmove >> 12) & 7) == 0) &&
         (Bitboards.checkers(color) == 0ULL) && (abs(score) < SCORE_WIN)) {
       fens[maxmove] = Bitboards.getFEN();
       scores[maxmove] = score * (1 - 2 * color);
@@ -179,7 +179,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     int color = Bitboards.position & 1;
     searchlimits.softnodelimit = color ? 2048 : 8192;
     int score = iterative();
-    if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
+    if ((bestmove > 0) && (((bestmove >> 12) & 7) == 0) &&
         (Bitboards.checkers(color) == 0ULL) && (abs(score) <= upperbound) &&
         (abs(score) >= lowerbound)) {
       dataoutput << Bitboards.getFEN() << "\n";

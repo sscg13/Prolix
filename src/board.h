@@ -45,7 +45,7 @@ public:
   U64 checkers(int color);
   void makenullmove();
   void unmakenullmove();
-  int expandedmove(int notation);
+  int expand(int notation);
   U64 keyafter(int notation);
   void makemove(int notation, bool reversible);
   void unmakemove(int notation);

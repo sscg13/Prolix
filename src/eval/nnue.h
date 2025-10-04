@@ -36,7 +36,7 @@ public:
   void refreshfromcache(int kingsquare, int color, const uint64_t *Bitboards);
   void refreshfromscratch(int kingsquare, int color, const uint64_t *Bitboards);
   void initializennue(const uint64_t *Bitboards);
-  void forwardaccumulators(const int notation, const uint64_t *Bitboards, const int* pieces);
+  void forwardaccumulators(const int notation, const uint64_t *Bitboards);
   void backwardaccumulators(int notation);
   int evaluate(int color);
 

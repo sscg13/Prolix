@@ -206,13 +206,13 @@ void NNUE::initializennue(const uint64_t *Bitboards) {
     totalmaterial += piececount * material[i % 6];
   }
 }
-void NNUE::forwardaccumulators(const int notation, const uint64_t *Bitboards, const int *pieces) {
+void NNUE::forwardaccumulators(const int notation, const uint64_t *Bitboards) {
   int from = notation & 63;
   int to = (notation >> 6) & 63;
-  int color = pieces[from] / 8;
-  int piece = pieces[from] % 8;
-  int captured = (notation >> 12) & 7;
-  int promoted = (notation >> 15) & 1;
+  int color = (notation >> 12) & 1;
+  int piece = (notation >> 13) & 7;
+  int captured = (notation >> 17) & 7;
+  int promoted = (notation >> 21) & 1;
   int piece2 = (promoted > 0) ? piece : piece - 2;
   int oppksq = __builtin_ctzll(Bitboards[7] & Bitboards[color ^ 1]);
   int ourksq = __builtin_ctzll(Bitboards[7] & Bitboards[color]);
