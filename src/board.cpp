@@ -1068,7 +1068,7 @@ bool Board::see_exceeds(int mov, int color, int threshold) {
   }
   int piececounts[2][6] = {{0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}};
   U64 occupied = Bitboards[0] | Bitboards[1];
-  occupied ^= (1ULL << (mov & 63));
+  occupied ^= (1ULL << from);
   U64 us = Bitboards[color];
   U64 enemy = Bitboards[color ^ 1];
   U64 alfils = AlfilAttacks[target] & Bitboards[3];

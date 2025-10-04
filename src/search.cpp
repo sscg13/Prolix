@@ -372,7 +372,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
             for (int j = 0; j < i; j++) {
               int mov2 = Bitboards.expand(moves[j]);
               Histories->updatemainhistory(mov2, -3 * depth);
-              if (!iscapture(moves[j])) {
+              if (ply > 0 && nmp && !iscapture(moves[j])) {
                 Histories->updateconthist(previousmove, mov2, -3 * depth);
               }
             }
