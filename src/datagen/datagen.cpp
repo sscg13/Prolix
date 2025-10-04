@@ -32,6 +32,7 @@ void Searcher::datagenautoplayplain() {
   int scores[1024];
   int maxmove = 0;
   bool finished = false;
+  int wincount = 0;
   while (!finished) {
     int color = Bitboards.position & 1;
     int score = iterative();
@@ -47,9 +48,14 @@ void Searcher::datagenautoplayplain() {
     } else {
       Bitboards.makemove(bestmove, 0);
     }
-    if (abs(score) >= SCORE_WIN) {
+    if (abs(score) >= 1000) {
+      wincount++;
+    } else {
+      wincount = 0;
+    }
+    if (wincount >= 5) {
       finished = true;
-      if (score * (1 - 2 * color) >= SCORE_WIN) {
+      if (score * (1 - 2 * color) >= 1000) {
         result = "1.0";
       } else {
         result = "0.0";
