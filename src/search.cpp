@@ -15,6 +15,7 @@ void Engine::startup() {
   searchlimits.maxdepth = maxmaxdepth;
   initializett();
   Bitboards.initialize();
+  master.resetauxdata();
   master.syncwith(*this);
   master.seedrng();
 }
@@ -44,7 +45,6 @@ void Searcher::resetauxdata() {
 }
 void Searcher::seedrng() { mt.seed(rd()); }
 void Searcher::syncwith(Engine &engine) {
-  resetauxdata();
   stopsearch = &(engine.stopsearch);
   TT = &(engine.TT);
   TTsize = &(engine.TTsize);
@@ -449,7 +449,6 @@ int Searcher::iterative() {
   int depth = 1;
   int bestmove1 = 0;
   int tbscore = 0;
-  resetauxdata();
   rootinTB = (__builtin_popcountll(Bitboards.Bitboards[0] |
                                    Bitboards.Bitboards[1]) <= maxtbpieces);
   if (rootinTB && searchoptions.useTB) {

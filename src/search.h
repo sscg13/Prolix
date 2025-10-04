@@ -42,7 +42,6 @@ class Searcher {
   int bestmove = 0;
   std::random_device rd;
   std::mt19937 mt;
-  void resetauxdata();
   int quiesce(int alpha, int beta, int depth, bool isPV);
   int alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
                 int nodetype);
@@ -55,6 +54,8 @@ public:
   Options searchoptions;
   std::ofstream dataoutput;
   bool ismaster = true;
+  Searcher() { resetauxdata(); }
+  void resetauxdata();
   void seedrng();
   void syncwith(Engine &engine);
   int iterative();
