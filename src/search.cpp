@@ -234,7 +234,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     return -1 * (SCORE_MATE - ply);
   }
   if ((!incheck && Bitboards.gamephase[color] > 3) && (depth > 1 && nmp) &&
-      (staticeval >= beta && !isPV) && (!tthit || ttnmpgood)) {
+      (staticeval >= beta && !isttPV) && (!tthit || ttnmpgood)) {
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
     int childnodetype = EXPECTED_PV_NODE ? EXPECTED_ALL_NODE : 3 - nodetype;
