@@ -33,6 +33,7 @@ void Searcher::datagenautoplayplain() {
   int maxmove = 0;
   bool finished = false;
   int wincount = 0;
+  int drawcount = 0;
   while (!finished) {
     int color = Bitboards.position & 1;
     int score = iterative();
@@ -53,6 +54,11 @@ void Searcher::datagenautoplayplain() {
     } else {
       wincount = 0;
     }
+    if (abs(score) <= 15 && maxmove >= 40) {
+      drawcount++;
+    } else {
+      drawcount = 0;
+    }
     if (wincount >= 5) {
       finished = true;
       if (score * (1 - 2 * color) >= 1000) {
@@ -60,6 +66,10 @@ void Searcher::datagenautoplayplain() {
       } else {
         result = "0.0";
       }
+    }
+    else if (drawcount >= 8) {
+      finished = true;
+      result = "0.5";
     }
     else if (Bitboards.twokings()) {
       finished = true;
