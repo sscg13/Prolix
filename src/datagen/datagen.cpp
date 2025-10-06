@@ -37,7 +37,7 @@ void Searcher::datagenautoplayplain() {
   while (!finished) {
     int color = Bitboards.position & 1;
     int score = iterative();
-    if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
+    if (((Bitboards.position >> 1) < 40) && (((bestmove >> 16) & 1) == 0) &&
         (Bitboards.checkers(color) == 0ULL) && (abs(score) < SCORE_WIN)) {
       fens[maxmove] = Bitboards.getFEN();
       scores[maxmove] = score * (1 - 2 * color);
