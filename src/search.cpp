@@ -242,7 +242,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
                        1 - beta, false, childnodetype);
     Bitboards.unmakenullmove();
     if (score >= beta) {
-      return beta;
+      return std::abs(score) < SCORE_MAX_EVAL ? score : beta;
     }
   }
   /*if ((depth < 3) && (staticeval + 200*depth < alpha) && !isPV) {
