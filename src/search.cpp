@@ -298,7 +298,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     __builtin_prefetch(&((*TT)[nextindex]), 0, 0);
     if (!iscapture(mov)) {
       quiets++;
-      if (i > depth * depth + depth + 4) {
+      if (i > (depth * depth + depth + 4) / (2 - improving)) {
         break;
       }
       if (!isPV && !incheck && depth < 5 && movescore[i] < 0) {
