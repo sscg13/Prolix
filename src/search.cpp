@@ -218,9 +218,6 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       ttnmpgood = (score >= beta || nodetype == EXPECTED_CUT_NODE);
     }
   }
-  if (depth >= 3 && !tthit) {
-    depth--;
-  }
   int margin = std::max(40, 70 * depth - 70 * improving);
   if (ply > 0 && !tthit) {
     if (staticeval - margin >= beta &&
@@ -251,6 +248,9 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
           return alpha;
       }
   }*/
+  if (depth >= 3 && !tthit) {
+    depth--;
+  }
   int counter = 0;
   int previousmove = 0;
   int previouspiece = 0;
