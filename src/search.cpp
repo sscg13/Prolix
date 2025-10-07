@@ -309,7 +309,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       }
     }
     r -= 1024 * isPV;
-    r -= 1024 * improving;
+    r -= 512 * improving;
     r += 512 * (nodetype == EXPECTED_CUT_NODE);
     r = std::max(0, r);
     if (nullwindow && !incheck && !prune && depth < 6) {
