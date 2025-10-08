@@ -60,6 +60,8 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int score =
       searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
   int bestscore = -SCORE_INF;
+  int savednodetype = EXPECTED_ALL_NODE;
+  int bestmove1 = 0;
   int movcount;
   if (ply > maxmaxdepth+30) {
     return score;
@@ -119,15 +121,25 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
         EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
       }
       if (score >= beta) {
+        if (!tthit) {
+          ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0,
+                             ply, false, score, EXPECTED_CUT_NODE, mov);
+          }
         return score;
       }
       if (score > alpha) {
+        savednodetype = EXPECTED_PV_NODE;
+        bestmove1 = mov;
         alpha = score;
       }
       if (score > bestscore) {
         bestscore = score;
       }
     }
+  }
+  if (!tthit) {
+    ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0,
+                             ply, (savednodetype == EXPECTED_PV_NODE), score, EXPECTED_CUT_NODE, bestmove1);
   }
   return bestscore;
 }
