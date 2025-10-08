@@ -225,7 +225,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       if (((nodetype & EXPECTED_CUT_NODE) && (score - margin >= beta)) &&
           (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) &&
           (margin < 500)) {
-        return (score + beta) / 2;
+        return (score + 2 * beta) / 3;
       }
       ttnmpgood = (score >= beta || nodetype == EXPECTED_CUT_NODE);
     }
@@ -237,7 +237,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   if (ply > 0 && !tthit) {
     if (staticeval - margin >= beta &&
         (abs(beta) < SCORE_MAX_EVAL && !incheck) && (margin < 500)) {
-      return (staticeval + beta) / 2;
+      return (staticeval + 2 * beta) / 3;
     }
   }
   int moves[maxmoves];
