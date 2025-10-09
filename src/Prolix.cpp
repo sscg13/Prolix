@@ -1,7 +1,7 @@
 #include "board.h"
 #include "engine.h"
 #include "eval/nnue.h"
-#include "external/Fathom/tbprobe.h"
+#include "external/probetool/jtbinterface.h"
 extern std::string uciinfostring;
 std::string proto = "uci";
 std::string inputfile;
@@ -49,6 +49,7 @@ int main(int argc, char *argv[]) {
   initializerankattacks();
   initializezobrist();
   initializelmr();
+  TBitf_init();
   if (argc > 1) {
     if (std::string(argv[1]) == "bench") {
       Engine Prolix;

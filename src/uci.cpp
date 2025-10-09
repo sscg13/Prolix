@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "external/probetool/jtbprobe.h"
 #include <sstream>
 
 // clang-format off
@@ -86,22 +87,17 @@ void Engine::uci() {
         TT.shrink_to_fit();
       }
     }
-    /*
     if (option == "EvalFile") {
       std::string nnuefile = ucicommand.substr(30, ucicommand.length() - 30);
       if (nnuefile != "<internal>") {
-        EUNN->readnnuefile(nnuefile);
-        EUNN.initializennue(Bitboards.Bitboards);
+        nnueweights->readnnuefile(nnuefile);
         std::cout << "info string using nnue file " << nnuefile << std::endl;
       }
-    }*/
+    }
     if (option == "SyzygyPath") {
       searchoptions.useTB = (value != "<empty>");
-      if (!tb_init(value.c_str())) {
-        std::cout << "info error initializing Syzygy TBs" << std::endl;
-      } else if (searchoptions.useTB) {
-        std::cout << "info string successful init Syzygy TBs" << std::endl;
-      }
+      TB_init(value.data());
+      std::cout << "info string found " << TB_NumTables[0] << " WDL and " << TB_NumTables[2] << " DTZ files \n";
     }
     if (option == "UCI_ShowWDL") {
       if (value == "true") {
@@ -197,6 +193,15 @@ void Engine::uci() {
     start = std::chrono::steady_clock::now();
     int color = Bitboards.position & 1;
     Bitboards.perftnobulk(depth, depth, color);
+  }
+  if (token == "tbwdl") {
+    if (__builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]) < 6) {
+      int result = Bitboards.probetbwdl();
+      std::cout << "WDL Probe result: " << result << "\n";
+    }
+    else {
+      std::cout << "Error: more than 5 pieces \n";
+    }
   }
   /*if (ucicommand == "eval") {
     int color = Bitboards.position & 1;

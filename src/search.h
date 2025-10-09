@@ -1,7 +1,7 @@
 #include "board.h"
 #include "consts.h"
 #include "eval/nnue.h"
-#include "external/Fathom/tbprobe.h"
+#include "external/probetool/jtbprobe.h"
 #include "history.h"
 #include "tt.h"
 #include <atomic>

@@ -1,7 +1,8 @@
 #include "board.h"
 #include "consts.h"
 #include "eval/hce.h"
-#include "external/Fathom/tbprobe.h"
+#include "external/probetool/jtbprobe.h"
+#include "external/probetool/jtbinterface.h"
 U64 KingAttacks[64];
 U64 PawnAttacks[2][64];
 U64 AlfilAttacks[64];
@@ -252,6 +253,9 @@ void Board::initialize() {
   gamephase[1] = 24;
   gamelength = 0;
   zobrist[0] = zobristhash = scratchzobrist();
+  if (tbpos == nullptr) {
+    tbpos = TBitf_alloc_position();
+  }
 }
 int Board::repetitions() {
   int repeats = 0;
@@ -1139,9 +1143,45 @@ bool Board::see_exceeds(int mov, int color, int threshold) {
   }
 }
 int Board::probetbwdl() {
-  auto wdl =
-      tb_probe_wdl(Bitboards[0], Bitboards[1], Bitboards[7], Bitboards[4],
-                   Bitboards[6], Bitboards[3], Bitboards[5], Bitboards[2], 0U,
-                   0U, 0U, ((position & 1) == 0));
-  return (wdl > 2) - (wdl < 2);
+  int success = 0;
+  /*int rule70 = 0;
+  TBitf_set_from_fen(tbpos, getFEN().c_str(), &rule70);
+  int result = TB_probe_wdl(tbpos, &success);
+  std::cout << "Raw result (fen): " << result << "\n";*/
+  uint8_t convert[8] = {0, 0, 1, 3, 5, 2, 4, 6};
+  tbpos->pt[0] = 6;
+  tbpos->pt[1] = 14;
+  tbpos->idx = 0;
+  tbpos->stm = position & 1;
+  tbpos->occ = Bitboards[0] | Bitboards[1];
+  tbpos->state[0] = (State) { 0 };
+  tbpos->sq[0] = __builtin_ctzll(Bitboards[0] & Bitboards[7]);
+  tbpos->sq[1] = __builtin_ctzll(Bitboards[1] & Bitboards[7]);
+  U64 occ = __builtin_bswap64((Bitboards[0] | Bitboards[1]) & ~Bitboards[7]);
+  tbpos->cnt[0] = __builtin_popcountll(Bitboards[0]) - 1;
+  tbpos->cnt[1] = __builtin_popcountll(Bitboards[1]) - 1;
+  tbpos->num = 2;
+  while (occ) {
+    int sq = 56 ^ __builtin_ctzll(occ);
+    tbpos->sq[tbpos->num] = sq;
+    int piece = 0;
+    for (int c = 0; c < 2; c++) {
+      if (Bitboards[c] & (1ULL << sq)) {
+        piece += 8*c;
+        break;
+      }
+    }
+    for (int p = 2; p < 7; p++) {
+      if (Bitboards[p] & (1ULL << sq)) {
+        piece += convert[p];
+        break;
+      }
+    }
+    tbpos->pt[tbpos->num++] = piece;
+    occ &= (occ - 1);
+  }
+  int result = TB_probe_wdl(tbpos, &success);
+  //std::cout << "Raw result (Bitboard): " << result << "\n";
+  
+  return success ? result : -3;
 }

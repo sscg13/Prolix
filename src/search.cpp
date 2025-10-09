@@ -162,16 +162,6 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   if (depth <= 0 || ply >= searchlimits.maxdepth) {
     return quiesce(alpha, beta, ply, (nodetype == EXPECTED_PV_NODE));
   }
-  int tbwdl = 0;
-  bool fewpieces =
-      (__builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]) <=
-       maxtbpieces);
-  if (fewpieces && searchoptions.useTB) {
-    tbwdl = Bitboards.probetbwdl();
-    if (!rootinTB) {
-      return tbwdl * (SCORE_TB_WIN - ply);
-    }
-  }
   int score = -SCORE_INF;
   int bestscore = -SCORE_INF;
   bool improvedalpha = false;
@@ -244,6 +234,19 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   movcount = Bitboards.generatemoves(color, 0, moves);
   if (movcount == 0) {
     return -1 * (SCORE_MATE - ply);
+  }
+  int tbwdl = -3;
+  bool fewpieces =
+      (__builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]) <=
+       maxtbpieces);
+  if (fewpieces && searchoptions.useTB) {
+    tbwdl = Bitboards.probetbwdl();
+    if (!rootinTB && tbwdl > -3) {
+      alpha = (tbwdl / 2) * (SCORE_TB_WIN - ply);
+      if (alpha >= beta) {
+        return alpha;
+      }
+    }
   }
   if ((!incheck && Bitboards.gamephase[color] > 3) && (depth > 1 && nmp) &&
       (staticeval >= beta && !isPV) && (!tthit || ttnmpgood)) {
@@ -328,9 +331,10 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       int threshold = iscapture(mov) ? -30 * depth * depth : -100 * depth;
       prune = !Bitboards.see_exceeds(mov, color, threshold);
     }
-    if (fewpieces && searchoptions.useTB) {
+    if (rootinTB && fewpieces && searchoptions.useTB) {
       Bitboards.makemove(mov, true);
-      if (Bitboards.probetbwdl() != -tbwdl) {
+      int newresult = Bitboards.probetbwdl();
+      if (newresult > -3 && newresult != -tbwdl) {
         prune = true;
       }
       Bitboards.unmakemove(mov);
@@ -494,8 +498,8 @@ int Searcher::iterative() {
          searchlimits.hardtimelimit <= 0) &&
         depth < searchlimits.maxdepth && bestmove >= 0) {
       returnedscore = score;
-      if (rootinTB && searchoptions.useTB && abs(score) < SCORE_WIN) {
-        score = SCORE_TB_WIN * tbscore;
+      if (rootinTB && searchoptions.useTB && abs(score) < SCORE_WIN && tbscore > -3) {
+        score = SCORE_TB_WIN * (tbscore / 2);
       }
       if (ismaster) {
         if (proto == "uci" && !searchoptions.suppressoutput) {
