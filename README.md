@@ -15,7 +15,7 @@ On compilation, Prolix embeds a NNUE file into the executable using [incbin](htt
 Prolix NNUE is trained on [bullet-legacy](https://github.com/jw1912/bullet/tree/legacy) using original data (the Google Drive contains more information regarding data). The default (and usually strongest) NNUE file's name is indicated in the Makefile. If you wish to compile with a different file, please ensure that the constants in `src/eval/arch.h` match the architecture of the net, and that the weights are binary encoded in the same way bullet-legacy would encode them.
 
 ## Syzygy Tablebases
-Prolix optionally includes support for (Shatranj) Syzygy tablebases (downloadable at ftp://chessdb:chessdb@ftp.chessdb.cn/pub/syzygy/shatranj/), using probing code of [Ronald De Man](https://github.com/syzygy1/probetool). Currently only WDL probing is supported, and I have only tested 5-men and below. Using tablebases also reduces mate finding ability.
+Prolix optionally includes support for (Shatranj) Syzygy tablebases (downloadable at ftp://chessdb:chessdb@ftp.chessdb.cn/pub/syzygy/shatranj/), using probing code of [Ronald De Man](https://github.com/syzygy1/probetool). Currently only WDL probing for 5-men and below is supported. Using tablebases also reduces mate finding ability.
 
 ## How to read evaluations
 A score of `+270.00` or `mate x` indicates a forced win. The exact mate distance may not be accurate.

@@ -12,6 +12,7 @@ class Engine;
 struct abinfo {
   int playedmove;
   int eval;
+  int plysincecapture;
 };
 struct Limits {
   int softnodelimit;
@@ -36,7 +37,8 @@ class Searcher {
   int killers[maxmaxdepth][2];
   int countermoves[6][64];
   std::atomic<bool> *stopsearch;
-  bool rootinTB = false;
+  int rootpiececount;
+  int tbhits = 0;
   abinfo searchstack[maxmaxdepth + 32];
   int pvtable[maxmaxdepth + 1][maxmaxdepth + 1];
   int bestmove = 0;

@@ -9,7 +9,6 @@
 #include <time.h>
 #pragma once
 extern std::string proto;
-const int maxtbpieces = 5;
 extern int lmr_reductions[maxmaxdepth][maxmoves];
 extern std::chrono::time_point<std::chrono::steady_clock> start;
 extern std::string inputfile;
