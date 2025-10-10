@@ -241,7 +241,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     tbwdl = Bitboards.probetbwdl();
     if (tbwdl > -3) {
       tbhits++;
-      if (tbwdl == 0) {
+      if (tbwdl == 0 && ply > 0) {
         return 0;
       }
       if (piececount < rootpiececount) {

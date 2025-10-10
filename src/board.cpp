@@ -1181,7 +1181,5 @@ int Board::probetbwdl() {
     occ &= (occ - 1);
   }
   int result = TB_probe_wdl(tbpos, &success);
-  //std::cout << "Raw result (Bitboard): " << result << "\n";
-  
   return success ? (result > 0) - (result < 0) : -3;
 }

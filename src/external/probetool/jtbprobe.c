@@ -1333,6 +1333,8 @@ INLINE int probe_table(TB_Position *pos, int s, int *success, const int type)
     ei =  type == WDL ? &ei[t + 4 * bside]
         : type == DTM ? &ei[t + 6 * bside] : &ei[t];
     TB_list_squares(pos, ei->pieces, flip, p);
+    // Bring the leading pawn back to the front.
+    leading_pawn(p, be, type != DTM ? FILE_ENC : RANK_ENC);
     idx = type != DTM ? encode_pawn_f(p, ei, be) : encode_pawn_r(p, ei, be);
   }
 
