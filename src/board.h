@@ -9,6 +9,8 @@
 using U64 = uint64_t;
 using U8 = uint8_t;
 
+struct TB_Position;
+
 class Board {
   int evalm[2] = {0, 0};
   int evale[2] = {0, 0};
@@ -17,6 +19,7 @@ class Board {
   U64 zobrist[1024];
   int history[1024];
   int root = 0;
+  TB_Position* tbpos = nullptr;
   int startpiece[16] = {4, 3, 1, 5, 2, 1, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0};
 
 public:
