@@ -6,9 +6,9 @@ SOURCES := src/Prolix.cpp src/uci.cpp src/xboard.cpp src/search.cpp src/datagen/
 
 CXX := clang++
 
-CXXFLAGS := -O3 -march=$(ARCH) -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+CXXFLAGS := -O3 -march=$(ARCH) -std=c++11 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
 
-DEBUGFLAGS := -g -march=$(ARCH) -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+DEBUGFLAGS := -g -march=$(ARCH) -std=c++11 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
 
 SUFFIX :=
 
