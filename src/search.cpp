@@ -372,6 +372,9 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         if (score > alpha && r > 0) {
           score = -alphabeta(depth - 1, ply + 1, -alpha - 1, -alpha, true,
                              EXPECTED_CUT_NODE);
+          if (score <= alpha) {
+            Histories->updatemainhistory(mov, -3 * depth);
+          }
         }
         if (score > alpha && score < beta) {
           score = -alphabeta(depth - 1, ply + 1, -beta, -alpha, true,
