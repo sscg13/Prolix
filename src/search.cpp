@@ -180,6 +180,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   bool isttPV = isPV;
   int staticeval =
       searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+  int ttcorreval = staticeval;
   searchstack[ply].eval = staticeval;
   bool improving = false;
   if (ply > 1) {
@@ -216,6 +217,10 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
           (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) &&
           (margin < 500)) {
         return (score + beta) / 2;
+      }
+      bool ttcorr = (score > staticeval && (nodetype & EXPECTED_CUT_NODE)) || (score < staticeval && (nodetype & EXPECTED_ALL_NODE));
+      if (ttcorr) {
+        ttcorreval = score;
       }
       ttnmpgood = (score >= beta || nodetype == EXPECTED_CUT_NODE);
     }
@@ -262,7 +267,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     }
   }
   if ((!incheck && Bitboards.gamephase[color] > 3) && (depth > 1 && nmp) &&
-      (staticeval >= beta && !isPV) && (!tthit || ttnmpgood)) {
+      (ttcorreval >= beta && !isPV) && (!tthit || ttnmpgood)) {
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
     int childnodetype = EXPECTED_PV_NODE ? EXPECTED_ALL_NODE : 3 - nodetype;
