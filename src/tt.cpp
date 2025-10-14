@@ -1,8 +1,8 @@
 #include "tt.h"
 #include "consts.h"
 #include <algorithm>
-void TTentry::update(U64 hash, int gamelength, int depth, int ply, bool ttpv, int score,
-                     int nodetype, int hashmove) {
+void TTentry::update(U64 hash, int gamelength, int depth, int ply, bool ttpv,
+                     int score, int nodetype, int hashmove) {
   key = hash;
   if (score > SCORE_MAX_EVAL) {
     score += ply;

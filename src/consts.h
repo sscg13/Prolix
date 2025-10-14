@@ -1,6 +1,7 @@
 #include <cstdint>
 #pragma once
 using U64 = uint64_t;
+using I16 = short int;
 const U64 FileA = 0x0101010101010101;
 const U64 FileB = FileA << 1;
 const U64 FileC = FileA << 2;

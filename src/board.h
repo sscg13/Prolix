@@ -19,7 +19,7 @@ class Board {
   U64 zobrist[1024];
   int history[1024];
   int root = 0;
-  TB_Position* tbpos = nullptr;
+  TB_Position *tbpos = nullptr;
   int startpiece[16] = {4, 3, 1, 5, 2, 1, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0};
 
 public:

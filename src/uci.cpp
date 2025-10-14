@@ -97,7 +97,8 @@ void Engine::uci() {
     if (option == "SyzygyPath") {
       searchoptions.useTB = (value != "<empty>");
       TB_init(value.data());
-      std::cout << "info string found " << TB_NumTables[0] << " WDL and " << TB_NumTables[2] << " DTZ files \n";
+      std::cout << "info string found " << TB_NumTables[0] << " WDL and "
+                << TB_NumTables[2] << " DTZ files \n";
     }
     if (option == "UCI_ShowWDL") {
       if (value == "true") {
@@ -195,11 +196,11 @@ void Engine::uci() {
     Bitboards.perftnobulk(depth, depth, color);
   }
   if (token == "tbwdl") {
-    if (__builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]) < 6) {
+    if (__builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]) <
+        6) {
       int result = Bitboards.probetbwdl();
       std::cout << "WDL Probe result: " << result << "\n";
-    }
-    else {
+    } else {
       std::cout << "Error: more than 5 pieces \n";
     }
   }
