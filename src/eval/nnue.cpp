@@ -19,7 +19,7 @@ void NNUEWeights::loaddefaultnet() {
       int convert[12] = {0, 3, 1, 4, 2, 5, 6, 9, 7, 10, 8, 11};
       for (int j = 0; j < nnuesize; j++) {
         I16 weight = 256 * (I16)(NNUEData[offset + 1]) +
-                           (I16)(unsigned char)(NNUEData[offset]);
+                     (I16)(unsigned char)(NNUEData[offset]);
         nnuelayer1[k][64 * convert[piece] + square][j] = weight;
         offset += 2;
       }
@@ -27,27 +27,27 @@ void NNUEWeights::loaddefaultnet() {
   }
   for (int i = 0; i < nnuesize; i++) {
     I16 bias = 256 * (I16)(NNUEData[offset + 1]) +
-                     (I16)(unsigned char)(NNUEData[offset]);
+               (I16)(unsigned char)(NNUEData[offset]);
     layer1bias[i] = bias;
     offset += 2;
   }
   for (int j = 0; j < outputbuckets; j++) {
     for (int i = 0; i < nnuesize; i++) {
       I16 weight = 256 * (I16)(NNUEData[offset + 1]) +
-                         (I16)(unsigned char)(NNUEData[offset]);
+                   (I16)(unsigned char)(NNUEData[offset]);
       ourlayer2[j][i] = (int)weight;
       offset += 2;
     }
     for (int i = 0; i < nnuesize; i++) {
       I16 weight = 256 * (I16)(NNUEData[offset + 1]) +
-                         (I16)(unsigned char)(NNUEData[offset]);
+                   (I16)(unsigned char)(NNUEData[offset]);
       theirlayer2[j][i] = (int)weight;
       offset += 2;
     }
   }
   for (int j = 0; j < outputbuckets; j++) {
     I16 base = 256 * (I16)(NNUEData[offset + 1]) +
-                     (I16)(unsigned char)(NNUEData[offset]);
+               (I16)(unsigned char)(NNUEData[offset]);
     finalbias[j] = base;
     offset += 2;
   }
@@ -65,7 +65,7 @@ void NNUEWeights::readnnuefile(std::string file) {
       int convert[12] = {0, 3, 1, 4, 2, 5, 6, 9, 7, 10, 8, 11};
       for (int j = 0; j < nnuesize; j++) {
         I16 weight = 256 * (I16)(weights[offset + 1]) +
-                           (I16)(unsigned char)(weights[offset]);
+                     (I16)(unsigned char)(weights[offset]);
         nnuelayer1[k][64 * convert[piece] + square][j] = weight;
         offset += 2;
       }
@@ -73,27 +73,27 @@ void NNUEWeights::readnnuefile(std::string file) {
   }
   for (int i = 0; i < nnuesize; i++) {
     I16 bias = 256 * (I16)(weights[offset + 1]) +
-                     (I16)(unsigned char)(weights[offset]);
+               (I16)(unsigned char)(weights[offset]);
     layer1bias[i] = bias;
     offset += 2;
   }
   for (int j = 0; j < outputbuckets; j++) {
     for (int i = 0; i < nnuesize; i++) {
       I16 weight = 256 * (I16)(weights[offset + 1]) +
-                         (I16)(unsigned char)(weights[offset]);
+                   (I16)(unsigned char)(weights[offset]);
       ourlayer2[j][i] = (int)weight;
       offset += 2;
     }
     for (int i = 0; i < nnuesize; i++) {
       I16 weight = 256 * (I16)(weights[offset + 1]) +
-                         (I16)(unsigned char)(weights[offset]);
+                   (I16)(unsigned char)(weights[offset]);
       theirlayer2[j][i] = (int)weight;
       offset += 2;
     }
   }
   for (int j = 0; j < outputbuckets; j++) {
     I16 base = 256 * (I16)(weights[offset + 1]) +
-                     (I16)(unsigned char)(weights[offset]);
+               (I16)(unsigned char)(weights[offset]);
     finalbias[j] = base;
     offset += 2;
   }
@@ -111,41 +111,47 @@ int NNUE::featureindex(int bucket, int color, int piece, int square) {
   return 64 * perspectivepiece + perspectivesquare;
 }
 int NNUE::differencecount(int bucket, int color, const U64 *Bitboards) {
-  return __builtin_popcountll((cachebitboards[bucket][color][0]|cachebitboards[bucket][color][1])^(Bitboards[0]|Bitboards[1]));
+  return __builtin_popcountll(
+      (cachebitboards[bucket][color][0] | cachebitboards[bucket][color][1]) ^
+      (Bitboards[0] | Bitboards[1]));
 }
 const I16 *NNUE::layer1weights(int kingsquare, int color, int piece,
-                                     int square) {
+                               int square) {
   int bucket = getbucket(kingsquare, color);
   return weights->nnuelayer1[bucket / mirrordivisor]
-                   [featureindex(bucket, color, piece, square)];
+                            [featureindex(bucket, color, piece, square)];
 }
-void NNUE::add(I16* accptr, const I16* addptr) {
+void NNUE::add(I16 *accptr, const I16 *addptr) {
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] += addptr[i];
   }
 }
-void NNUE::sub(I16* accptr, const I16* subptr) {
+void NNUE::sub(I16 *accptr, const I16 *subptr) {
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] -= subptr[i];
   }
 }
-void NNUE::addsub(I16* oldaccptr, I16* newaccptr, const I16* addptr, const I16* subptr) {
+void NNUE::addsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
+                  const I16 *subptr) {
   for (int i = 0; i < nnuesize; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr[i];
   }
 }
-void NNUE::addsubsub(I16* oldaccptr, I16* newaccptr, const I16* addptr, const I16* subptr1, const I16* subptr2) {
+void NNUE::addsubsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
+                     const I16 *subptr1, const I16 *subptr2) {
   for (int i = 0; i < nnuesize; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
   }
 }
-void NNUE::activatepiece(I16* accptr, int kingsquare, int color, int piece, int square) {
+void NNUE::activatepiece(I16 *accptr, int kingsquare, int color, int piece,
+                         int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] += weightsptr[i];
   }
 }
-void NNUE::deactivatepiece(I16* accptr, int kingsquare, int color, int piece, int square) {
+void NNUE::deactivatepiece(I16 *accptr, int kingsquare, int color, int piece,
+                           int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < nnuesize; i++) {
     accptr[i] -= weightsptr[i];
@@ -158,8 +164,12 @@ void NNUE::refreshfromcache(int kingsquare, int color, const U64 *Bitboards) {
   I16 *accptr = accumulation[2 * ply + color];
   I16 *cacheaccptr = cacheaccumulators[bucket][color];
   for (int i = 0; i < 12; i++) {
-    add[i] = (Bitboards[i/6] & Bitboards[2 + (i % 6)]) & ~(cachebitboards[bucket][color][i/6] & cachebitboards[bucket][color][2 + (i % 6)]);
-    remove[i] = (cachebitboards[bucket][color][i/6] & cachebitboards[bucket][color][2 + (i % 6)]) & ~(Bitboards[i/6] & Bitboards[2 + (i % 6)]);
+    add[i] = (Bitboards[i / 6] & Bitboards[2 + (i % 6)]) &
+             ~(cachebitboards[bucket][color][i / 6] &
+               cachebitboards[bucket][color][2 + (i % 6)]);
+    remove[i] = (cachebitboards[bucket][color][i / 6] &
+                 cachebitboards[bucket][color][2 + (i % 6)]) &
+                ~(Bitboards[i / 6] & Bitboards[2 + (i % 6)]);
   }
   for (int i = 0; i < 12; i++) {
     int addcount = __builtin_popcountll(add[i]);
@@ -182,8 +192,7 @@ void NNUE::refreshfromcache(int kingsquare, int color, const U64 *Bitboards) {
     accptr[i] = cacheaccptr[i];
   }
 }
-void NNUE::refreshfromscratch(int kingsquare, int color,
-                              const U64 *Bitboards) {
+void NNUE::refreshfromscratch(int kingsquare, int color, const U64 *Bitboards) {
   I16 *accptr = accumulation[2 * ply + color];
   I16 *cacheaccptr = cacheaccumulators[getbucket(kingsquare, color)][color];
   for (int i = 0; i < nnuesize; i++) {
@@ -244,34 +253,36 @@ void NNUE::forwardaccumulators(const int notation, const U64 *Bitboards) {
       layer1weights(oppksq, color ^ 1, 6 * color + piece - 2, from);
   ply++;
   if (captured > 0) {
-    const I16 *subweights2opp = layer1weights(oppksq, color ^ 1, 6 * (color ^ 1) + captured - 2, to);
+    const I16 *subweights2opp =
+        layer1weights(oppksq, color ^ 1, 6 * (color ^ 1) + captured - 2, to);
     totalmaterial -= material[captured - 2];
-    addsubsub(oldaccptr, newaccptr, addweightsopp, subweightsopp, subweights2opp);
-  }
-  else {
+    addsubsub(oldaccptr, newaccptr, addweightsopp, subweightsopp,
+              subweights2opp);
+  } else {
     addsub(oldaccptr, newaccptr, addweightsopp, subweightsopp);
   }
-  if (piece == 7 &&
-      getbucket(to, color) != getbucket(from, color)) {
-    int scratchrefreshtime = __builtin_popcountll(Bitboards[0]|Bitboards[1]);
-    int cacherefreshtime = differencecount(getbucket(to, color), color, Bitboards);
+  if (piece == 7 && getbucket(to, color) != getbucket(from, color)) {
+    int scratchrefreshtime = __builtin_popcountll(Bitboards[0] | Bitboards[1]);
+    int cacherefreshtime =
+        differencecount(getbucket(to, color), color, Bitboards);
     if (scratchrefreshtime <= cacherefreshtime) {
       refreshfromscratch(to, color, Bitboards);
-    }
-    else {
+    } else {
       refreshfromcache(to, color, Bitboards);
     }
   } else {
     newaccptr = accumulation[2 * ply + color];
     oldaccptr = accumulation[2 * (ply - 1) + color];
-    const I16 *addweightsus = layer1weights(ourksq, color, 6 * color + piece2, to);
+    const I16 *addweightsus =
+        layer1weights(ourksq, color, 6 * color + piece2, to);
     const I16 *subweightsus =
         layer1weights(ourksq, color, 6 * color + piece - 2, from);
     if (captured > 0) {
-      const I16 *subweights2us = layer1weights(ourksq, color, 6 * (color ^ 1) + captured - 2, to);
-      addsubsub(oldaccptr, newaccptr, addweightsus, subweightsus, subweights2us);
-    }
-    else {
+      const I16 *subweights2us =
+          layer1weights(ourksq, color, 6 * (color ^ 1) + captured - 2, to);
+      addsubsub(oldaccptr, newaccptr, addweightsus, subweightsus,
+                subweights2us);
+    } else {
       addsub(oldaccptr, newaccptr, addweightsus, subweightsus);
     }
   }

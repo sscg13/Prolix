@@ -1,8 +1,8 @@
 #include "board.h"
 #include "consts.h"
 #include "eval/hce.h"
-#include "external/probetool/jtbprobe.h"
 #include "external/probetool/jtbinterface.h"
+#include "external/probetool/jtbprobe.h"
 U64 KingAttacks[64];
 U64 PawnAttacks[2][64];
 U64 AlfilAttacks[64];
@@ -1154,7 +1154,7 @@ int Board::probetbwdl() {
   tbpos->idx = 0;
   tbpos->stm = position & 1;
   tbpos->occ = Bitboards[0] | Bitboards[1];
-  tbpos->state[0] = (State) { 0 };
+  tbpos->state[0] = (State){0};
   tbpos->sq[0] = __builtin_ctzll(Bitboards[0] & Bitboards[7]);
   tbpos->sq[1] = __builtin_ctzll(Bitboards[1] & Bitboards[7]);
   U64 occ = __builtin_bswap64((Bitboards[0] | Bitboards[1]) & ~Bitboards[7]);
@@ -1167,7 +1167,7 @@ int Board::probetbwdl() {
     int piece = 0;
     for (int c = 0; c < 2; c++) {
       if (Bitboards[c] & (1ULL << sq)) {
-        piece += 8*c;
+        piece += 8 * c;
         break;
       }
     }
