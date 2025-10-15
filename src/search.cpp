@@ -282,12 +282,12 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       return std::abs(score) < SCORE_MAX_EVAL ? score : beta;
     }
   }
-  /*if ((depth < 3) && (staticeval + 200*depth < alpha) && !isPV) {
-      int qsearchscore = quiesce(alpha, beta, color, 0);
+  if ((depth < 5) && (staticeval + 200*depth < alpha) && !isPV && !incheck) {
+      int qsearchscore = quiesce(alpha, alpha + 1, color, 0);
       if (qsearchscore <= alpha) {
           return alpha;
       }
-  }*/
+  }
   int counter = 0;
   int previousmove = 0;
   int previouspiece = 0;
