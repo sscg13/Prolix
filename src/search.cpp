@@ -125,6 +125,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
           ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0, ply,
                          false, score, EXPECTED_CUT_NODE, mov);
         }
+        Histories->updatemainhistory(mov, 1);
         return score;
       }
       if (score > alpha) {
