@@ -227,7 +227,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       ttnmpgood = (score >= beta || nodetype == EXPECTED_CUT_NODE);
     }
   }
-  if (depth >= 3 && !tthit) {
+  if (depth >= 3 && ttmove == 0) {
     depth--;
   }
   int margin = std::max(40, 70 * depth - 70 * improving);
