@@ -97,15 +97,12 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
     }
     movcount = Bitboards.generatemoves(color, 1, moves);
   }
-  for (int i = 0; i < movcount - 1; i++) {
-    for (int j = i + 1;
-         Histories->movescore(moves[j]) > Histories->movescore(moves[j - 1]) &&
-         j > 0;
-         j--) {
-      std::swap(moves[j], moves[j - 1]);
-    }
-  }
   for (int i = 0; i < movcount; i++) {
+    for (int j = i + 1; j < movcount; j++) {
+      if (Histories->movescore(moves[j]) > Histories->movescore(moves[i])) {
+        std::swap(moves[j], moves[i]);
+      }
+    }
     int mov = moves[i];
     int nextindex = (Bitboards.keyafter(mov) % *TTsize);
     __builtin_prefetch((&(*TT)[nextindex]), 0, 0);
@@ -328,17 +325,17 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       }
       Bitboards.unmakemove(mov);
     }
-    int j = i;
-    while (j > 0 && movescore[j] > movescore[j - 1]) {
-      std::swap(moves[j], moves[j - 1]);
-      std::swap(movescore[j], movescore[j - 1]);
-      j--;
-    }
   }
   for (int i = 0; i < movcount; i++) {
     bool nullwindow = (i > 0);
     int r = 0;
     bool prune = false;
+    for (int j = i + 1; j < movcount; j++) {
+      if (movescore[j] > movescore[i]) {
+        std::swap(moves[j], moves[i]);
+        std::swap(movescore[j], movescore[i]);
+      }
+    }
     int mov = moves[i];
     int nextindex = (Bitboards.keyafter(mov) % *TTsize);
     __builtin_prefetch(&((*TT)[nextindex]), 0, 0);
