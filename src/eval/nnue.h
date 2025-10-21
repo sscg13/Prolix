@@ -5,7 +5,7 @@
 #pragma once
 
 class Searcher;
-struct NNUEWeights {
+struct alignas(64) NNUEWeights {
   I16 nnuelayer1[realbuckets][768][nnuesize];
   I16 layer1bias[nnuesize];
   int ourlayer2[outputbuckets][nnuesize];
