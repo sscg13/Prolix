@@ -9,7 +9,9 @@ int screlu(I16 x) {
   I16 y = std::max(std::min(x, (I16)255), (I16)0);
   return y * y;
 }
-
+I16 crelu(I16 x) {
+  return std::max(std::min(x, (I16)255), (I16)0);
+}
 void NNUEWeights::loaddefaultnet() {
   int offset = 0;
   for (int k = 0; k < realbuckets; k++) {
@@ -296,16 +298,19 @@ void NNUE::backwardaccumulators(int notation, const U64 *Bitboards) {
 }
 int NNUE::evaluate(int color) {
   int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
-  int eval = weights->finalbias[bucket] * evalQA;
+  int eval = 0;
   I16 *stmaccptr = accumulation[2 * ply + color];
   I16 *nstmaccptr = accumulation[2 * ply + (color ^ 1)];
   const int *stmweightsptr = weights->ourlayer2[bucket];
   const int *nstmweightsptr = weights->theirlayer2[bucket];
   for (int i = 0; i < nnuesize; i++) {
-    eval += screlu(stmaccptr[i]) * stmweightsptr[i];
-    eval += screlu(nstmaccptr[i]) * nstmweightsptr[i];
+    I16 stmclipped = crelu(stmaccptr[i]);
+    I16 nstmclipped = crelu(nstmaccptr[i]);
+    eval += I16(stmclipped * stmweightsptr[i]) * stmclipped;
+    eval += I16(nstmclipped * nstmweightsptr[i]) * nstmclipped;
   }
   eval /= evalQA;
+  eval += weights->finalbias[bucket];
   eval *= evalscale;
   eval /= (evalQA * evalQB);
   return eval;
