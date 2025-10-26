@@ -7,7 +7,7 @@ The same command as used by OpenBench:
 
 ```make EXE=(executable name) EVALFILE=(path to NNUE file)```
 
-Prolix compiles using `clang++`, though in theory `g++` should also be supported.
+Prolix compiles using `clang++`. A version at least 19 is ideal for maximum performance.
 
 ## NNUE
 On compilation, Prolix embeds a NNUE file into the executable using [incbin](https://github.com/graphitemaster/incbin), which becomes the default NNUE file used for evaluation. You can download NNUE files from [Google Drive](https://drive.google.com/drive/folders/1d4HROM-7nbSpkQGt4e4TMEcmcVa00XoE?usp=sharing).

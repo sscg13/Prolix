@@ -5,10 +5,6 @@
 #include "../external/incbin/incbin.h"
 
 INCBIN(char, NNUE, EUNNfile);
-int screlu(I16 x) {
-  I16 y = std::max(std::min(x, (I16)255), (I16)0);
-  return y * y;
-}
 I16 crelu(I16 x) {
   return std::max(std::min(x, (I16)255), (I16)0);
 }
