@@ -134,7 +134,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
       }
     }
   }
-  if (!tthit) {
+  if (ttentry.depth() == 0) {
     ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0, ply,
                    (savednodetype == EXPECTED_PV_NODE), score,
                    EXPECTED_CUT_NODE, bestmove1);
