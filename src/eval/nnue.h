@@ -5,12 +5,12 @@
 #pragma once
 
 class Searcher;
-struct alignas(64) NNUEWeights {
-  I16 nnuelayer1[realbuckets][768][nnuesize];
-  I16 layer1bias[nnuesize];
-  int ourlayer2[outputbuckets][nnuesize];
-  int theirlayer2[outputbuckets][nnuesize];
-  int finalbias[outputbuckets];
+struct NNUEWeights {
+  alignas(64) I16 nnuelayer1[realbuckets][768][nnuesize];
+  alignas(64) I16 layer1bias[nnuesize];
+  alignas(64) int ourlayer2[outputbuckets][nnuesize];
+  alignas(64) int theirlayer2[outputbuckets][nnuesize];
+  alignas(64) int finalbias[outputbuckets];
 
   void loaddefaultnet();
   NNUEWeights() { loaddefaultnet(); }
