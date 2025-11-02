@@ -6,7 +6,7 @@ bool iscapture(int notation) { return ((notation >> 16) & 1); }
 void initializelmr() {
   for (int i = 0; i < maxmaxdepth; i++) {
     for (int j = 0; j < maxmoves; j++) {
-      lmr_reductions[i][j] = floor(788.5 + log(i + 1) * log(j + 1) * 471);
+      lmr_reductions[i][j] = floor(686 + log(i + 1) * log(j + 1) * 471);
     }
   }
 }
