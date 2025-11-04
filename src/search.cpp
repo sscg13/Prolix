@@ -209,7 +209,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         }
       }
     } else {
-      int margin = std::max(20, 70 * depth - 70 * ttdepth - 70 * improving + 70 * isttPV);
+      int margin = std::max(20 * isttPV, 70 * depth - 70 * ttdepth - 70 * improving);
       if (((nodetype & EXPECTED_CUT_NODE) && (score - margin >= beta)) &&
           (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) &&
           (margin < 500)) {
@@ -226,7 +226,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   if (depth >= 3 && !tthit) {
     depth--;
   }
-  int margin = std::max(20, 70 * depth - 70 * improving + 70 * isttPV);
+  int margin = std::max(20 * isttPV, 70 * depth - 70 * improving);
   if (ply > 0 && !tthit) {
     if (staticeval - margin >= beta &&
         (abs(beta) < SCORE_MAX_EVAL && !incheck) && (margin < 500)) {
