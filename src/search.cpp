@@ -56,22 +56,27 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
   bool tthit = (ttentry.key == Bitboards.zobristhash);
+  int tteval;
+  int ttnodetype;
   if (!isPV && tthit) {
-    int score = std::min(std::max(ttentry.score(0), -SCORE_WIN), SCORE_WIN);
-    int nodetype = ttentry.nodetype();
-    if (nodetype == EXPECTED_PV_NODE) {
-      return score;
+    tteval = std::min(std::max(ttentry.score(0), -SCORE_WIN), SCORE_WIN);
+    ttnodetype = ttentry.nodetype();
+    if (ttnodetype == EXPECTED_PV_NODE) {
+      return tteval;
     }
-    if ((nodetype & EXPECTED_CUT_NODE) && (score >= beta)) {
-      return score;
+    if ((ttnodetype & EXPECTED_CUT_NODE) && (tteval >= beta)) {
+      return tteval;
     }
-    if ((nodetype & EXPECTED_ALL_NODE) && (score <= alpha)) {
-      return score;
+    if ((ttnodetype & EXPECTED_ALL_NODE) && (tteval <= alpha)) {
+      return tteval;
     }
   }
   int color = Bitboards.position & 1;
   int score =
       searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+  if ((!isPV && tthit) && ((tteval > score) ? (ttnodetype & EXPECTED_CUT_NODE) : (ttnodetype & EXPECTED_ALL_NODE))) {
+    score = tteval;
+  }
   int bestscore = -SCORE_INF;
   int savednodetype = EXPECTED_ALL_NODE;
   int bestmove1 = 0;
