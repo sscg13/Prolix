@@ -346,7 +346,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     searchstack[ply + 1].plysincecapture = 0;
     if (!iscapture(mov)) {
       quiets++;
-      if (i > depth * depth + depth + 4) {
+      if (i > depth * depth + 5) {
         break;
       }
       if (!isPV && !incheck && depth < 5 && movescore[i] < 0) {
