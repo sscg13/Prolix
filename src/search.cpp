@@ -492,6 +492,8 @@ int Searcher::iterative() {
   int color = Bitboards.position & 1;
   int score =
       searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+  int initialscore = 0;
+  float complexitytmfactor = 1;
   int returnedscore = score;
   int depth = 1;
   int bestmove1 = 0;
@@ -520,6 +522,9 @@ int Searcher::iterative() {
         score = score1;
         fail = false;
       }
+    }
+    if (depth == 1) {
+      initialscore = score;
     }
     auto now = std::chrono::steady_clock::now();
     auto timetaken =
@@ -587,6 +592,11 @@ int Searcher::iterative() {
           }
           std::cout << std::endl;
         }
+        if (depth >= 6 && ismaster && std::abs(score) < SCORE_MAX_EVAL) {
+          int complexity = std::abs(score - initialscore);
+          float factor = std::max(std::min(complexity / 200.0, 1.0), 0.25);
+          complexitytmfactor =  (0.9 + 0.4 * factor);
+        }
       }
       depth++;
       if (depth == searchlimits.maxdepth && ismaster) {
@@ -596,7 +606,7 @@ int Searcher::iterative() {
     } else if (ismaster) {
       *stopsearch = true;
     }
-    if (ismaster && ((timetaken.count() > searchlimits.softtimelimit &&
+    if (ismaster && ((timetaken.count() > (int)(complexitytmfactor * searchlimits.softtimelimit) &&
                       searchlimits.softtimelimit > 0) ||
                      (Bitboards.nodecount > searchlimits.softnodelimit &&
                       searchlimits.softnodelimit > 0))) {
