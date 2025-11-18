@@ -5,9 +5,7 @@
 #include "../external/incbin/incbin.h"
 
 INCBIN(char, NNUE, EUNNfile);
-I16 crelu(I16 x) {
-  return std::max(std::min(x, (I16)255), (I16)0);
-}
+I16 crelu(I16 x) { return std::max(std::min(x, (I16)255), (I16)0); }
 void NNUEWeights::loaddefaultnet() {
   int offset = 0;
   for (int k = 0; k < realbuckets; k++) {
@@ -239,8 +237,8 @@ void NNUE::forwardaccumulators(const int notation, const U64 *Bitboards) {
   int color = (notation >> 12) & 1;
   int piece = (notation >> 13) & 7;
   int captured = (notation >> 17) & 7;
-  int promoted = (notation >> 21) & 3;
-  int piece2 = (promoted > 0) ? piece : piece - 2;
+  int promoted = (notation >> 20) & 1;
+  int piece2 = (promoted > 0) ? 2 : piece - 2;
   int oppksq = __builtin_ctzll(Bitboards[7] & Bitboards[color ^ 1]);
   int ourksq = __builtin_ctzll(Bitboards[7] & Bitboards[color]);
   I16 *newaccptr = accumulation[2 * (ply + 1) + (color ^ 1)];

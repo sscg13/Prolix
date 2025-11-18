@@ -322,8 +322,8 @@ U64 Board::keyafter(int notation) {
   int color = (notation >> 12) & 1;
   int piece = (notation >> 13) & 7;
   int captured = (notation >> 17) & 7;
-  int promoted = (notation >> 21) & 3;
-  int piece2 = (promoted > 0) ? piece + 2 : piece;
+  int promoted = (notation >> 20) & 1;
+  int piece2 = (promoted > 0) ? 4 : piece;
   U64 change = (colorhash ^ hashes[color][from] ^ hashes[color][to] ^
                 hashes[piece][from] ^ hashes[piece2][to]);
   if (captured) {
@@ -333,7 +333,7 @@ U64 Board::keyafter(int notation) {
 }
 void Board::makemove(int notation, bool reversible) {
   // 6 bits from square, 6 bits to square, 1 bit color, 3 bits piece moved, 1
-  // bit capture, 3 bits piece captured, 1 bit promotion, 2 bits promoted piece, 23 bits total
+  // bit capture, 3 bits piece captured, 1 bit promotion, 21 bits total
 
   // 1 bit color, 7 bits halfmove
   gamelength++;
@@ -352,7 +352,6 @@ void Board::makemove(int notation, bool reversible) {
   zobristhash ^= (hashes[color][from] ^ hashes[color][to]);
   zobristhash ^= (hashes[piece][from] ^ hashes[piece][to]);
   int captured = (notation >> 17) & 7;
-  int promoted = (notation >> 21) & 3;
   int halfmove = (position >> 1);
   position ^= (halfmove << 1);
   halfmove++;
@@ -383,11 +382,9 @@ void Board::makemove(int notation, bool reversible) {
     pieces[to] = 8 * color + 4;
     zobristhash ^= (hashes[2][to] ^ hashes[4][to]);
     evalm[color] -= (materialm[0] + pstm[0][(56 * color) ^ from]);
-    evalm[color] +=
-        (materialm[2] + pstm[2][(56 * color) ^ from]);
+    evalm[color] += (materialm[2] + pstm[2][(56 * color) ^ from]);
     evale[color] -= (materiale[0] + pste[0][(56 * color) ^ from]);
-    evale[color] +=
-        (materiale[2] + pste[2][(56 * color) ^ to]);
+    evale[color] += (materiale[2] + pste[2][(56 * color) ^ to]);
     gamephase[color] += phase[2];
     gamephase[color] -= phase[0];
   }
@@ -418,7 +415,6 @@ void Board::unmakemove(int notation) {
   evale[color] += pste[piece - 2][(56 * color) ^ from];
   evale[color] -= pste[piece - 2][(56 * color) ^ to];
   int captured = (notation >> 17) & 7;
-  int promoted = (notation >> 21) & 3;
   if (notation & (1 << 16)) {
     Bitboards[color ^ 1] ^= (1ULL << to);
     Bitboards[captured] ^= (1ULL << to);
@@ -434,11 +430,9 @@ void Board::unmakemove(int notation) {
     Bitboards[4] ^= (1ULL << to);
     pieces[from] = 8 * color + 2;
     evalm[color] += (materialm[0] + pstm[0][(56 * color) ^ from]);
-    evalm[color] -=
-        (materialm[2] + pstm[2][(56 * color) ^ from]);
+    evalm[color] -= (materialm[2] + pstm[2][(56 * color) ^ from]);
     evale[color] += (materiale[0] + pste[0][(56 * color) ^ from]);
-    evale[color] -=
-        (materiale[2] + pste[2][(56 * color) ^ to]);
+    evale[color] -= (materiale[2] + pste[2][(56 * color) ^ to]);
     gamephase[color] -= phase[2];
     gamephase[color] += phase[0];
   }
@@ -589,7 +583,7 @@ int Board::generatemoves(int color, bool capturesonly, int *movelist) {
       notation |= (captured << 17);
       if (((color == 0) && (capturesquare & 56) == 56) ||
           ((color == 1) && (capturesquare & 56) == 0)) {
-        movelist[movecount] = notation | (3 << 20);
+        movelist[movecount] = notation | (1 << 20);
         movecount++;
       } else {
         movelist[movecount] = notation;
@@ -608,7 +602,7 @@ int Board::generatemoves(int color, bool capturesonly, int *movelist) {
         notation |= (2 << 13);
         if (((color == 0) && (movesquare & 56) == 56) ||
             ((color == 1) && (movesquare & 56) == 0)) {
-          movelist[movecount] = notation | (3 << 20);
+          movelist[movecount] = notation | (1 << 20);
           movecount++;
         } else {
           movelist[movecount] = notation;

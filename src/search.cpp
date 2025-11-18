@@ -74,7 +74,9 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int color = Bitboards.position & 1;
   int score =
       searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
-  if ((!isPV && tthit) && ((tteval > score) ? (ttnodetype & EXPECTED_CUT_NODE) : (ttnodetype & EXPECTED_ALL_NODE))) {
+  if ((!isPV && tthit) &&
+      ((tteval > score) ? (ttnodetype & EXPECTED_CUT_NODE)
+                        : (ttnodetype & EXPECTED_ALL_NODE))) {
     score = tteval;
   }
   int bestscore = -SCORE_INF;
@@ -214,7 +216,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         }
       }
     } else {
-      int margin = std::max(20 * isttPV, 70 * depth - 70 * ttdepth - 70 * improving);
+      int margin =
+          std::max(20 * isttPV, 70 * depth - 70 * ttdepth - 70 * improving);
       if (((nodetype & EXPECTED_CUT_NODE) && (score - margin >= beta)) &&
           (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) &&
           (margin < 500)) {
