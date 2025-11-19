@@ -24,6 +24,7 @@ class Board {
 
 public:
   U64 Bitboards[8];
+  int pieces[64];
   int gamelength = 0;
   int position = 0;
   int nodecount = 0;

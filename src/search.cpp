@@ -74,7 +74,9 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int color = Bitboards.position & 1;
   int score =
       searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
-  if ((!isPV && tthit) && ((tteval > score) ? (ttnodetype & EXPECTED_CUT_NODE) : (ttnodetype & EXPECTED_ALL_NODE))) {
+  if ((!isPV && tthit) &&
+      ((tteval > score) ? (ttnodetype & EXPECTED_CUT_NODE)
+                        : (ttnodetype & EXPECTED_ALL_NODE))) {
     score = tteval;
   }
   int bestscore = -SCORE_INF;
@@ -214,7 +216,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         }
       }
     } else {
-      int margin = std::max(20 * isttPV, 70 * depth - 70 * ttdepth - 70 * improving);
+      int margin =
+          std::max(20 * isttPV, 70 * depth - 70 * ttdepth - 70 * improving);
       if (((nodetype & EXPECTED_CUT_NODE) && (score - margin >= beta)) &&
           (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) &&
           (margin < 500)) {
@@ -464,9 +467,9 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
 }
 int Searcher::wdlmodel(int eval) {
   int material = Bitboards.material();
-  double m = std::max(std::min(material, 64), 4) / 32.0;
-  double as[4] = {1.68116882, 4.65282732, -59.57468312, 227.74637225};
-  double bs[4] = {-0.87426669, 2.05986232, -1.43046196, 52.66782181};
+  double m = std::max(std::min(material, 64), 4) / 24.0;
+  double as[4] = {25.31918174, -110.26807200, 128.89604743, 179.29034199};
+  double bs[4] = {0.70633876, 0.06764485, 5.23894335, 45.58262508};
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   double b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3];
   return int(0.5 + 1000 / (1 + exp((a - double(eval)) / b)));
@@ -476,8 +479,8 @@ int Searcher::normalize(int eval) {
     return eval;
   }
   int material = Bitboards.material();
-  double m = std::max(std::min(material, 64), 4) / 32.0;
-  double as[4] = {1.68116882, 4.65282732, -59.57468312, 227.74637225};
+  double m = std::max(std::min(material, 64), 4) / 24.0;
+  double as[4] = {25.31918174, -110.26807200, 128.89604743, 179.29034199};
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   return round(100 * eval / a);
 }

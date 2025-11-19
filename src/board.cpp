@@ -210,11 +210,11 @@ std::string get129600FEN(int seed1, int seed2) {
 
 U64 Board::scratchzobrist() {
   U64 scratch = 0ULL;
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 64; j++) {
-      if (Bitboards[i] & (1ULL << j)) {
-        scratch ^= hashes[i][j];
-      }
+  for (int i = 0; i < 64; i++) {
+    int piece = pieces[i];
+    if (piece > 0) {
+      scratch ^= hashes[piece / 8][i];
+      scratch ^= hashes[piece % 8][i];
     }
   }
   if (position & 1) {
@@ -242,8 +242,13 @@ void Board::initialize() {
   int startpstm = 0;
   int startpste = 0;
   for (int i = 0; i < 16; i++) {
+    pieces[i] = 2 + startpiece[i];
+    pieces[56 ^ i] = 10 + startpiece[i];
     startpstm += pstm[startpiece[i]][i];
     startpste += pste[startpiece[i]][i];
+  }
+  for (int i = 16; i < 48; i++) {
+    pieces[i] = 0;
   }
   evalm[0] = startmatm + startpstm;
   evalm[1] = startmatm + startpstm;
@@ -317,8 +322,8 @@ U64 Board::keyafter(int notation) {
   int color = (notation >> 12) & 1;
   int piece = (notation >> 13) & 7;
   int captured = (notation >> 17) & 7;
-  int promoted = (notation >> 21) & 3;
-  int piece2 = (promoted > 0) ? piece + 2 : piece;
+  int promoted = (notation >> 20) & 1;
+  int piece2 = (promoted > 0) ? 4 : piece;
   U64 change = (colorhash ^ hashes[color][from] ^ hashes[color][to] ^
                 hashes[piece][from] ^ hashes[piece2][to]);
   if (captured) {
@@ -328,10 +333,9 @@ U64 Board::keyafter(int notation) {
 }
 void Board::makemove(int notation, bool reversible) {
   // 6 bits from square, 6 bits to square, 1 bit color, 3 bits piece moved, 1
-  // bit capture, 3 bits piece captured, 1 bit promotion, 2 bits promoted piece,
-  // 1 bit castling, 1 bit double pawn push, 1 bit en passant, 26 bits total
+  // bit capture, 3 bits piece captured, 1 bit promotion, 21 bits total
 
-  // 1 bit color, 7 bits halfmove, 6 bits ep, 4 bits castling
+  // 1 bit color, 7 bits halfmove
   gamelength++;
   int from = notation & 63;
   int to = (notation >> 6) & 63;
@@ -339,6 +343,8 @@ void Board::makemove(int notation, bool reversible) {
   int piece = (notation >> 13) & 7;
   Bitboards[color] ^= ((1ULL << from) | (1ULL << to));
   Bitboards[piece] ^= ((1ULL << from) | (1ULL << to));
+  pieces[to] = pieces[from];
+  pieces[from] = 0;
   evalm[color] += pstm[piece - 2][(56 * color) ^ to];
   evalm[color] -= pstm[piece - 2][(56 * color) ^ from];
   evale[color] += pste[piece - 2][(56 * color) ^ to];
@@ -346,7 +352,6 @@ void Board::makemove(int notation, bool reversible) {
   zobristhash ^= (hashes[color][from] ^ hashes[color][to]);
   zobristhash ^= (hashes[piece][from] ^ hashes[piece][to]);
   int captured = (notation >> 17) & 7;
-  int promoted = (notation >> 21) & 3;
   int halfmove = (position >> 1);
   position ^= (halfmove << 1);
   halfmove++;
@@ -373,18 +378,15 @@ void Board::makemove(int notation, bool reversible) {
   }
   if (notation & (1 << 20)) {
     Bitboards[2] ^= (1ULL << to);
-    Bitboards[promoted + 3] ^= (1ULL << to);
-    zobristhash ^= (hashes[2][to] ^ hashes[promoted + 3][to]);
+    Bitboards[4] ^= (1ULL << to);
+    pieces[to] = 8 * color + 4;
+    zobristhash ^= (hashes[2][to] ^ hashes[4][to]);
     evalm[color] -= (materialm[0] + pstm[0][(56 * color) ^ from]);
-    evalm[color] +=
-        (materialm[promoted + 1] + pstm[promoted + 1][(56 * color) ^ from]);
+    evalm[color] += (materialm[2] + pstm[2][(56 * color) ^ from]);
     evale[color] -= (materiale[0] + pste[0][(56 * color) ^ from]);
-    evale[color] +=
-        (materiale[promoted + 1] + pste[promoted + 1][(56 * color) ^ to]);
-    gamephase[color] += phase[promoted + 1];
+    evale[color] += (materiale[2] + pste[2][(56 * color) ^ to]);
+    gamephase[color] += phase[2];
     gamephase[color] -= phase[0];
-  } else if (notation & (1 << 24)) {
-    position ^= ((from + to) << 7);
   }
   if (!reversible) {
     root = gamelength;
@@ -406,15 +408,17 @@ void Board::unmakemove(int notation) {
   int piece = (notation >> 13) & 7;
   Bitboards[color] ^= ((1ULL << from) | (1ULL << to));
   Bitboards[piece] ^= ((1ULL << from) | (1ULL << to));
+  pieces[from] = pieces[to];
+  pieces[to] = 0;
   evalm[color] += pstm[piece - 2][(56 * color) ^ from];
   evalm[color] -= pstm[piece - 2][(56 * color) ^ to];
   evale[color] += pste[piece - 2][(56 * color) ^ from];
   evale[color] -= pste[piece - 2][(56 * color) ^ to];
   int captured = (notation >> 17) & 7;
-  int promoted = (notation >> 21) & 3;
   if (notation & (1 << 16)) {
     Bitboards[color ^ 1] ^= (1ULL << to);
     Bitboards[captured] ^= (1ULL << to);
+    pieces[to] = 8 * (color ^ 1) + captured;
     evalm[color ^ 1] += materialm[captured - 2];
     evale[color ^ 1] += materiale[captured - 2];
     evalm[color ^ 1] += pstm[captured - 2][(56 * (color ^ 1)) ^ to];
@@ -423,14 +427,13 @@ void Board::unmakemove(int notation) {
   }
   if (notation & (1 << 20)) {
     Bitboards[2] ^= (1ULL << to);
-    Bitboards[promoted + 3] ^= (1ULL << to);
+    Bitboards[4] ^= (1ULL << to);
+    pieces[from] = 8 * color + 2;
     evalm[color] += (materialm[0] + pstm[0][(56 * color) ^ from]);
-    evalm[color] -=
-        (materialm[promoted + 1] + pstm[promoted + 1][(56 * color) ^ from]);
+    evalm[color] -= (materialm[2] + pstm[2][(56 * color) ^ from]);
     evale[color] += (materiale[0] + pste[0][(56 * color) ^ from]);
-    evale[color] -=
-        (materiale[promoted + 1] + pste[promoted + 1][(56 * color) ^ to]);
-    gamephase[color] -= phase[promoted + 1];
+    evale[color] -= (materiale[2] + pste[2][(56 * color) ^ to]);
+    gamephase[color] -= phase[2];
     gamephase[color] += phase[0];
   }
 }
@@ -513,15 +516,10 @@ int Board::generatemoves(int color, bool capturesonly, int *movelist) {
   int movenumber;
   for (int i = 0; i < capturenumber; i++) {
     int capturesquare = __builtin_ctzll(ourcaptures);
+    int captured = pieces[capturesquare] % 8;
     int notation = kingsquare | (capturesquare << 6);
     notation |= (color << 12);
     notation |= (7 << 13);
-    int captured = 0;
-    for (int j = 2; j < 7; j++) {
-      if ((1ULL << capturesquare) & (Bitboards[opposite] & Bitboards[j])) {
-        captured = j;
-      }
-    }
     notation |= (1 << 16);
     notation |= (captured << 17);
     movelist[movecount] = notation;
@@ -577,20 +575,15 @@ int Board::generatemoves(int color, bool capturesonly, int *movelist) {
     }
     for (int j = 0; j < capturenumber; j++) {
       int capturesquare = __builtin_ctzll(ourcaptures);
+      int captured = pieces[capturesquare] % 8;
       int notation = pawnsquare | (capturesquare << 6);
       notation |= (color << 12);
       notation |= (2 << 13);
-      int captured = 0;
-      for (int j = 2; j < 7; j++) {
-        if ((1ULL << capturesquare) & (Bitboards[opposite] & Bitboards[j])) {
-          captured = j;
-        }
-      }
       notation |= (1 << 16);
       notation |= (captured << 17);
       if (((color == 0) && (capturesquare & 56) == 56) ||
           ((color == 1) && (capturesquare & 56) == 0)) {
-        movelist[movecount] = notation | (3 << 20);
+        movelist[movecount] = notation | (1 << 20);
         movecount++;
       } else {
         movelist[movecount] = notation;
@@ -609,7 +602,7 @@ int Board::generatemoves(int color, bool capturesonly, int *movelist) {
         notation |= (2 << 13);
         if (((color == 0) && (movesquare & 56) == 56) ||
             ((color == 1) && (movesquare & 56) == 0)) {
-          movelist[movecount] = notation | (3 << 20);
+          movelist[movecount] = notation | (1 << 20);
           movecount++;
         } else {
           movelist[movecount] = notation;
@@ -636,15 +629,10 @@ int Board::generatemoves(int color, bool capturesonly, int *movelist) {
     int capturenumber = __builtin_popcountll(ourcaptures);
     for (int j = 0; j < capturenumber; j++) {
       int capturesquare = __builtin_ctzll(ourcaptures);
+      int captured = pieces[capturesquare] % 8;
       int notation = alfilsquare | (capturesquare << 6);
       notation |= (color << 12);
       notation |= (3 << 13);
-      int captured = 0;
-      for (int j = 2; j < 7; j++) {
-        if ((1ULL << capturesquare) & (Bitboards[opposite] & Bitboards[j])) {
-          captured = j;
-        }
-      }
       notation |= (1 << 16);
       notation |= (captured << 17);
       movelist[movecount] = notation;
@@ -682,15 +670,10 @@ int Board::generatemoves(int color, bool capturesonly, int *movelist) {
     int capturenumber = __builtin_popcountll(ourcaptures);
     for (int j = 0; j < capturenumber; j++) {
       int capturesquare = __builtin_ctzll(ourcaptures);
+      int captured = pieces[capturesquare] % 8;
       int notation = ferzsquare | (capturesquare << 6);
       notation |= (color << 12);
       notation |= (4 << 13);
-      int captured = 0;
-      for (int j = 2; j < 7; j++) {
-        if ((1ULL << capturesquare) & (Bitboards[opposite] & Bitboards[j])) {
-          captured = j;
-        }
-      }
       notation |= (1 << 16);
       notation |= (captured << 17);
       movelist[movecount] = notation;
@@ -728,15 +711,10 @@ int Board::generatemoves(int color, bool capturesonly, int *movelist) {
     int capturenumber = __builtin_popcountll(ourcaptures);
     for (int j = 0; j < capturenumber; j++) {
       int capturesquare = __builtin_ctzll(ourcaptures);
+      int captured = pieces[capturesquare] % 8;
       int notation = knightsquare | (capturesquare << 6);
       notation |= (color << 12);
       notation |= (5 << 13);
-      int captured = 0;
-      for (int j = 2; j < 7; j++) {
-        if ((1ULL << capturesquare) & (Bitboards[opposite] & Bitboards[j])) {
-          captured = j;
-        }
-      }
       notation |= (1 << 16);
       notation |= (captured << 17);
       movelist[movecount] = notation;
@@ -780,15 +758,10 @@ int Board::generatemoves(int color, bool capturesonly, int *movelist) {
     int capturenumber = __builtin_popcountll(ourcaptures);
     for (int j = 0; j < capturenumber; j++) {
       int capturesquare = __builtin_ctzll(ourcaptures);
+      int captured = pieces[capturesquare] % 8;
       int notation = rooksquare | (capturesquare << 6);
       notation |= (color << 12);
       notation |= (6 << 13);
-      int captured = 0;
-      for (int j = 2; j < 7; j++) {
-        if ((1ULL << capturesquare) & (Bitboards[opposite] & Bitboards[j])) {
-          captured = j;
-        }
-      }
       notation |= (1 << 16);
       notation |= (captured << 17);
       movelist[movecount] = notation;
@@ -874,12 +847,6 @@ void Board::parseFEN(std::string FEN) {
   evalm[1] = 0;
   evale[0] = 0;
   evale[1] = 0;
-  int order[64] = {56, 57, 58, 59, 60, 61, 62, 63, 48, 49, 50, 51, 52,
-                   53, 54, 55, 40, 41, 42, 43, 44, 45, 46, 47, 32, 33,
-                   34, 35, 36, 37, 38, 39, 24, 25, 26, 27, 28, 29, 30,
-                   31, 16, 17, 18, 19, 20, 21, 22, 23, 8,  9,  10, 11,
-                   12, 13, 14, 15, 0,  1,  2,  3,  4,  5,  6,  7};
-  char file[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
   int progress = 0;
   for (int i = 0; i < 8; i++) {
     Bitboards[i] = 0ULL;
@@ -891,103 +858,118 @@ void Board::parseFEN(std::string FEN) {
     char hm = FEN[tracker];
     if ('0' <= hm && hm <= '9') {
       int repeat = (int)hm - 48;
-      progress += repeat;
+      for (int i = 0; i < repeat; i++) {
+        pieces[(56 ^ progress)] = 0;
+        progress++;
+      }
     }
     if ('A' <= hm && hm <= 'Z') {
-      Bitboards[0] |= (1ULL << order[progress]);
+      Bitboards[0] |= (1ULL << (56 ^ progress));
       if (hm == 'P') {
-        Bitboards[2] |= (1ULL << order[progress]);
+        Bitboards[2] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 2;
         evalm[0] += materialm[0];
         evale[0] += materiale[0];
-        evalm[0] += pstm[0][order[progress]];
-        evale[0] += pste[0][order[progress]];
+        evalm[0] += pstm[0][(56 ^ progress)];
+        evale[0] += pste[0][(56 ^ progress)];
         gamephase[0] += phase[0];
       }
       if (hm == 'A' || hm == 'B') {
-        Bitboards[3] |= (1ULL << order[progress]);
+        Bitboards[3] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 3;
         evalm[0] += materialm[1];
         evale[0] += materiale[1];
-        evalm[0] += pstm[1][order[progress]];
-        evale[0] += pste[1][order[progress]];
+        evalm[0] += pstm[1][(56 ^ progress)];
+        evale[0] += pste[1][(56 ^ progress)];
         gamephase[0] += phase[1];
       }
       if (hm == 'F' || hm == 'Q') {
-        Bitboards[4] |= (1ULL << order[progress]);
+        Bitboards[4] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 4;
         evalm[0] += materialm[2];
         evale[0] += materiale[2];
-        evalm[0] += pstm[2][order[progress]];
-        evale[0] += pste[2][order[progress]];
+        evalm[0] += pstm[2][(56 ^ progress)];
+        evale[0] += pste[2][(56 ^ progress)];
         gamephase[0] += phase[2];
       }
       if (hm == 'N') {
-        Bitboards[5] |= (1ULL << order[progress]);
+        Bitboards[5] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 5;
         evalm[0] += materialm[3];
         evale[0] += materiale[3];
-        evalm[0] += pstm[3][order[progress]];
-        evale[0] += pste[3][order[progress]];
+        evalm[0] += pstm[3][(56 ^ progress)];
+        evale[0] += pste[3][(56 ^ progress)];
         gamephase[0] += phase[3];
       }
       if (hm == 'R') {
-        Bitboards[6] |= (1ULL << order[progress]);
+        Bitboards[6] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 6;
         evalm[0] += materialm[4];
         evale[0] += materiale[4];
-        evalm[0] += pstm[4][order[progress]];
-        evale[0] += pste[4][order[progress]];
+        evalm[0] += pstm[4][(56 ^ progress)];
+        evale[0] += pste[4][(56 ^ progress)];
         gamephase[0] += phase[4];
       }
       if (hm == 'K') {
-        Bitboards[7] |= (1ULL << order[progress]);
-        evalm[0] += pstm[5][order[progress]];
-        evale[0] += pste[5][order[progress]];
+        Bitboards[7] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 7;
+        evalm[0] += pstm[5][(56 ^ progress)];
+        evale[0] += pste[5][(56 ^ progress)];
       }
       progress++;
     }
     if ('a' <= hm && hm <= 'z') {
-      Bitboards[1] |= (1ULL << order[progress]);
+      Bitboards[1] |= (1ULL << (56 ^ progress));
       if (hm == 'p') {
-        Bitboards[2] |= (1ULL << order[progress]);
+        Bitboards[2] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 10;
         evalm[1] += materialm[0];
         evale[1] += materiale[0];
-        evalm[1] += pstm[0][56 ^ order[progress]];
-        evale[1] += pste[0][56 ^ order[progress]];
+        evalm[1] += pstm[0][56 ^ (56 ^ progress)];
+        evale[1] += pste[0][56 ^ (56 ^ progress)];
         gamephase[1] += phase[0];
       }
       if (hm == 'a' || hm == 'b') {
-        Bitboards[3] |= (1ULL << order[progress]);
+        Bitboards[3] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 11;
         evalm[1] += materialm[1];
         evale[1] += materiale[1];
-        evalm[1] += pstm[1][56 ^ order[progress]];
-        evale[1] += pste[1][56 ^ order[progress]];
+        evalm[1] += pstm[1][56 ^ (56 ^ progress)];
+        evale[1] += pste[1][56 ^ (56 ^ progress)];
         gamephase[1] += phase[1];
       }
       if (hm == 'f' || hm == 'q') {
-        Bitboards[4] |= (1ULL << order[progress]);
+        Bitboards[4] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 12;
         evalm[1] += materialm[2];
         evale[1] += materiale[2];
-        evalm[1] += pstm[2][56 ^ order[progress]];
-        evale[1] += pste[2][56 ^ order[progress]];
+        evalm[1] += pstm[2][56 ^ (56 ^ progress)];
+        evale[1] += pste[2][56 ^ (56 ^ progress)];
         gamephase[1] += phase[2];
       }
       if (hm == 'n') {
-        Bitboards[5] |= (1ULL << order[progress]);
+        Bitboards[5] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 13;
         evalm[1] += materialm[3];
         evale[1] += materiale[3];
-        evalm[1] += pstm[3][56 ^ order[progress]];
-        evale[1] += pste[3][56 ^ order[progress]];
+        evalm[1] += pstm[3][56 ^ (56 ^ progress)];
+        evale[1] += pste[3][56 ^ (56 ^ progress)];
         gamephase[1] += phase[3];
       }
       if (hm == 'r') {
-        Bitboards[6] |= (1ULL << order[progress]);
+        Bitboards[6] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 14;
         evalm[1] += materialm[4];
         evale[1] += materiale[4];
-        evalm[1] += pstm[4][56 ^ order[progress]];
-        evale[1] += pste[4][56 ^ order[progress]];
+        evalm[1] += pstm[4][56 ^ (56 ^ progress)];
+        evale[1] += pste[4][56 ^ (56 ^ progress)];
         gamephase[1] += phase[4];
       }
       if (hm == 'k') {
-        Bitboards[7] |= (1ULL << order[progress]);
-        evalm[1] += pstm[5][56 ^ order[progress]];
-        evale[1] += pste[5][56 ^ order[progress]];
+        Bitboards[7] |= (1ULL << (56 ^ progress));
+        pieces[(56 ^ progress)] = 15;
+        evalm[1] += pstm[5][56 ^ (56 ^ progress)];
+        evale[1] += pste[5][56 ^ (56 ^ progress)];
       }
       progress++;
     }
@@ -1012,11 +994,6 @@ void Board::parseFEN(std::string FEN) {
   history[0] = position;
 }
 std::string Board::getFEN() {
-  int order[64] = {56, 57, 58, 59, 60, 61, 62, 63, 48, 49, 50, 51, 52,
-                   53, 54, 55, 40, 41, 42, 43, 44, 45, 46, 47, 32, 33,
-                   34, 35, 36, 37, 38, 39, 24, 25, 26, 27, 28, 29, 30,
-                   31, 16, 17, 18, 19, 20, 21, 22, 23, 8,  9,  10, 11,
-                   12, 13, 14, 15, 0,  1,  2,  3,  4,  5,  6,  7};
   std::string FEN = "";
   int empt = 0;
   char convert[2][6] = {{'P', 'B', 'Q', 'N', 'R', 'K'},
@@ -1026,7 +1003,7 @@ std::string Board::getFEN() {
   for (int i = 0; i < 64; i++) {
     color = -1;
     for (int j = 0; j < 2; j++) {
-      if (Bitboards[j] & (1ULL << order[i])) {
+      if (Bitboards[j] & (1ULL << (56 ^ i))) {
         color = j;
       }
     }
@@ -1036,7 +1013,7 @@ std::string Board::getFEN() {
         empt = 0;
       }
       for (int j = 0; j < 6; j++) {
-        if (Bitboards[j + 2] & (1ULL << order[i])) {
+        if (Bitboards[j + 2] & (1ULL << (56 ^ i))) {
           piece = j;
         }
       }
