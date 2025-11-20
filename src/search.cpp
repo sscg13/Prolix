@@ -594,8 +594,8 @@ int Searcher::iterative() {
         }
         if (depth >= 6 && ismaster && std::abs(score) < SCORE_MAX_EVAL) {
           int complexity = std::abs(score - initialscore);
-          float factor = std::max(std::min(complexity / 120.0, 1.0), 0.25);
-          complexitytmfactor =  (0.9 + 0.4 * factor);
+          float factor = std::max(std::min(complexity / 120.0, 1.0), 0.4);
+          complexitytmfactor =  (0.8 + 0.5 * factor);
         }
       }
       depth++;
