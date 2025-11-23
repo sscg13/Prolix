@@ -63,4 +63,6 @@ public:
   void datagenautoplayplain();
   void datagenautoplayviriformat();
   void bookgenautoplay(int lowerbound, int upperbound);
+
+  friend class Engine;
 };

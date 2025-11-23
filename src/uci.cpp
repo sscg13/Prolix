@@ -204,12 +204,14 @@ void Engine::uci() {
       std::cout << "Error: more than 5 pieces \n";
     }
   }
-  /*if (ucicommand == "eval") {
+  if (token == "eval") {
+    master.syncwith(*this);
     int color = Bitboards.position & 1;
-    int eval = useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+    int eval = searchoptions.useNNUE ? master.EUNN.evaluate(color) : Bitboards.evaluate(color);
     std::cout << "Raw eval: " << eval << "\n";
-    std::cout << "Normalized eval: " << normalize(eval) << "\n";
+    std::cout << "Normalized eval: " << master.normalize(eval) << "\n";
   }
+  /*
   if (ucicommand.substr(0, 3) == "see") {
     std::string mov = ucicommand.substr(4, ucicommand.length() - 4);
     int color = Bitboards.position & 1;

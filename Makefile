@@ -1,5 +1,5 @@
 EXE := Prolix
-EVALFILE := shatranj-net39.nnue
+EVALFILE := shatranj-net40.nnue
 ARCH := native
 
 SOURCES := src/Prolix.cpp src/uci.cpp src/xboard.cpp src/search.cpp src/datagen/datagen.cpp src/eval/nnue.cpp src/tt.cpp src/history.cpp src/datagen/viriformat.cpp src/board.cpp src/external/probetool/jtbprobe.c src/external/probetool/jtbinterface_bb.c
