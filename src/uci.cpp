@@ -10,6 +10,7 @@ std::string uciinfostring =
     "option name Threads type spin default 1 min 1 max 8 \n"
     "option name Hash type spin default 32 min 1 max 1024 \n"
     "option name UseNNUE type check default true \n"
+    "option name MinimalReporting type check default false\n"
     "option name NormalizeEval type check default true \n"
     "option name EvalFile type string default <internal> \n"
     "option name UCI_ShowWDL type check default true \n"
@@ -119,6 +120,13 @@ void Engine::uci() {
         searchoptions.useNNUE = true;
       } else {
         searchoptions.useNNUE = false;
+      }
+    }
+    if (option == "MinimalReporting") {
+      if (value == "true") {
+        searchoptions.minimal = true;
+      } else {
+        searchoptions.minimal = false;
       }
     }
   }

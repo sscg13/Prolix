@@ -23,6 +23,7 @@ struct Limits {
 };
 struct Options {
   bool useNNUE = true;
+  bool minimal = false;
   bool normalizeeval = true;
   bool showWDL = true;
   bool suppressoutput = false;
