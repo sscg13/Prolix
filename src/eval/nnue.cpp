@@ -21,7 +21,17 @@ void NNUEWeights::loaddefaultnet() {
   memcpy(layer1bias, &NNUEData[offset], 2 * L1size);
   offset += 2 * L1size;
 #ifdef MULTI_LAYER
-// Coming soon
+  memcpy(nnuelayer2, &NNUEData[offset], outputbuckets * L1size * L2size);
+  offset += outputbuckets * L1size * L2size;
+  memcpy(layer2bias, &NNUEData[offset], 4 * outputbuckets * L2size);
+  offset += 4 * outputbuckets * L2size;
+  memcpy(nnuelayer3, &NNUEData[offset], 4 * outputbuckets * L2size * L3size);
+  offset += 4 * outputbuckets * L2size * L3size;
+  memcpy(layer3bias, &NNUEData[offset], 4 * outputbuckets * L3size);
+  offset += 4 * outputbuckets * L3size;
+  memcpy(nnuelayer4, &NNUEData[offset], 4 * outputbuckets * L3size);
+  offset += 4 * outputbuckets * L3size;
+  memcpy(finalbias, &NNUEData[offset], 4 * outputbuckets);
 #else
   memcpy(nnuelayer2, &NNUEData[offset], 4 * outputbuckets * L1size);
   offset += 4 * outputbuckets * L1size;
