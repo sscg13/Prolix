@@ -54,10 +54,8 @@ void Engine::evalscale(std::string inputfile) {
       continue;
     }
     Bitboards.parseFEN(fen);
-    int color = Bitboards.position & 1;
     master.syncwith(*this);
-    int absscore = std::abs(searchoptions.useNNUE ? master.EUNN.evaluate(color)
-                                                  : Bitboards.evaluate(color));
+    int absscore = std::abs(master.staticeval());
     total += absscore;
     count++;
   }

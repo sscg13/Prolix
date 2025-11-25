@@ -12,7 +12,7 @@ struct PSQFeatureWeights {
 
   void load(const char *stream);
 };
-//not correct right now
+// not correct right now
 static constexpr int threatcount = 7504;
 struct ThreatFeatureWeights {
   alignas(64) I8 nnuelayer1[threatcount][L1size];
@@ -28,7 +28,8 @@ struct MultiLayerWeights {
   alignas(64) I32 layer3bias[outputbuckets * L3size];
   alignas(64) I32 nnuelayer4[outputbuckets * L3size];
   alignas(64) I32 finalbias[outputbuckets];
-  static constexpr int size = outputbuckets * (L2size * (L1size + 4) + 4 * (L3size * (L2size + 2) + 1));
+  static constexpr int size =
+      outputbuckets * (L2size * (L1size + 4) + 4 * (L3size * (L2size + 2) + 1));
 
   void load(const char *stream);
 };
@@ -40,7 +41,6 @@ struct SingleLayerWeights {
 
   void load(const char *stream);
 };
-
 
 #ifdef MULTI_LAYER
 using LayerWeights = MultiLayerWeights;
@@ -64,7 +64,8 @@ struct ThreatNNUEWeights {
   ThreatFeatureWeights threatweights;
   PSQFeatureWeights psqweights;
   LayerWeights layerweights;
-  static constexpr int size = ThreatFeatureWeights::size + PSQFeatureWeights::size + LayerWeights::size;
+  static constexpr int size =
+      ThreatFeatureWeights::size + PSQFeatureWeights::size + LayerWeights::size;
 
   void loaddefaultnet();
   ThreatNNUEWeights() { loaddefaultnet(); }
@@ -77,12 +78,12 @@ using NNUEWeights = ThreatNNUEWeights;
 using NNUEWeights = PSQNNUEWeights;
 #endif
 
-
 struct SingleLayerStack {
   SingleLayerWeights *weights;
 
-  void load(NNUEWeights* EUNNweights);
-  int propagate(int bucket, int color, const AccumulatorOutputType* input);
+  void load(NNUEWeights *EUNNweights);
+  int propagate(const int bucket, const int color,
+                const AccumulatorOutputType *input);
 };
 
 struct MultiLayerStack {
@@ -91,9 +92,10 @@ struct MultiLayerStack {
   I32 layer2activated[L2size * (1 + dualactivation)];
   I32 layer3raw[L3size];
   I32 layer3activated[L3size];
-  
-  void load(NNUEWeights* EUNNweights);
-  int propagate(int bucket, int color, const AccumulatorOutputType* input);
+
+  void load(NNUEWeights *EUNNweights);
+  int propagate(const int bucket, const int color,
+                const AccumulatorOutputType *input);
 };
 
 struct PSQAccumulatorStack {
@@ -103,25 +105,29 @@ struct PSQAccumulatorStack {
   U64 cachebitboards[inputbuckets][2][8];
   I16 accumulation[2 * (maxmaxdepth + 32)][L1size];
 
-  int getbucket(int kingsquare, int color);
-  int featureindex(int bucket, int color, int piece, int square);
-  int differencecount(int bucket, int color, const U64 *Bitboards);
-  const I16 *layer1weights(int kingsquare, int color, int piece, int square);
+  int getbucket(const int kingsquare, const int color);
+  int featureindex(const int bucket, const int color, const int piece,
+                   const int square);
+  int differencecount(const int bucket, const int color, const U64 *Bitboards);
+  const I16 *layer1weights(const int kingsquare, const int color,
+                           const int piece, const int square);
   void add(I16 *accptr, const I16 *addptr);
   void sub(I16 *accptr, const I16 *subptr);
   void addsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
               const I16 *subptr);
   void addsubsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
                  const I16 *subptr1, const I16 *subptr2);
-  void activatepiece(I16 *accptr, int kingsquare, int color, int piece,
-                     int square);
-  void deactivatepiece(I16 *accptr, int kingsquare, int color, int piece,
-                       int square);                   
-  void refreshfromcache(int kingsquare, int color, const U64 *Bitboards);
-  void refreshfromscratch(int kingsquare, int color, const U64 *Bitboards);
+  void activatepiece(I16 *accptr, const int kingsquare, const int color,
+                     const int piece, const int square);
+  void deactivatepiece(I16 *accptr, const int kingsquare, const int color,
+                       const int piece, const int square);
+  void refreshfromcache(const int kingsquare, const int color,
+                        const U64 *Bitboards);
+  void refreshfromscratch(const int kingsquare, const int color,
+                          const U64 *Bitboards);
   void initializennue(const U64 *Bitboards);
   void forwardaccumulators(const int notation, const U64 *Bitboards);
-  void backwardaccumulators(int notation, const U64 *Bitboards);
+  void backwardaccumulators(const int notation, const U64 *Bitboards);
   const I16 *currentaccumulator() { return accumulation[2 * ply]; }
 };
 
@@ -134,8 +140,8 @@ struct ThreatAccumulatorStack {
 struct SingleAccumulatorStack {
   PSQAccumulatorStack psqaccumulators;
 
-  void load(NNUEWeights* EUNNweights);
-  void initialize(const U64* Bitboards);
+  void load(NNUEWeights *EUNNweights);
+  void initialize(const U64 *Bitboards);
   void make(const int notation, const U64 *Bitboards);
   void unmake(const int notation, const U64 *Bitboards);
   const AccumulatorOutputType *transform(int color);
@@ -145,8 +151,8 @@ struct DualAccumulatorStack {
   PSQAccumulatorStack psqaccumulators;
   ThreatAccumulatorStack threataccumulators;
 
-  void load(NNUEWeights* EUNNweights);
-  void initialize(const U64* Bitboards);
+  void load(NNUEWeights *EUNNweights);
+  void initialize(const U64 *Bitboards);
   void make(const int notation, const U64 *Bitboards);
   void unmake(const int notation, const U64 *Bitboards);
   const AccumulatorOutputType *transform(int color);
@@ -164,18 +170,16 @@ using LayerStack = MultiLayerStack;
 using LayerStack = SingleLayerStack;
 #endif
 
-
 class NNUE {
   AccumulatorStack accumulators;
   LayerStack layers;
-  
+
   int totalmaterial;
 
 public:
-  void load(NNUEWeights* EUNNweights);
-  void initialize(const U64* Bitboards);
+  void load(NNUEWeights *EUNNweights);
+  void initialize(const U64 *Bitboards);
   void make(const int notation, const U64 *Bitboards);
   void unmake(const int notation, const U64 *Bitboards);
-  int evaluate(int color);
-  int initeval(int color, const U64 *Bitboards);
+  int evaluate(const int color);
 };

@@ -53,6 +53,11 @@ void Searcher::syncwith(Engine &engine) {
   searchoptions = engine.searchoptions;
   EUNN.initialize(Bitboards.Bitboards);
 }
+int Searcher::staticeval() {
+  int color = Bitboards.position & 1;
+  return searchoptions.useNNUE ? EUNN.evaluate(color)
+                               : Bitboards.evaluate(color);
+}
 int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];

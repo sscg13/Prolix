@@ -83,23 +83,26 @@ void ThreatNNUEWeights::readnnuefile(std::string file) {
   delete[] layerweightptr;
   nnueweights.close();
 }
-int PSQAccumulatorStack::getbucket(int kingsquare, int color) {
+int PSQAccumulatorStack::getbucket(const int kingsquare, const int color) {
   return kingbuckets[(56 * color) ^ kingsquare];
 }
-int PSQAccumulatorStack::featureindex(int bucket, int color, int piece, int square) {
+int PSQAccumulatorStack::featureindex(const int bucket, const int color,
+                                      const int piece, const int square) {
   int piececolor = piece / 6;
   int perspectivepiece = (color ^ piececolor) * 6 + (piece % 6);
   bool hmactive = mirrored && (bucket % 2 == 1);
   int perspectivesquare = (56 * color) ^ square ^ (7 * hmactive);
   return 64 * perspectivepiece + perspectivesquare;
 }
-int PSQAccumulatorStack::differencecount(int bucket, int color, const U64 *Bitboards) {
+int PSQAccumulatorStack::differencecount(const int bucket, const int color,
+                                         const U64 *Bitboards) {
   return __builtin_popcountll(
       (cachebitboards[bucket][color][0] | cachebitboards[bucket][color][1]) ^
       (Bitboards[0] | Bitboards[1]));
 }
-const I16 *PSQAccumulatorStack::layer1weights(int kingsquare, int color, int piece,
-                               int square) {
+const I16 *PSQAccumulatorStack::layer1weights(const int kingsquare,
+                                              const int color, const int piece,
+                                              const int square) {
   int bucket = getbucket(kingsquare, color);
   return weights->nnuelayer1[bucket / mirrordivisor]
                             [featureindex(bucket, color, piece, square)];
@@ -114,33 +117,38 @@ void PSQAccumulatorStack::sub(I16 *accptr, const I16 *subptr) {
     accptr[i] -= subptr[i];
   }
 }
-void PSQAccumulatorStack::addsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
-                  const I16 *subptr) {
+void PSQAccumulatorStack::addsub(I16 *oldaccptr, I16 *newaccptr,
+                                 const I16 *addptr, const I16 *subptr) {
   for (int i = 0; i < L1size; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr[i];
   }
 }
-void PSQAccumulatorStack::addsubsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
-                     const I16 *subptr1, const I16 *subptr2) {
+void PSQAccumulatorStack::addsubsub(I16 *oldaccptr, I16 *newaccptr,
+                                    const I16 *addptr, const I16 *subptr1,
+                                    const I16 *subptr2) {
   for (int i = 0; i < L1size; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
   }
 }
-void PSQAccumulatorStack::activatepiece(I16 *accptr, int kingsquare, int color, int piece,
-                         int square) {
+void PSQAccumulatorStack::activatepiece(I16 *accptr, const int kingsquare,
+                                        const int color, const int piece,
+                                        const int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < L1size; i++) {
     accptr[i] += weightsptr[i];
   }
 }
-void PSQAccumulatorStack::deactivatepiece(I16 *accptr, int kingsquare, int color, int piece,
-                           int square) {
+void PSQAccumulatorStack::deactivatepiece(I16 *accptr, const int kingsquare,
+                                          const int color, const int piece,
+                                          const int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < L1size; i++) {
     accptr[i] -= weightsptr[i];
   }
 }
-void PSQAccumulatorStack::refreshfromcache(int kingsquare, int color, const U64 *Bitboards) {
+void PSQAccumulatorStack::refreshfromcache(const int kingsquare,
+                                           const int color,
+                                           const U64 *Bitboards) {
   U64 add[12];
   U64 remove[12];
   int bucket = getbucket(kingsquare, color);
@@ -175,7 +183,9 @@ void PSQAccumulatorStack::refreshfromcache(int kingsquare, int color, const U64 
     accptr[i] = cacheaccptr[i];
   }
 }
-void PSQAccumulatorStack::refreshfromscratch(int kingsquare, int color, const U64 *Bitboards) {
+void PSQAccumulatorStack::refreshfromscratch(const int kingsquare,
+                                             const int color,
+                                             const U64 *Bitboards) {
   I16 *accptr = accumulation[2 * ply + color];
   I16 *cacheaccptr = cacheaccumulators[getbucket(kingsquare, color)][color];
   for (int i = 0; i < L1size; i++) {
@@ -212,7 +222,8 @@ void PSQAccumulatorStack::initializennue(const U64 *Bitboards) {
     }
   }
 }
-void PSQAccumulatorStack::forwardaccumulators(const int notation, const U64 *Bitboards) {
+void PSQAccumulatorStack::forwardaccumulators(const int notation,
+                                              const U64 *Bitboards) {
   int from = notation & 63;
   int to = (notation >> 6) & 63;
   int color = (notation >> 12) & 1;
@@ -263,10 +274,11 @@ void PSQAccumulatorStack::forwardaccumulators(const int notation, const U64 *Bit
     }
   }
 }
-void PSQAccumulatorStack::backwardaccumulators(int notation, const U64 *Bitboards) {
+void PSQAccumulatorStack::backwardaccumulators(const int notation,
+                                               const U64 *Bitboards) {
   ply--;
 }
-void SingleAccumulatorStack::load(NNUEWeights* EUNNweights) {
+void SingleAccumulatorStack::load(NNUEWeights *EUNNweights) {
   psqaccumulators.weights = &(EUNNweights->psqweights);
 }
 void SingleAccumulatorStack::initialize(const U64 *Bitboards) {
@@ -279,13 +291,14 @@ void SingleAccumulatorStack::unmake(const int notation, const U64 *Bitboards) {
   psqaccumulators.backwardaccumulators(notation, Bitboards);
 }
 const AccumulatorOutputType *SingleAccumulatorStack::transform(int color) {
-  //todo multilayer
+  // todo multilayer
   return psqaccumulators.currentaccumulator();
 }
-void SingleLayerStack::load(NNUEWeights* EUNNweights) {
+void SingleLayerStack::load(NNUEWeights *EUNNweights) {
   weights = &(EUNNweights->layerweights);
 }
-int SingleLayerStack::propagate(int bucket, int color, const AccumulatorOutputType* input) {
+int SingleLayerStack::propagate(const int bucket, const int color,
+                                const AccumulatorOutputType *input) {
   int eval = 0;
   const I16 *stmaccptr = input + color * L1size;
   const I16 *nstmaccptr = input + (color ^ 1) * L1size;
@@ -304,14 +317,14 @@ int SingleLayerStack::propagate(int bucket, int color, const AccumulatorOutputTy
   eval /= (evalQA * evalQB);
   return eval;
 }
-void NNUE::load(NNUEWeights* EUNNweights) {
+void NNUE::load(NNUEWeights *EUNNweights) {
   accumulators.load(EUNNweights);
   layers.load(EUNNweights);
 }
 void NNUE::initialize(const U64 *Bitboards) {
   totalmaterial = 0;
   for (int i = 0; i < 6; i++) {
-    totalmaterial += material[i] * __builtin_popcountll(Bitboards[2+i]);
+    totalmaterial += material[i] * __builtin_popcountll(Bitboards[2 + i]);
   }
   accumulators.initialize(Bitboards);
 }
@@ -329,8 +342,8 @@ void NNUE::unmake(const int notation, const U64 *Bitboards) {
   }
   accumulators.unmake(notation, Bitboards);
 }
-int NNUE::evaluate(int color) {
+int NNUE::evaluate(const int color) {
   int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
-  const AccumulatorOutputType* layerstackinput = accumulators.transform(color);
+  const AccumulatorOutputType *layerstackinput = accumulators.transform(color);
   return layers.propagate(bucket, color, layerstackinput);
 }
