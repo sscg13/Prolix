@@ -47,11 +47,11 @@ void Searcher::syncwith(Engine &engine) {
   stopsearch = &(engine.stopsearch);
   TT = &(engine.TT);
   TTsize = &(engine.TTsize);
-  EUNN.weights = engine.nnueweights;
+  EUNN.load(engine.nnueweights);
   Bitboards = engine.Bitboards;
   searchlimits = engine.searchlimits;
   searchoptions = engine.searchoptions;
-  EUNN.initializennue(Bitboards.Bitboards);
+  EUNN.initialize(Bitboards.Bitboards);
 }
 int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
@@ -117,12 +117,12 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
     if (good && !(*stopsearch)) {
       Bitboards.makemove(mov, 1);
       if (searchoptions.useNNUE) {
-        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.make(mov, Bitboards.Bitboards);
       }
       score = -quiesce(-beta, -alpha, ply + 1, isPV);
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
-        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.unmake(mov, Bitboards.Bitboards);
       }
       if (score >= beta) {
         if (!tthit) {
@@ -391,7 +391,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       Bitboards.makemove(mov, true);
       searchstack[ply].playedmove = mov;
       if (searchoptions.useNNUE) {
-        EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.make(mov, Bitboards.Bitboards);
       }
       r /= 1024;
       if (nullwindow) {
@@ -413,7 +413,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       }
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
-        EUNN.backwardaccumulators(mov, Bitboards.Bitboards);
+        EUNN.unmake(mov, Bitboards.Bitboards);
       }
       if (score > bestscore) {
         if (score > alpha) {
@@ -648,7 +648,7 @@ int Searcher::iterative() {
     }
     Bitboards.makemove(bestmove1, 0);
     if (searchoptions.useNNUE) {
-      EUNN.forwardaccumulators(bestmove1, Bitboards.Bitboards);
+      EUNN.make(bestmove1, Bitboards.Bitboards);
     }
   }
   bestmove = bestmove1;
