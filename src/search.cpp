@@ -153,6 +153,9 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
         }
       }
     }
+    if (*stopsearch) {
+      i = movcount;
+    }
   }
   if (!tthit) {
     ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0, ply,
