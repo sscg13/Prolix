@@ -6,12 +6,10 @@
 
 class Searcher;
 #ifdef MULTI_LAYER
-#else
-#endif
-#ifdef MULTI_LAYER
 //clang-format off
-constexpr int nnuefilesize = L1size * (1536 * realbuckets + 2) + outputbuckets *
-(L2size * (L1size + 4) + 4 * (L3size * (L2size + 2) + 1));
+constexpr int nnuefilesize =
+    L1size * (1536 * realbuckets + 2) +
+    outputbuckets * (L2size * (L1size + 4) + 4 * (L3size * (L2size + 2) + 1));
 //clang-format on
 struct NNUEWeights {
   alignas(64) I16 nnuelayer1[realbuckets * 768 * L1size];
@@ -22,11 +20,11 @@ struct NNUEWeights {
   alignas(64) I32 layer3bias[outputbuckets * L3size];
   alignas(64) I32 nnuelayer4[outputbuckets * L3size];
   alignas(64) I32 finalbias[outputbuckets];
-
 };
 #else
 //clang-format off
-constexpr int nnuefilesize = L1size * (1536 * realbuckets + 2) + outputbuckets * (4 * L1size + 2);
+constexpr int nnuefilesize =
+    L1size * (1536 * realbuckets + 2) + outputbuckets * (4 * L1size + 2);
 //clang-format on
 struct NNUEWeights {
   alignas(64) I16 nnuelayer1[realbuckets][768][L1size];
@@ -40,8 +38,6 @@ struct NNUEWeights {
 };
 #endif
 
-
-
 class NNUE {
   NNUEWeights *weights;
   int totalmaterial;
@@ -49,9 +45,9 @@ class NNUE {
   I16 cacheaccumulators[inputbuckets][2][L1size];
   U64 cachebitboards[inputbuckets][2][8];
   I16 accumulation[2 * maxmaxdepth + 64][L1size];
-  #ifdef MULTI_LAYER
-  I8 L1pairwise[L1size];
-  #endif
+#ifdef MULTI_LAYER
+  U8 L1pairwise[L1size];
+#endif
 
 public:
   int getbucket(int kingsquare, int color);

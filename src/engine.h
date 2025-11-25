@@ -36,6 +36,7 @@ public:
   void startup();
   void bench();
   void spawnworker();
+  void evalscale(std::string inputfile);
   void datagen(int dataformat, int threads, int n, std::string outputfile);
   void bookgen(int lowerbound, int upperbound, int threads, int n,
                std::string outputfile);

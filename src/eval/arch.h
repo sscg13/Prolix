@@ -22,7 +22,7 @@ constexpr int kingbuckets[64] = {
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
 constexpr int bucketdivisor = 32 / outputbuckets;
 constexpr bool dualactivation = false;
-//#define MULTI_LAYER
+// #define MULTI_LAYER
 #ifdef MULTI_LAYER
 constexpr int L2size = 8;
 constexpr int L3size = 32;

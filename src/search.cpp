@@ -114,7 +114,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
     int nextindex = (Bitboards.keyafter(mov) % *TTsize);
     __builtin_prefetch((&(*TT)[nextindex]), 0, 0);
     bool good = (incheck || Bitboards.see_exceeds(mov, color, 0));
-    if (good) {
+    if (good && !(*stopsearch)) {
       Bitboards.makemove(mov, 1);
       if (searchoptions.useNNUE) {
         EUNN.forwardaccumulators(mov, Bitboards.Bitboards);
@@ -152,9 +152,6 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
           *stopsearch = true;
         }
       }
-    }
-    if (*stopsearch) {
-      i = movcount;
     }
   }
   if (!tthit) {
@@ -562,14 +559,14 @@ int Searcher::iterative() {
             int printedscore =
                 searchoptions.normalizeeval ? normalize(score) : score;
             infoline << "info depth " << depth << " nodes "
-                      << Bitboards.nodecount << " tbhits " << tbhits << " time "
-                      << timetaken.count() << " score cp " << printedscore;
+                     << Bitboards.nodecount << " tbhits " << tbhits << " time "
+                     << timetaken.count() << " score cp " << printedscore;
             if (searchoptions.showWDL) {
               int winrate = wdlmodel(score);
               int lossrate = wdlmodel(-score);
               int drawrate = 1000 - winrate - lossrate;
               infoline << " wdl " << winrate << " " << drawrate << " "
-                        << lossrate;
+                       << lossrate;
             }
             infoline << " pv ";
             for (int i = 1; i < pvtable[0][0]; i++) {
@@ -583,8 +580,8 @@ int Searcher::iterative() {
               matescore = (-SCORE_MATE - score) / 2;
             }
             infoline << "info depth " << depth << " nodes "
-                      << Bitboards.nodecount << " tbhits " << tbhits << " time "
-                      << timetaken.count() << " score mate " << matescore;
+                     << Bitboards.nodecount << " tbhits " << tbhits << " time "
+                     << timetaken.count() << " score mate " << matescore;
             if (searchoptions.showWDL) {
               int winrate = 1000 * (matescore > 0);
               int lossrate = 1000 * (matescore < 0);
@@ -641,7 +638,7 @@ int Searcher::iterative() {
                         std::max((uint64_t)1, (uint64_t)timetaken.count()));
       std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps
                 << std::endl;
-                
+
       std::cout << "bestmove " << algebraic(bestmove1) << std::endl;
     }
   }

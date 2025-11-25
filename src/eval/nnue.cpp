@@ -13,19 +13,20 @@ void NNUEWeights::loaddefaultnet() {
       int piece = i / 64;
       int square = i % 64;
       int convert[12] = {0, 3, 1, 4, 2, 5, 6, 9, 7, 10, 8, 11};
-      memcpy(nnuelayer1[k][64 * convert[piece] + square], &NNUEData[offset], 2 * L1size);
+      memcpy(nnuelayer1[k][64 * convert[piece] + square], &NNUEData[offset],
+             2 * L1size);
       offset += 2 * L1size;
     }
   }
   memcpy(layer1bias, &NNUEData[offset], 2 * L1size);
   offset += 2 * L1size;
-  #ifdef MULTI_LAYER
-  //Coming soon
-  #else
+#ifdef MULTI_LAYER
+// Coming soon
+#else
   memcpy(nnuelayer2, &NNUEData[offset], 4 * outputbuckets * L1size);
   offset += 4 * outputbuckets * L1size;
   memcpy(finalbias, &NNUEData[offset], 2 * outputbuckets);
-  #endif
+#endif
 }
 void NNUEWeights::readnnuefile(std::string file) {
   std::ifstream nnueweights;
@@ -38,7 +39,8 @@ void NNUEWeights::readnnuefile(std::string file) {
       int piece = i / 64;
       int square = i % 64;
       int convert[12] = {0, 3, 1, 4, 2, 5, 6, 9, 7, 10, 8, 11};
-      memcpy(nnuelayer1[k][64 * convert[piece] + square], &weights[offset], 2 * L1size);
+      memcpy(nnuelayer1[k][64 * convert[piece] + square], &weights[offset],
+             2 * L1size);
       offset += 2 * L1size;
     }
   }
@@ -250,7 +252,8 @@ int NNUE::evaluate(int color) {
   I16 *stmaccptr = accumulation[2 * ply + color];
   I16 *nstmaccptr = accumulation[2 * ply + (color ^ 1)];
   const I16 *stmweightsptr = &(weights->nnuelayer2[bucket * 2 * L1size]);
-  const I16 *nstmweightsptr = &(weights->nnuelayer2[bucket * 2 * L1size + L1size]);
+  const I16 *nstmweightsptr =
+      &(weights->nnuelayer2[bucket * 2 * L1size + L1size]);
   for (int i = 0; i < L1size; i++) {
     I16 stmclipped = crelu(stmaccptr[i]);
     I16 nstmclipped = crelu(nstmaccptr[i]);

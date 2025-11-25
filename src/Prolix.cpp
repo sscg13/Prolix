@@ -4,7 +4,6 @@
 #include "external/probetool/jtbinterface.h"
 extern std::string uciinfostring;
 std::string proto = "uci";
-std::string inputfile;
 void Engine::bench() {
   std::string benchfens[14] = {
       "r5r1/1k6/1pqb4/1Bppn1p1/P1n1p2p/P1N1P2P/2KQ1p2/1RBR2N1 w - - 0 45",
@@ -43,6 +42,29 @@ void Engine::bench() {
   int nps = 1000 * (nodes / timetaken);
   std::cout << nodes << " nodes " << nps << " nps\n";
 }
+void Engine::evalscale(std::string inputfile) {
+  U64 total = 0;
+  U64 count = 0;
+  std::ifstream epdin;
+  epdin.open(inputfile);
+  while (epdin) {
+    std::string fen;
+    getline(epdin, fen);
+    if (fen == "") {
+      continue;
+    }
+    Bitboards.parseFEN(fen);
+    int color = Bitboards.position & 1;
+    master.syncwith(*this);
+    int absscore = std::abs(searchoptions.useNNUE ? master.EUNN.evaluate(color)
+                                                  : Bitboards.evaluate(color));
+    total += absscore;
+    count++;
+  }
+  std::cout << "Total sum of absolute evals " << total << " over " << count
+            << " positions\n";
+  std::cout << "Average absolute eval is " << (total / count) << std::endl;
+}
 int main(int argc, char *argv[]) {
   initializeleaperattacks();
   initializemasks();
@@ -57,8 +79,17 @@ int main(int argc, char *argv[]) {
       Prolix.bench();
       return 0;
     }
+    if (std::string(argv[1]) == "evalscale") {
+      if (argc < 3) {
+        std::cerr << "Proper usage: ./(exe) evalscale filepath";
+        return 0;
+      }
+      Engine Prolix;
+      Prolix.evalscale(std::string(argv[2]));
+      return 0;
+    }
     if (std::string(argv[1]) == "datagen") {
-      if (argc < 5) {
+      if (argc < 6) {
         std::cerr << "Proper usage: ./(exe) datagen <viriformat|plain> threads "
                      "games outputfile";
         return 0;
