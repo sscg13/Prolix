@@ -1,11 +1,14 @@
 #include "nnue.h"
 #include <cmath>
 #include <fstream>
+#include <string.h>
 #define INCBIN_PREFIX
 #include "../external/incbin/incbin.h"
 
 INCBIN(char, NNUE, EUNNfile);
-I16 crelu(I16 x) { return std::max(std::min(x, (I16)255), (I16)0); }
+template<typename T>
+T crelu(T x, T Q) { return std::max(std::min(x, Q), (T)0); }
+I32 csqr(I32 x, I32 Q) { return std::min(x * x, Q); }
 
 void PSQFeatureWeights::load(const char *stream) {
   int offset = 0;
@@ -292,7 +295,18 @@ void SingleAccumulatorStack::unmake(const int notation, const U64 *Bitboards) {
 }
 const AccumulatorOutputType *SingleAccumulatorStack::transform(int color) {
   // todo multilayer
-  return psqaccumulators.currentaccumulator();
+  if (multilayer) {
+    const I16* accumulator = psqaccumulators.currentaccumulator();
+    for (int i = 0; i < L1size / 2; i++) {
+      pairwise[i] = crelu<I16>(accumulator[color * L1size + i], L1Q)
+      * crelu<I16>(accumulator[color * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
+      pairwise[L1size / 2 + i] = crelu<I16>(accumulator[(color ^ 1) * L1size + i], L1Q)
+      * crelu<I16>(accumulator[(color ^ 1) * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
+    }
+  }
+  else {
+    return psqaccumulators.currentaccumulator();
+  }
 }
 void SingleLayerStack::load(NNUEWeights *EUNNweights) {
   weights = &(EUNNweights->layerweights);
@@ -306,15 +320,15 @@ int SingleLayerStack::propagate(const int bucket, const int color,
   const I16 *nstmweightsptr =
       &(weights->nnuelayer2[bucket * 2 * L1size + L1size]);
   for (int i = 0; i < L1size; i++) {
-    I16 stmclipped = crelu(stmaccptr[i]);
-    I16 nstmclipped = crelu(nstmaccptr[i]);
+    I16 stmclipped = crelu<I16>(stmaccptr[i], L1Q);
+    I16 nstmclipped = crelu<I16>(nstmaccptr[i], L1Q);
     eval += I16(stmclipped * stmweightsptr[i]) * stmclipped;
     eval += I16(nstmclipped * nstmweightsptr[i]) * nstmclipped;
   }
-  eval /= evalQA;
+  eval /= L1Q;
   eval += weights->finalbias[bucket];
   eval *= evalscale;
-  eval /= (evalQA * evalQB);
+  eval /= (L1Q * L2Q);
   return eval;
 }
 void NNUE::load(NNUEWeights *EUNNweights) {

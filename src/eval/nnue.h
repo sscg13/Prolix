@@ -53,7 +53,6 @@ using AccumulatorOutputType = I16;
 struct PSQNNUEWeights {
   PSQFeatureWeights psqweights;
   LayerWeights layerweights;
-  static constexpr int size = PSQFeatureWeights::size + LayerWeights::size;
 
   void loaddefaultnet();
   PSQNNUEWeights() { loaddefaultnet(); }
@@ -64,8 +63,6 @@ struct ThreatNNUEWeights {
   ThreatFeatureWeights threatweights;
   PSQFeatureWeights psqweights;
   LayerWeights layerweights;
-  static constexpr int size =
-      ThreatFeatureWeights::size + PSQFeatureWeights::size + LayerWeights::size;
 
   void loaddefaultnet();
   ThreatNNUEWeights() { loaddefaultnet(); }
@@ -139,6 +136,7 @@ struct ThreatAccumulatorStack {
 
 struct SingleAccumulatorStack {
   PSQAccumulatorStack psqaccumulators;
+  U8 pairwise[L1size];
 
   void load(NNUEWeights *EUNNweights);
   void initialize(const U64 *Bitboards);
@@ -150,6 +148,7 @@ struct SingleAccumulatorStack {
 struct DualAccumulatorStack {
   PSQAccumulatorStack psqaccumulators;
   ThreatAccumulatorStack threataccumulators;
+  AccumulatorOutputType output[L1size * (1 + multilayer)];
 
   void load(NNUEWeights *EUNNweights);
   void initialize(const U64 *Bitboards);
