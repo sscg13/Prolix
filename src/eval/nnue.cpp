@@ -1,115 +1,157 @@
 #include "nnue.h"
 #include <cmath>
 #include <fstream>
+#include <string.h>
 #define INCBIN_PREFIX
 #include "../external/incbin/incbin.h"
 
 INCBIN(char, NNUE, EUNNfile);
-I16 crelu(I16 x) { return std::max(std::min(x, (I16)255), (I16)0); }
-void NNUEWeights::loaddefaultnet() {
+template<typename T>
+T crelu(T x, T Q) { return std::max(std::min(x, Q), (T)0); }
+I32 csqr(I32 x, I32 Q) { return std::min(x * x, Q); }
+
+void PSQFeatureWeights::load(const char *stream) {
   int offset = 0;
   for (int k = 0; k < realbuckets; k++) {
     for (int i = 0; i < 768; i++) {
       int piece = i / 64;
       int square = i % 64;
       int convert[12] = {0, 3, 1, 4, 2, 5, 6, 9, 7, 10, 8, 11};
-      memcpy(nnuelayer1[k][64 * convert[piece] + square], &NNUEData[offset],
+      memcpy(nnuelayer1[k][64 * convert[piece] + square], stream + offset,
              2 * L1size);
       offset += 2 * L1size;
     }
   }
-  memcpy(layer1bias, &NNUEData[offset], 2 * L1size);
-  offset += 2 * L1size;
-#ifdef MULTI_LAYER
-// Coming soon
-#else
-  memcpy(nnuelayer2, &NNUEData[offset], 4 * outputbuckets * L1size);
-  offset += 4 * outputbuckets * L1size;
-  memcpy(finalbias, &NNUEData[offset], 2 * outputbuckets);
-#endif
+  memcpy(layer1bias, stream + offset, 2 * L1size);
 }
-void NNUEWeights::readnnuefile(std::string file) {
+void ThreatFeatureWeights::load(const char *stream) {
+  memcpy(nnuelayer1, stream, size);
+}
+void MultiLayerWeights::load(const char *stream) {
+  int offset = 0;
+  memcpy(nnuelayer2, stream + offset, outputbuckets * L1size * L2size);
+  offset += outputbuckets * L1size * L2size;
+  memcpy(layer2bias, stream + offset, 4 * outputbuckets * L2size);
+  offset += 4 * outputbuckets * L2size;
+  memcpy(nnuelayer3, stream + offset, 4 * outputbuckets * L2size * L3size);
+  offset += 4 * outputbuckets * L2size * L3size;
+  memcpy(layer3bias, stream + offset, 4 * outputbuckets * L3size);
+  offset += 4 * outputbuckets * L3size;
+  memcpy(nnuelayer4, stream + offset, 4 * outputbuckets * L3size);
+  offset += 4 * outputbuckets * L3size;
+  memcpy(finalbias, stream + offset, 4 * outputbuckets);
+}
+void SingleLayerWeights::load(const char *stream) {
+  int offset = 0;
+  memcpy(nnuelayer2, stream + offset, 4 * outputbuckets * L1size);
+  offset += 4 * outputbuckets * L1size;
+  memcpy(finalbias, stream + offset, 2 * outputbuckets);
+}
+void PSQNNUEWeights::loaddefaultnet() {
+  psqweights.load(&NNUEData[0]);
+  layerweights.load(&NNUEData[psqweights.size]);
+}
+void ThreatNNUEWeights::loaddefaultnet() {
+  threatweights.load(&NNUEData[0]);
+  psqweights.load(&NNUEData[threatweights.size]);
+  layerweights.load(&NNUEData[threatweights.size + psqweights.size]);
+}
+void PSQNNUEWeights::readnnuefile(std::string file) {
   std::ifstream nnueweights;
   nnueweights.open(file, std::ifstream::binary);
-  char *weights = new char[nnuefilesize];
-  nnueweights.read(weights, nnuefilesize);
-  int offset = 0;
-  for (int k = 0; k < realbuckets; k++) {
-    for (int i = 0; i < 768; i++) {
-      int piece = i / 64;
-      int square = i % 64;
-      int convert[12] = {0, 3, 1, 4, 2, 5, 6, 9, 7, 10, 8, 11};
-      memcpy(nnuelayer1[k][64 * convert[piece] + square], &weights[offset],
-             2 * L1size);
-      offset += 2 * L1size;
-    }
-  }
-  memcpy(layer1bias, &weights[offset], 2 * L1size);
-  offset += 2 * L1size;
-  memcpy(nnuelayer2, &weights[offset], 4 * outputbuckets * L1size);
-  offset += 4 * outputbuckets * L1size;
-  memcpy(finalbias, &weights[offset], 2 * outputbuckets);
-  delete[] weights;
+  char *psqweightptr = new char[psqweights.size];
+  nnueweights.read(psqweightptr, psqweights.size);
+  char *layerweightptr = new char[layerweights.size];
+  nnueweights.read(layerweightptr, layerweights.size);
+  psqweights.load(psqweightptr);
+  layerweights.load(layerweightptr);
+  delete[] psqweightptr;
+  delete[] layerweightptr;
   nnueweights.close();
 }
-int NNUE::getbucket(int kingsquare, int color) {
+void ThreatNNUEWeights::readnnuefile(std::string file) {
+  std::ifstream nnueweights;
+  nnueweights.open(file, std::ifstream::binary);
+  char *threatweightptr = new char[threatweights.size];
+  nnueweights.read(threatweightptr, threatweights.size);
+  char *psqweightptr = new char[psqweights.size];
+  nnueweights.read(psqweightptr, psqweights.size);
+  char *layerweightptr = new char[layerweights.size];
+  nnueweights.read(layerweightptr, layerweights.size);
+  threatweights.load(threatweightptr);
+  psqweights.load(psqweightptr);
+  layerweights.load(layerweightptr);
+  delete[] threatweightptr;
+  delete[] psqweightptr;
+  delete[] layerweightptr;
+  nnueweights.close();
+}
+int PSQAccumulatorStack::getbucket(const int kingsquare, const int color) {
   return kingbuckets[(56 * color) ^ kingsquare];
 }
-int NNUE::featureindex(int bucket, int color, int piece, int square) {
+int PSQAccumulatorStack::featureindex(const int bucket, const int color,
+                                      const int piece, const int square) {
   int piececolor = piece / 6;
   int perspectivepiece = (color ^ piececolor) * 6 + (piece % 6);
   bool hmactive = mirrored && (bucket % 2 == 1);
   int perspectivesquare = (56 * color) ^ square ^ (7 * hmactive);
   return 64 * perspectivepiece + perspectivesquare;
 }
-int NNUE::differencecount(int bucket, int color, const U64 *Bitboards) {
+int PSQAccumulatorStack::differencecount(const int bucket, const int color,
+                                         const U64 *Bitboards) {
   return __builtin_popcountll(
       (cachebitboards[bucket][color][0] | cachebitboards[bucket][color][1]) ^
       (Bitboards[0] | Bitboards[1]));
 }
-const I16 *NNUE::layer1weights(int kingsquare, int color, int piece,
-                               int square) {
+const I16 *PSQAccumulatorStack::layer1weights(const int kingsquare,
+                                              const int color, const int piece,
+                                              const int square) {
   int bucket = getbucket(kingsquare, color);
   return weights->nnuelayer1[bucket / mirrordivisor]
                             [featureindex(bucket, color, piece, square)];
 }
-void NNUE::add(I16 *accptr, const I16 *addptr) {
+void PSQAccumulatorStack::add(I16 *accptr, const I16 *addptr) {
   for (int i = 0; i < L1size; i++) {
     accptr[i] += addptr[i];
   }
 }
-void NNUE::sub(I16 *accptr, const I16 *subptr) {
+void PSQAccumulatorStack::sub(I16 *accptr, const I16 *subptr) {
   for (int i = 0; i < L1size; i++) {
     accptr[i] -= subptr[i];
   }
 }
-void NNUE::addsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
-                  const I16 *subptr) {
+void PSQAccumulatorStack::addsub(I16 *oldaccptr, I16 *newaccptr,
+                                 const I16 *addptr, const I16 *subptr) {
   for (int i = 0; i < L1size; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr[i];
   }
 }
-void NNUE::addsubsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
-                     const I16 *subptr1, const I16 *subptr2) {
+void PSQAccumulatorStack::addsubsub(I16 *oldaccptr, I16 *newaccptr,
+                                    const I16 *addptr, const I16 *subptr1,
+                                    const I16 *subptr2) {
   for (int i = 0; i < L1size; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
   }
 }
-void NNUE::activatepiece(I16 *accptr, int kingsquare, int color, int piece,
-                         int square) {
+void PSQAccumulatorStack::activatepiece(I16 *accptr, const int kingsquare,
+                                        const int color, const int piece,
+                                        const int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < L1size; i++) {
     accptr[i] += weightsptr[i];
   }
 }
-void NNUE::deactivatepiece(I16 *accptr, int kingsquare, int color, int piece,
-                           int square) {
+void PSQAccumulatorStack::deactivatepiece(I16 *accptr, const int kingsquare,
+                                          const int color, const int piece,
+                                          const int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < L1size; i++) {
     accptr[i] -= weightsptr[i];
   }
 }
-void NNUE::refreshfromcache(int kingsquare, int color, const U64 *Bitboards) {
+void PSQAccumulatorStack::refreshfromcache(const int kingsquare,
+                                           const int color,
+                                           const U64 *Bitboards) {
   U64 add[12];
   U64 remove[12];
   int bucket = getbucket(kingsquare, color);
@@ -144,7 +186,9 @@ void NNUE::refreshfromcache(int kingsquare, int color, const U64 *Bitboards) {
     accptr[i] = cacheaccptr[i];
   }
 }
-void NNUE::refreshfromscratch(int kingsquare, int color, const U64 *Bitboards) {
+void PSQAccumulatorStack::refreshfromscratch(const int kingsquare,
+                                             const int color,
+                                             const U64 *Bitboards) {
   I16 *accptr = accumulation[2 * ply + color];
   I16 *cacheaccptr = cacheaccumulators[getbucket(kingsquare, color)][color];
   for (int i = 0; i < L1size; i++) {
@@ -166,8 +210,7 @@ void NNUE::refreshfromscratch(int kingsquare, int color, const U64 *Bitboards) {
     cacheaccptr[i] = accptr[i];
   }
 }
-void NNUE::initializennue(const U64 *Bitboards) {
-  totalmaterial = 0;
+void PSQAccumulatorStack::initializennue(const U64 *Bitboards) {
   ply = 0;
   for (int color = 0; color < 2; color++) {
     refreshfromscratch(__builtin_ctzll(Bitboards[7] & Bitboards[color]), color,
@@ -181,13 +224,9 @@ void NNUE::initializennue(const U64 *Bitboards) {
       }
     }
   }
-  for (int i = 0; i < 12; i++) {
-    U64 pieces = (Bitboards[i / 6] & Bitboards[2 + (i % 6)]);
-    int piececount = __builtin_popcountll(pieces);
-    totalmaterial += piececount * material[i % 6];
-  }
 }
-void NNUE::forwardaccumulators(const int notation, const U64 *Bitboards) {
+void PSQAccumulatorStack::forwardaccumulators(const int notation,
+                                              const U64 *Bitboards) {
   int from = notation & 63;
   int to = (notation >> 6) & 63;
   int color = (notation >> 12) & 1;
@@ -207,7 +246,6 @@ void NNUE::forwardaccumulators(const int notation, const U64 *Bitboards) {
   if (captured > 0) {
     const I16 *subweights2opp =
         layer1weights(oppksq, color ^ 1, 6 * (color ^ 1) + captured - 2, to);
-    totalmaterial -= material[captured - 2];
     addsubsub(oldaccptr, newaccptr, addweightsopp, subweightsopp,
               subweights2opp);
   } else {
@@ -239,30 +277,87 @@ void NNUE::forwardaccumulators(const int notation, const U64 *Bitboards) {
     }
   }
 }
-void NNUE::backwardaccumulators(int notation, const U64 *Bitboards) {
-  int captured = (notation >> 17) & 7;
-  if (captured > 0) {
-    totalmaterial += material[captured - 2];
-  }
+void PSQAccumulatorStack::backwardaccumulators(const int notation,
+                                               const U64 *Bitboards) {
   ply--;
 }
-int NNUE::evaluate(int color) {
-  int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
+void SingleAccumulatorStack::load(NNUEWeights *EUNNweights) {
+  psqaccumulators.weights = &(EUNNweights->psqweights);
+}
+void SingleAccumulatorStack::initialize(const U64 *Bitboards) {
+  psqaccumulators.initializennue(Bitboards);
+}
+void SingleAccumulatorStack::make(const int notation, const U64 *Bitboards) {
+  psqaccumulators.forwardaccumulators(notation, Bitboards);
+}
+void SingleAccumulatorStack::unmake(const int notation, const U64 *Bitboards) {
+  psqaccumulators.backwardaccumulators(notation, Bitboards);
+}
+const AccumulatorOutputType *SingleAccumulatorStack::transform(int color) {
+  // todo multilayer
+  if (multilayer) {
+    const I16* accumulator = psqaccumulators.currentaccumulator();
+    for (int i = 0; i < L1size / 2; i++) {
+      pairwise[i] = crelu<I16>(accumulator[color * L1size + i], L1Q)
+      * crelu<I16>(accumulator[color * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
+      pairwise[L1size / 2 + i] = crelu<I16>(accumulator[(color ^ 1) * L1size + i], L1Q)
+      * crelu<I16>(accumulator[(color ^ 1) * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
+    }
+  }
+  else {
+    return psqaccumulators.currentaccumulator();
+  }
+}
+void SingleLayerStack::load(NNUEWeights *EUNNweights) {
+  weights = &(EUNNweights->layerweights);
+}
+int SingleLayerStack::propagate(const int bucket, const int color,
+                                const AccumulatorOutputType *input) {
   int eval = 0;
-  I16 *stmaccptr = accumulation[2 * ply + color];
-  I16 *nstmaccptr = accumulation[2 * ply + (color ^ 1)];
+  const I16 *stmaccptr = input + color * L1size;
+  const I16 *nstmaccptr = input + (color ^ 1) * L1size;
   const I16 *stmweightsptr = &(weights->nnuelayer2[bucket * 2 * L1size]);
   const I16 *nstmweightsptr =
       &(weights->nnuelayer2[bucket * 2 * L1size + L1size]);
   for (int i = 0; i < L1size; i++) {
-    I16 stmclipped = crelu(stmaccptr[i]);
-    I16 nstmclipped = crelu(nstmaccptr[i]);
+    I16 stmclipped = crelu<I16>(stmaccptr[i], L1Q);
+    I16 nstmclipped = crelu<I16>(nstmaccptr[i], L1Q);
     eval += I16(stmclipped * stmweightsptr[i]) * stmclipped;
     eval += I16(nstmclipped * nstmweightsptr[i]) * nstmclipped;
   }
-  eval /= evalQA;
+  eval /= L1Q;
   eval += weights->finalbias[bucket];
   eval *= evalscale;
-  eval /= (evalQA * evalQB);
+  eval /= (L1Q * L2Q);
   return eval;
+}
+void NNUE::load(NNUEWeights *EUNNweights) {
+  accumulators.load(EUNNweights);
+  layers.load(EUNNweights);
+}
+void NNUE::initialize(const U64 *Bitboards) {
+  totalmaterial = 0;
+  for (int i = 0; i < 6; i++) {
+    totalmaterial += material[i] * __builtin_popcountll(Bitboards[2 + i]);
+  }
+  accumulators.initialize(Bitboards);
+}
+void NNUE::make(const int notation, const U64 *Bitboards) {
+  int captured = (notation >> 17) & 7;
+  if (captured > 0) {
+    totalmaterial -= material[captured - 2];
+  }
+  accumulators.make(notation, Bitboards);
+}
+void NNUE::unmake(const int notation, const U64 *Bitboards) {
+  int captured = (notation >> 17) & 7;
+  if (captured > 0) {
+    totalmaterial += material[captured - 2];
+  }
+  accumulators.unmake(notation, Bitboards);
+}
+int NNUE::evaluate(const int color) {
+  int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
+  const AccumulatorOutputType *layerstackinput = accumulators.transform(color);
+  return layers.propagate(bucket, color, layerstackinput);
 }

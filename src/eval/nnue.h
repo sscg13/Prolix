@@ -5,71 +5,180 @@
 #pragma once
 
 class Searcher;
-#ifdef MULTI_LAYER
-//clang-format off
-constexpr int nnuefilesize =
-    L1size * (1536 * realbuckets + 2) +
-    outputbuckets * (L2size * (L1size + 4) + 4 * (L3size * (L2size + 2) + 1));
-//clang-format on
-struct NNUEWeights {
-  alignas(64) I16 nnuelayer1[realbuckets * 768 * L1size];
+struct PSQFeatureWeights {
+  alignas(64) I16 nnuelayer1[realbuckets][768][L1size];
   alignas(64) I16 layer1bias[L1size];
+  static constexpr int size = L1size * (1536 * realbuckets + 2);
+
+  void load(const char *stream);
+};
+// not correct right now
+static constexpr int threatcount = 7504;
+struct ThreatFeatureWeights {
+  alignas(64) I8 nnuelayer1[threatcount][L1size];
+  static constexpr int size = threatcount * L1size;
+
+  void load(const char *stream);
+};
+
+struct MultiLayerWeights {
   alignas(64) I8 nnuelayer2[outputbuckets * L1size * L2size];
   alignas(64) I32 layer2bias[outputbuckets * L2size];
   alignas(64) I32 nnuelayer3[outputbuckets * L2size * L3size];
   alignas(64) I32 layer3bias[outputbuckets * L3size];
   alignas(64) I32 nnuelayer4[outputbuckets * L3size];
   alignas(64) I32 finalbias[outputbuckets];
+  static constexpr int size =
+      outputbuckets * (L2size * (L1size + 4) + 4 * (L3size * (L2size + 2) + 1));
+
+  void load(const char *stream);
 };
-#else
-//clang-format off
-constexpr int nnuefilesize =
-    L1size * (1536 * realbuckets + 2) + outputbuckets * (4 * L1size + 2);
-//clang-format on
-struct NNUEWeights {
-  alignas(64) I16 nnuelayer1[realbuckets][768][L1size];
-  alignas(64) I16 layer1bias[L1size];
+
+struct SingleLayerWeights {
   alignas(64) I16 nnuelayer2[outputbuckets * 2 * L1size];
   alignas(64) I16 finalbias[outputbuckets];
+  static constexpr int size = outputbuckets * (4 * L1size + 2);
 
-  void loaddefaultnet();
-  NNUEWeights() { loaddefaultnet(); }
-  void readnnuefile(std::string file);
+  void load(const char *stream);
 };
+
+#ifdef MULTI_LAYER
+using LayerWeights = MultiLayerWeights;
+using AccumulatorOutputType = U8;
+#else
+using LayerWeights = SingleLayerWeights;
+using AccumulatorOutputType = I16;
 #endif
 
-class NNUE {
-  NNUEWeights *weights;
-  int totalmaterial;
+struct PSQNNUEWeights {
+  PSQFeatureWeights psqweights;
+  LayerWeights layerweights;
+
+  void loaddefaultnet();
+  PSQNNUEWeights() { loaddefaultnet(); }
+  void readnnuefile(std::string file);
+};
+
+struct ThreatNNUEWeights {
+  ThreatFeatureWeights threatweights;
+  PSQFeatureWeights psqweights;
+  LayerWeights layerweights;
+
+  void loaddefaultnet();
+  ThreatNNUEWeights() { loaddefaultnet(); }
+  void readnnuefile(std::string file);
+};
+
+#ifdef THREAT_INPUTS
+using NNUEWeights = ThreatNNUEWeights;
+#else
+using NNUEWeights = PSQNNUEWeights;
+#endif
+
+struct SingleLayerStack {
+  SingleLayerWeights *weights;
+
+  void load(NNUEWeights *EUNNweights);
+  int propagate(const int bucket, const int color,
+                const AccumulatorOutputType *input);
+};
+
+struct MultiLayerStack {
+  MultiLayerWeights *weights;
+  I32 layer2raw[L2size];
+  I32 layer2activated[L2size * (1 + dualactivation)];
+  I32 layer3raw[L3size];
+  I32 layer3activated[L3size];
+
+  void load(NNUEWeights *EUNNweights);
+  int propagate(const int bucket, const int color,
+                const AccumulatorOutputType *input);
+};
+
+struct PSQAccumulatorStack {
+  PSQFeatureWeights *weights;
   int ply;
   I16 cacheaccumulators[inputbuckets][2][L1size];
   U64 cachebitboards[inputbuckets][2][8];
-  I16 accumulation[2 * maxmaxdepth + 64][L1size];
-#ifdef MULTI_LAYER
-  U8 L1pairwise[L1size];
-#endif
+  I16 accumulation[2 * (maxmaxdepth + 32)][L1size];
 
-public:
-  int getbucket(int kingsquare, int color);
-  int featureindex(int bucket, int color, int piece, int square);
-  int differencecount(int bucket, int color, const U64 *Bitboards);
-  const I16 *layer1weights(int kingsquare, int color, int piece, int square);
+  int getbucket(const int kingsquare, const int color);
+  int featureindex(const int bucket, const int color, const int piece,
+                   const int square);
+  int differencecount(const int bucket, const int color, const U64 *Bitboards);
+  const I16 *layer1weights(const int kingsquare, const int color,
+                           const int piece, const int square);
   void add(I16 *accptr, const I16 *addptr);
   void sub(I16 *accptr, const I16 *subptr);
   void addsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
               const I16 *subptr);
   void addsubsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
                  const I16 *subptr1, const I16 *subptr2);
-  void activatepiece(I16 *accptr, int kingsquare, int color, int piece,
-                     int square);
-  void deactivatepiece(I16 *accptr, int kingsquare, int color, int piece,
-                       int square);
-  void refreshfromcache(int kingsquare, int color, const U64 *Bitboards);
-  void refreshfromscratch(int kingsquare, int color, const U64 *Bitboards);
+  void activatepiece(I16 *accptr, const int kingsquare, const int color,
+                     const int piece, const int square);
+  void deactivatepiece(I16 *accptr, const int kingsquare, const int color,
+                       const int piece, const int square);
+  void refreshfromcache(const int kingsquare, const int color,
+                        const U64 *Bitboards);
+  void refreshfromscratch(const int kingsquare, const int color,
+                          const U64 *Bitboards);
   void initializennue(const U64 *Bitboards);
   void forwardaccumulators(const int notation, const U64 *Bitboards);
-  void backwardaccumulators(int notation, const U64 *Bitboards);
-  int evaluate(int color);
+  void backwardaccumulators(const int notation, const U64 *Bitboards);
+  const I16 *currentaccumulator() { return accumulation[2 * ply]; }
+};
 
-  friend class Searcher;
+struct ThreatAccumulatorStack {
+  ThreatFeatureWeights *weights;
+  int ply;
+  I16 accumulation[2 * (maxmaxdepth + 32)][L1size];
+};
+
+struct SingleAccumulatorStack {
+  PSQAccumulatorStack psqaccumulators;
+  U8 pairwise[L1size];
+
+  void load(NNUEWeights *EUNNweights);
+  void initialize(const U64 *Bitboards);
+  void make(const int notation, const U64 *Bitboards);
+  void unmake(const int notation, const U64 *Bitboards);
+  const AccumulatorOutputType *transform(int color);
+};
+
+struct DualAccumulatorStack {
+  PSQAccumulatorStack psqaccumulators;
+  ThreatAccumulatorStack threataccumulators;
+  AccumulatorOutputType output[L1size * (1 + multilayer)];
+
+  void load(NNUEWeights *EUNNweights);
+  void initialize(const U64 *Bitboards);
+  void make(const int notation, const U64 *Bitboards);
+  void unmake(const int notation, const U64 *Bitboards);
+  const AccumulatorOutputType *transform(int color);
+};
+
+#ifdef THREAT_INPUTS
+using AccumulatorStack = DualAccumulatorStack;
+#else
+using AccumulatorStack = SingleAccumulatorStack;
+#endif
+
+#ifdef MULTI_LAYER
+using LayerStack = MultiLayerStack;
+#else
+using LayerStack = SingleLayerStack;
+#endif
+
+class NNUE {
+  AccumulatorStack accumulators;
+  LayerStack layers;
+
+  int totalmaterial;
+
+public:
+  void load(NNUEWeights *EUNNweights);
+  void initialize(const U64 *Bitboards);
+  void make(const int notation, const U64 *Bitboards);
+  void unmake(const int notation, const U64 *Bitboards);
+  int evaluate(const int color);
 };

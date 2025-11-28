@@ -215,8 +215,7 @@ void Engine::uci() {
   if (token == "eval") {
     master.syncwith(*this);
     int color = Bitboards.position & 1;
-    int eval = searchoptions.useNNUE ? master.EUNN.evaluate(color)
-                                     : Bitboards.evaluate(color);
+    int eval = master.staticeval();
     std::cout << "Raw eval: " << eval << "\n";
     std::cout << "Normalized eval: " << master.normalize(eval) << "\n";
   }

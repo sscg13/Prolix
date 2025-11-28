@@ -1,6 +1,7 @@
 #include <cstdint>
 #pragma once
 using U64 = uint64_t;
+using U8 = uint8_t;
 using I32 = int32_t;
 using I16 = int16_t;
 using I8 = int8_t;

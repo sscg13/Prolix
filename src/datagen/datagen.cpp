@@ -19,7 +19,7 @@ void Searcher::datagenautoplayplain() {
     game += " ";
   }
   if (searchoptions.useNNUE) {
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN.initialize(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
@@ -99,7 +99,7 @@ void Searcher::datagenautoplayplain() {
       result = "0.5";
     }
     if (!finished && searchoptions.useNNUE && bestmove > 0) {
-      EUNN.initializennue(Bitboards.Bitboards);
+      EUNN.initialize(Bitboards.Bitboards);
     }
   }
   for (int i = 0; i < maxmove; i++) {
@@ -124,7 +124,7 @@ void Searcher::datagenautoplayviriformat() {
     return;
   }
   if (searchoptions.useNNUE) {
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN.initialize(Bitboards.Bitboards);
   }
   Viriformat game;
   game.initialize(Bitboards);
@@ -166,7 +166,7 @@ void Searcher::datagenautoplayviriformat() {
       result = 1;
     }
     if (searchoptions.useNNUE && bestmove > 0) {
-      EUNN.initializennue(Bitboards.Bitboards);
+      EUNN.initialize(Bitboards.Bitboards);
     }
   }
   game.writewithwdl(dataoutput, result);
@@ -185,7 +185,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     Bitboards.makemove(moves[rand_move], 0);
   }
   if (searchoptions.useNNUE) {
-    EUNN.initializennue(Bitboards.Bitboards);
+    EUNN.initialize(Bitboards.Bitboards);
   }
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
@@ -208,7 +208,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     } else {
       Bitboards.makemove(bestmove, 0);
       if (searchoptions.useNNUE) {
-        EUNN.initializennue(Bitboards.Bitboards);
+        EUNN.initialize(Bitboards.Bitboards);
       }
     }
     if (Bitboards.twokings()) {
