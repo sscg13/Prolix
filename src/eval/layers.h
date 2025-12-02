@@ -103,15 +103,13 @@ template <int inputsize> struct PerspectiveSCReLU {
 
 template <int inputsize> struct PerspectiveCReLU {
   static I32 transform(const I16 *stminput, const I16* nstminput, const I16* stmweights, const I16* nstmweights, I16 bias, I16 Q) {
-    int eval = 0;
+    int eval = bias;
     for (int i = 0; i < inputsize; i++) {
       I16 stmclipped = crelu<I16>(stminput[i], Q);
       I16 nstmclipped = crelu<I16>(nstminput[i], Q);
       eval += I16(stmclipped * stmweights[i]);
       eval += I16(nstmclipped * nstmweights[i]);
     }
-    eval /= Q;
-    eval += bias;
     return eval;
   }
 };

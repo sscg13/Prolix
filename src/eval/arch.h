@@ -1,6 +1,6 @@
 #pragma once
 
-constexpr int inputbuckets = 4;
+constexpr int inputbuckets = 8;
 constexpr bool mirrored = true;
 constexpr int mirrordivisor = mirrored ? 2 : 1;
 constexpr int realbuckets = inputbuckets / mirrordivisor;
@@ -16,13 +16,13 @@ constexpr int pairwiseshiftbits = 9;
 // clang-format off
 constexpr int kingbuckets[64] = {
   0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
-  0, 0, 0, 0, 1, 1, 1, 1,
   2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3,
-  2, 2, 2, 2, 3, 3, 3, 3
+  4, 4, 4, 4, 5, 5, 5, 5,
+  4, 4, 4, 4, 5, 5, 5, 5,
+  6, 6, 6, 6, 7, 7, 7, 7,
+  6, 6, 6, 6, 7, 7, 7, 7,
+  6, 6, 6, 6, 7, 7, 7, 7,
+  6, 6, 6, 6, 7, 7, 7, 7
 };
 // clang-format on
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
