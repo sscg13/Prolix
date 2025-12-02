@@ -1,41 +1,123 @@
 #include "../consts.h"
+#include "arch.h"
+#include <cmath>
+#include <string.h>
+#pragma once
 
-template <int inputsize, int outputsize> struct SparseAffine {
+template<typename T> T crelu(T x, T Q);
+I32 csqr(I32 x, I32 Q);
+
+template <int inputsize, int outputsize> struct SparseAffineWeights {
   alignas(64) I8 weights[outputbuckets * inputsize * outputsize];
   alignas(64) I32 bias[outputbuckets * outputsize];
-  alignas(64) I32 output[outputsize];
-  void load(char* stream);
-  I32 *transform(U8 *input, int bucket);
+  void load(char* stream) {
+    int offset = 0;
+    memcpy(weights, stream + offset, outputbuckets * inputsize * outputsize);
+    offset += outputbuckets * inputsize * outputsize;
+    memcpy(bias, stream + offset, 4 * outputbuckets * outputsize);
+  }
+};
+
+template <int inputsize, int outputsize> struct SparseAffine {
+  static void transform(const U8 *input, I32 *output, const I8 *weights, const I32* bias) {
+    memcpy(output, bias, 4 * outputsize);
+    for (int i = 0; i < inputsize; i++) {
+      if (input[i]) {
+        const I8* vector = &weights[i * outputsize];
+        const int factor = input[i];
+        for (int j = 0; j < outputsize; j++) {
+          output[j] += vector[j] * factor;
+        }
+      }
+    }
+  }
+};
+
+template <int inputsize, int outputsize> struct DenseAffineWeights {
+  alignas(64) I32 weights[outputbuckets * inputsize * outputsize];
+  alignas(64) I32 bias[outputbuckets * outputsize];
+  void load(char* stream) {
+    int offset = 0;
+    memcpy(weights, stream + offset, 4 * outputbuckets * inputsize * outputsize);
+    offset += 4 * outputbuckets * inputsize * outputsize;
+    memcpy(bias, stream + offset, 4 * outputbuckets * outputsize);
+  }
 };
 
 template <int inputsize, int outputsize> struct DenseAffine {
-  alignas(64) I32 weights[outputbuckets * inputsize * outputsize];
-  alignas(64) I32 bias[outputbuckets * outputsize];
-  alignas(64) I32 output[outputsize];
-  void load(char* stream);
-  I32 *transform(I32 *input, int bucket);
+  static void transform(const I32 *input, I32 *output, const I8 *weights, const I32* bias) {
+    memcpy(output, bias, 4 * outputsize);
+    for (int j = 0; j < outputsize; j++) {
+      const I8* vector = &weights[j * inputsize];
+      for (int i = 0; i < inputsize; i++) {
+        output[j] += input[i]*vector[i];
+      }
+    }
+  }
 };
 
-template <int inputsize> struct PerspectiveSCReLU {
-  alignas(64) I32 weights[outputbuckets * inputsize];
-  alignas(64) I32 bias[outputbuckets];
-  void load(char* stream);
-  I32 transform(I32 *input, int bucket);
-};
-
-template <int inputsize> struct PerspectiveCReLU {
-  alignas(64) I32 weights[outputbuckets * inputsize];
-  alignas(64) I32 bias[outputbuckets];
-  void load(char* stream);
-  I32 transform(I32 *input, int bucket);
+template <int inputsize> struct PerspectiveWeights {
+  alignas(64) I16 weights[2 * outputbuckets * inputsize];
+  alignas(64) I16 bias[outputbuckets];
+  void load(char* stream) {
+    int offset = 0;
+    memcpy(weights, stream + offset, 4 * outputbuckets * inputsize);
+    offset += 4 * outputbuckets * inputsize;
+    memcpy(bias, stream + offset, 2 * outputbuckets);
+  }
 };
 
 template <int inputsize> struct CReLUActivation {
-  alignas(64) I32 output[inputsize];
-  I32 *transform(I32 *input, I32 Q);
+  static void transform(const I32 *input, I32 *output, I32 Q) {
+    for (int i = 0; i < inputsize; i++) {
+      output[i] = crelu<I32>(input[i], Q);
+    }
+  }
 };
 
 template <int inputsize> struct DualActivation {
-  alignas(64) I32 output[2 * inputsize];
-  I32 *transform(I32 *input, I32 Q);
+  I32 *transform(const I32 *input, I32 *output, I32 Q) {
+    for (int i = 0; i < inputsize; i++) {
+      I32 *creluoutput = output;
+      I32 *csqroutput = &(output[inputsize]);
+      creluoutput[i] = Q * crelu<I32>(input[i], Q);
+      csqroutput[i] = csqr(input[i], Q);
+    }
+  }
 };
+
+template <int inputsize> struct PerspectiveSCReLU {
+  static I32 transform(const I16 *stminput, const I16* nstminput, const I16* stmweights, const I16* nstmweights, I16 bias, I16 Q) {
+    int eval = 0;
+    for (int i = 0; i < inputsize; i++) {
+      I16 stmclipped = crelu<I16>(stminput[i], Q);
+      I16 nstmclipped = crelu<I16>(nstminput[i], Q);
+      eval += I16(stmclipped * stmweights[i]) * stmclipped;
+      eval += I16(nstmclipped * nstmweights[i]) * nstmclipped;
+    }
+    eval /= Q;
+    eval += bias;
+    return eval;
+  }
+};
+
+template <int inputsize> struct PerspectiveCReLU {
+  static I32 transform(const I16 *stminput, const I16* nstminput, const I16* stmweights, const I16* nstmweights, I16 bias, I16 Q) {
+    int eval = 0;
+    for (int i = 0; i < inputsize; i++) {
+      I16 stmclipped = crelu<I16>(stminput[i], Q);
+      I16 nstmclipped = crelu<I16>(nstminput[i], Q);
+      eval += I16(stmclipped * stmweights[i]);
+      eval += I16(nstmclipped * nstmweights[i]);
+    }
+    eval /= Q;
+    eval += bias;
+    return eval;
+  }
+};
+
+#ifdef SINGLE_LAYER_CRELU
+template<int inputsize> using SingleLayerAffine = PerspectiveCReLU<inputsize>;
+#else
+template<int inputsize> using SingleLayerAffine = PerspectiveSCReLU<inputsize>;
+#endif
