@@ -27,23 +27,11 @@ void ThreatFeatureWeights::load(const char *stream) {
 }
 void MultiLayerWeights::load(const char *stream) {
   int offset = 0;
-  memcpy(nnuelayer2, stream + offset, outputbuckets * L1size * L2size);
-  offset += outputbuckets * L1size * L2size;
-  memcpy(layer2bias, stream + offset, 4 * outputbuckets * L2size);
-  offset += 4 * outputbuckets * L2size;
-  memcpy(nnuelayer3, stream + offset, 4 * outputbuckets * L2size * L3size);
-  offset += 4 * outputbuckets * L2size * L3size;
-  memcpy(layer3bias, stream + offset, 4 * outputbuckets * L3size);
-  offset += 4 * outputbuckets * L3size;
-  memcpy(nnuelayer4, stream + offset, 4 * outputbuckets * L3size);
-  offset += 4 * outputbuckets * L3size;
-  memcpy(finalbias, stream + offset, 4 * outputbuckets);
-}
-void SingleLayerWeights::load(const char *stream) {
-  int offset = 0;
-  memcpy(nnuelayer2, stream + offset, 4 * outputbuckets * L1size);
-  offset += 4 * outputbuckets * L1size;
-  memcpy(finalbias, stream + offset, 2 * outputbuckets);
+  layer2weights.load(stream + offset);
+  offset += layer2weights.size;
+  layer3weights.load(stream + offset);
+  offset += layer3weights.size;
+  layer4weights.load(stream + offset);
 }
 void PSQNNUEWeights::loaddefaultnet() {
   psqweights.load(&NNUEData[0]);
@@ -310,16 +298,29 @@ void SingleLayerStack::load(NNUEWeights *EUNNweights) {
   weights = &(EUNNweights->layerweights);
 }
 int SingleLayerStack::propagate(int bucket, int color,
-                                const AccumulatorOutputType *input) {
+                                const I16 *input) {
   //int eval = 0;
   const I16 *stmaccptr = input + color * L1size;
   const I16 *nstmaccptr = input + (color ^ 1) * L1size;
-  const I16 *stmweightsptr = &(weights->nnuelayer2[bucket * 2 * L1size]);
+  const I16 *stmweightsptr = &(weights->weights[bucket * 2 * L1size]);
   const I16 *nstmweightsptr =
-      &(weights->nnuelayer2[bucket * 2 * L1size + L1size]);
-  int eval = SingleLayerAffine<L1size>::transform(stmaccptr, nstmaccptr, stmweightsptr, nstmweightsptr, weights->finalbias[bucket], L1Q);
+      &(weights->weights[bucket * 2 * L1size + L1size]);
+  int eval = SingleLayerAffine::transform(stmaccptr, nstmaccptr, stmweightsptr, nstmweightsptr, weights->bias[bucket], L1Q);
   eval *= evalscale;
   eval /= (L1Q * L2Q);
+  return eval;
+}
+int MultiLayerStack::propagate(int bucket, int color, const U8 *input) {
+  Layer2Affine::transform(input, layer2raw, &(weights->layer2weights));
+  Layer2Shift::transform(layer2raw);
+  Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
+  Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights));
+  Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
+  Layer4Affine::transform(layer3activated, output, &(weights->layer4weights));
+  int eval = output[0];
+  eval /= (L3Q * L4Q);
+  eval *= evalscale;
+  eval /= totalL2Q;
   return eval;
 }
 void NNUE::load(NNUEWeights *EUNNweights) {

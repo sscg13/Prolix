@@ -6,6 +6,27 @@
 #pragma once
 
 class Searcher;
+
+using Layer2Affine = SparseAffine<L1size, L2size>;
+#ifdef DUAL_ACTIVATION
+using Layer2Activation = DualActivation<L2size>;
+using Layer2Shift = DivideShift<L2size, 2 * L1bits - pairwiseshiftbits>;
+constexpr int activatedL2size = L2size * 2;
+constexpr int totalL2Q = L2Q;
+constexpr int totalL3Q = L2Q * L2Q * L3Q;
+constexpr int totalL4Q = totalL3Q * L4Q;
+#else
+using Layer2Activation = CReLUActivation<L2size>;
+using Layer2Shift = DivideShift<L2size, 0>;
+constexpr int activatedL2size = L2size;
+constexpr int totalL2Q = ((L1Q * L1Q) >> pairwiseshiftbits) * L2Q;
+constexpr int totalL3Q = totalL2Q * L3Q;
+constexpr int totalL4Q = totalL3Q * L4Q;
+#endif
+using Layer3Affine = DenseAffine<activatedL2size, L3size>;
+using Layer3Activation = CReLUActivation<L3size>;
+using Layer4Affine = DenseAffine<L3size, 1>;
+
 struct PSQFeatureWeights {
   alignas(64) I16 nnuelayer1[realbuckets][768][L1size];
   alignas(64) I16 layer1bias[L1size];
@@ -23,22 +44,12 @@ struct ThreatFeatureWeights {
 };
 
 struct MultiLayerWeights {
-  alignas(64) I8 nnuelayer2[outputbuckets * L1size * L2size];
-  alignas(64) I32 layer2bias[outputbuckets * L2size];
-  alignas(64) I32 nnuelayer3[outputbuckets * L2size * L3size];
-  alignas(64) I32 layer3bias[outputbuckets * L3size];
-  alignas(64) I32 nnuelayer4[outputbuckets * L3size];
-  alignas(64) I32 finalbias[outputbuckets];
-  static constexpr int size =
-      outputbuckets * (L2size * (L1size + 4) + 4 * (L3size * (L2size + 2) + 1));
-
-  void load(const char *stream);
-};
-
-struct SingleLayerWeights {
-  alignas(64) I16 nnuelayer2[outputbuckets * 2 * L1size];
-  alignas(64) I16 finalbias[outputbuckets];
-  static constexpr int size = outputbuckets * (4 * L1size + 2);
+  SparseAffineWeights<L1size, L2size> layer2weights;
+  DenseAffineWeights<activatedL2size, L3size> layer3weights;
+  DenseAffineWeights<L3size, 1> layer4weights;
+  static constexpr int size = SparseAffineWeights<L1size, L2size>::size 
+  + DenseAffineWeights<activatedL2size, L3size>::size
+  + DenseAffineWeights<L3size, 1>::size;
 
   void load(const char *stream);
 };
@@ -47,7 +58,7 @@ struct SingleLayerWeights {
 using LayerWeights = MultiLayerWeights;
 using AccumulatorOutputType = U8;
 #else
-using LayerWeights = SingleLayerWeights;
+using LayerWeights = PerspectiveWeights<L1size>;
 using AccumulatorOutputType = I16;
 #endif
 
@@ -77,23 +88,24 @@ using NNUEWeights = PSQNNUEWeights;
 #endif
 
 struct SingleLayerStack {
-  SingleLayerWeights *weights;
+  PerspectiveWeights<L1size> *weights;
 
   void load(NNUEWeights *EUNNweights);
   int propagate(const int bucket, const int color,
-                const AccumulatorOutputType *input);
+                const I16 *input);
 };
 
 struct MultiLayerStack {
   MultiLayerWeights *weights;
   I32 layer2raw[L2size];
-  I32 layer2activated[L2size * (1 + dualactivation)];
+  I32 layer2activated[activatedL2size];
   I32 layer3raw[L3size];
   I32 layer3activated[L3size];
+  I32 output[1];
 
   void load(NNUEWeights *EUNNweights);
   int propagate(const int bucket, const int color,
-                const AccumulatorOutputType *input);
+                const U8 *input);
 };
 
 struct PSQAccumulatorStack {
