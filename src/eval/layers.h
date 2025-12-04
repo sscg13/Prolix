@@ -20,11 +20,11 @@ template <int inputsize, int outputsize> struct SparseAffineWeights {
 };
 
 template <int inputsize, int outputsize> struct SparseAffine {
-  static void transform(const U8 *input, I32 *output, const SparseAffineWeights<inputsize, outputsize>* weights) {
+  static void transform(const U8 *input, I32 *output, const SparseAffineWeights<inputsize, outputsize>* weights, int bucket) {
     memcpy(output, weights->bias, 4 * outputsize);
     for (int i = 0; i < inputsize; i++) {
       if (input[i]) {
-        const I8* vector = &(weights->weights[i * outputsize]);
+        const I8* vector = &(weights->weights[bucket * inputsize * outputsize + i * outputsize]);
         const int factor = input[i];
         for (int j = 0; j < outputsize; j++) {
           output[j] += vector[j] * factor;
@@ -35,7 +35,7 @@ template <int inputsize, int outputsize> struct SparseAffine {
 };
 
 template <int inputsize, int outputsize> struct DenseAffineWeights {
-  alignas(64) I32 weights[outputbuckets * inputsize * outputsize];
+  alignas(64) I32 weights[outputbuckets * outputsize * inputsize];
   alignas(64) I32 bias[outputbuckets * outputsize];
   static constexpr int size = 4 * outputbuckets * outputsize * (inputsize + 1);
   void load(const char* stream) {
@@ -47,10 +47,10 @@ template <int inputsize, int outputsize> struct DenseAffineWeights {
 };
 
 template <int inputsize, int outputsize> struct DenseAffine {
-  static void transform(const I32 *input, I32 *output, const DenseAffineWeights<inputsize, outputsize>* weights) {
+  static void transform(const I32 *input, I32 *output, const DenseAffineWeights<inputsize, outputsize>* weights, int bucket) {
     memcpy(output, weights->bias, 4 * outputsize);
     for (int j = 0; j < outputsize; j++) {
-      const I32* vector = &(weights->weights[j * inputsize]);
+      const I32* vector = &(weights->weights[bucket * outputsize * inputsize + j * inputsize]);
       for (int i = 0; i < inputsize; i++) {
         output[j] += input[i]*vector[i];
       }
@@ -79,7 +79,7 @@ template <int inputsize> struct CReLUActivation {
 };
 
 template <int inputsize> struct DualActivation {
-  I32 *transform(const I32 *input, I32 *output, I32 Q) {
+  static void transform(const I32 *input, I32 *output, I32 Q) {
     for (int i = 0; i < inputsize; i++) {
       I32 *creluoutput = output;
       I32 *csqroutput = &(output[inputsize]);

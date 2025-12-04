@@ -311,12 +311,12 @@ int SingleLayerStack::propagate(int bucket, int color,
   return eval;
 }
 int MultiLayerStack::propagate(int bucket, int color, const U8 *input) {
-  Layer2Affine::transform(input, layer2raw, &(weights->layer2weights));
+  Layer2Affine::transform(input, layer2raw, &(weights->layer2weights), bucket);
   Layer2Shift::transform(layer2raw);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
-  Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights));
+  Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights), bucket);
   Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
-  Layer4Affine::transform(layer3activated, output, &(weights->layer4weights));
+  Layer4Affine::transform(layer3activated, output, &(weights->layer4weights), bucket);
   int eval = output[0];
   eval /= (L3Q * L4Q);
   eval *= evalscale;
