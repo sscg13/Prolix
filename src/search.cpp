@@ -49,6 +49,7 @@ void Searcher::syncwith(Engine &engine) {
   TTsize = &(engine.TTsize);
   EUNN.load(engine.nnueweights);
   Bitboards = engine.Bitboards;
+  Bitboards.get_tbpos_pointer();
   searchlimits = engine.searchlimits;
   searchoptions = engine.searchoptions;
   EUNN.initialize(Bitboards.Bitboards);
@@ -187,6 +188,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   }
   int score = -SCORE_INF;
   int bestscore = -SCORE_INF;
+  int maxtbscore = SCORE_INF;
+  int mintbscore = -SCORE_INF;
   bool improvedalpha = false;
   bool ttnmpgood = false;
   int movcount;
@@ -220,34 +223,34 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   if (tthit) {
     score = ttentry.score(ply);
     ttmove = ttentry.hashmove();
-    int nodetype = ttentry.nodetype();
+    int ttnodetype = ttentry.nodetype();
     isttPV |= ttentry.isttPV();
     if (ttdepth >= depth) {
       if (!isPV && Bitboards.repetitions() == 0) {
-        if (nodetype == EXPECTED_PV_NODE) {
+        if (ttnodetype == EXPECTED_PV_NODE) {
           return score;
         }
-        if ((nodetype & EXPECTED_CUT_NODE) && (score >= beta)) {
+        if ((ttnodetype & EXPECTED_CUT_NODE) && (score >= beta)) {
           return score;
         }
-        if ((nodetype & EXPECTED_ALL_NODE) && (score <= alpha)) {
+        if ((ttnodetype & EXPECTED_ALL_NODE) && (score <= alpha)) {
           return score;
         }
       }
     } else {
       int margin =
           std::max(20 * isttPV, 70 * depth - 70 * ttdepth - 70 * improving);
-      if (((nodetype & EXPECTED_CUT_NODE) && (score - margin >= beta)) &&
+      if (((ttnodetype & EXPECTED_CUT_NODE) && (score - margin >= beta)) &&
           (abs(beta) < SCORE_MAX_EVAL && !incheck) && (ply > 0) &&
           (margin < 500)) {
         return (score + beta) / 2;
       }
-      bool ttcorr = (score > staticeval && (nodetype & EXPECTED_CUT_NODE)) ||
-                    (score < staticeval && (nodetype & EXPECTED_ALL_NODE));
+      bool ttcorr = (score > staticeval && (ttnodetype & EXPECTED_CUT_NODE)) ||
+                    (score < staticeval && (ttnodetype & EXPECTED_ALL_NODE));
       if (ttcorr) {
         ttcorreval = score;
       }
-      ttnmpgood = (score >= beta || nodetype == EXPECTED_CUT_NODE);
+      ttnmpgood = (score >= beta || ttnodetype == EXPECTED_CUT_NODE);
     }
   }
   if (depth >= 3 && !tthit) {
@@ -268,27 +271,25 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   int tbwdl = -3;
   int piececount =
       __builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]);
-  if (piececount <= MAX_TB_PIECES && searchoptions.useTB) {
+  if (ply > 0 && piececount <= MAX_TB_PIECES && searchoptions.useTB && Bitboards.halfmovecount() == 0) {
     tbwdl = Bitboards.probetbwdl();
     if (tbwdl > -3) {
       tbhits++;
-      if (tbwdl == 0 && ply > 0) {
-        return 0;
+      int result = searchoptions.TB70mr ? (tbwdl / 2) : ((tbwdl > 0) - (tbwdl < 0));
+      int ttnodetype = (result > 0) ? EXPECTED_CUT_NODE : ((result < 0) ? EXPECTED_ALL_NODE : EXPECTED_PV_NODE);
+      int tbscore = (SCORE_TB_WIN - ply) * result;
+      if (ttnodetype == EXPECTED_PV_NODE || (ttnodetype == EXPECTED_CUT_NODE && tbscore >= beta) || (ttnodetype == EXPECTED_ALL_NODE && tbscore <= alpha)) {
+        ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
+                   isttPV, tbscore, ttnodetype, 0);
+        return tbscore;
       }
-      if (piececount < rootpiececount) {
-        int base = SCORE_TB_WIN + 4000 - 1000 * piececount - ply +
-                   searchstack[ply].plysincecapture;
-        if (tbwdl == 1) {
-          alpha = std::max(alpha, base);
-          if (alpha >= beta) {
-            return alpha;
-          }
+      if (isPV) {
+        if (ttnodetype == EXPECTED_ALL_NODE) {
+          maxtbscore = tbscore;
         }
-        if (tbwdl == -1) {
-          beta = std::min(beta, -base);
-          if (alpha >= beta) {
-            return beta;
-          }
+        else {
+          alpha = std::max(tbscore, alpha);
+          mintbscore = tbscore;
         }
       }
     }
@@ -342,15 +343,6 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     /*if (see_exceeds(moves[ply][i], color, 0)) {
         movescore[ply][i]+=15000;
     }*/
-    if (piececount <= MAX_TB_PIECES && searchoptions.useTB) {
-      Bitboards.makemove(mov, true);
-      int newresult = Bitboards.probetbwdl();
-      if (newresult > -3 && tbwdl > -3) {
-        tbhits++;
-        movescore[i] -= (newresult == -tbwdl) ? 0 : (1 << 18);
-      }
-      Bitboards.unmakemove(mov);
-    }
   }
   for (int i = 0; i < movcount; i++) {
     bool nullwindow = (i > 0);
@@ -365,7 +357,6 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     int mov = moves[i];
     int nextindex = (Bitboards.keyafter(mov) % *TTsize);
     __builtin_prefetch(&((*TT)[nextindex]), 0, 0);
-    searchstack[ply + 1].plysincecapture = 0;
     if (!iscapture(mov)) {
       quiets++;
       if (i > depth * depth + depth + 4) {
@@ -377,11 +368,6 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       if (quiets > 1 + isttPV + isPV) {
         r = std::min(1024 * (depth - 1), lmr_reductions[depth][quiets]);
       }
-      searchstack[ply + 1].plysincecapture =
-          searchstack[ply].plysincecapture + 1;
-    }
-    if (movescore[i] < -100000) {
-      break;
     }
     r -= 1024 * isPV;
     r -= 1024 * improving;
@@ -476,6 +462,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       }
     }
   }
+  bestscore = std::min(std::max(bestscore, mintbscore), maxtbscore);
   int realnodetype = improvedalpha ? EXPECTED_PV_NODE : EXPECTED_ALL_NODE;
   int savedmove = improvedalpha ? moves[bestmove1] : ttmove;
   if (((update || (realnodetype == EXPECTED_PV_NODE)) && !(*stopsearch))) {
@@ -506,7 +493,6 @@ int Searcher::normalize(int eval) {
 int Searcher::iterative() {
   Bitboards.nodecount = 0;
   tbhits = 0;
-  searchstack[0].plysincecapture = 0;
   if (ismaster) {
     *stopsearch = false;
   }
@@ -521,13 +507,9 @@ int Searcher::iterative() {
   int returnedscore = score;
   int depth = 1;
   int bestmove1 = 0;
-  int tbscore = 0;
   resetauxdata();
   rootpiececount =
       __builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]);
-  if (rootpiececount <= MAX_TB_PIECES && searchoptions.useTB) {
-    tbscore = Bitboards.probetbwdl();
-  }
   while (!(*stopsearch)) {
     bestmove = -1;
     int delta = 20;
@@ -559,10 +541,6 @@ int Searcher::iterative() {
          searchlimits.hardtimelimit <= 0) &&
         depth < searchlimits.maxdepth && bestmove >= 0) {
       returnedscore = score;
-      if (rootpiececount <= MAX_TB_PIECES && searchoptions.useTB &&
-          abs(score) < SCORE_WIN && tbscore > -3) {
-        score = tbscore * (SCORE_TB_WIN + 4000 - 1000 * rootpiececount);
-      }
       if (ismaster) {
         if (proto == "uci" && !searchoptions.suppressoutput) {
           if (abs(score) <= SCORE_WIN) {
@@ -669,6 +647,7 @@ int Searcher::iterative() {
   bestmove = bestmove1;
   if (!ismaster) {
     delete Histories;
+    Bitboards.free_tbpos_pointer();
   }
   return returnedscore;
 }

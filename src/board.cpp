@@ -208,6 +208,12 @@ std::string get129600FEN(int seed1, int seed2) {
   return FEN;
 }
 
+void Board::get_tbpos_pointer() {
+  tbpos = TBitf_alloc_position();
+}
+void Board::free_tbpos_pointer() {
+  TBitf_free_position(tbpos);
+}
 U64 Board::scratchzobrist() {
   U64 scratch = 0ULL;
   for (int i = 0; i < 64; i++) {
@@ -259,7 +265,7 @@ void Board::initialize() {
   gamelength = 0;
   zobrist[0] = zobristhash = scratchzobrist();
   if (tbpos == nullptr) {
-    tbpos = TBitf_alloc_position();
+    get_tbpos_pointer();
   }
 }
 int Board::repetitions() {
@@ -1158,5 +1164,5 @@ int Board::probetbwdl() {
     occ &= (occ - 1);
   }
   int result = TB_probe_wdl(tbpos, &success);
-  return success ? (result > 0) - (result < 0) : -3;
+  return success ? result : -3;
 }

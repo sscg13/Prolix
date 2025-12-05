@@ -30,6 +30,8 @@ public:
   int nodecount = 0;
   int gamephase[2] = {0, 0};
   U64 zobristhash = 0ULL;
+  void get_tbpos_pointer();
+  void free_tbpos_pointer();
   U64 scratchzobrist();
   void initialize();
   int repetitions();

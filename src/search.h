@@ -12,7 +12,6 @@ class Engine;
 struct abinfo {
   int playedmove;
   int eval;
-  int plysincecapture;
 };
 struct Limits {
   int softnodelimit;
@@ -28,6 +27,7 @@ struct Options {
   bool showWDL = true;
   bool suppressoutput = false;
   bool useTB = false;
+  bool TB70mr = true;
 };
 class Searcher {
   NNUE EUNN;
