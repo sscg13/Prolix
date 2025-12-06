@@ -1,10 +1,10 @@
 #pragma once
 
-constexpr int inputbuckets = 32;
+constexpr int inputbuckets = 8;
 constexpr bool mirrored = true;
 constexpr int mirrordivisor = mirrored ? 2 : 1;
 constexpr int realbuckets = inputbuckets / mirrordivisor;
-constexpr int L1size = 1792;
+constexpr int L1size = 768;
 constexpr int L2size = 16;
 
 constexpr int L3size = 32;
@@ -18,23 +18,23 @@ constexpr int L4Q = 64;
 constexpr int pairwiseshiftbits = 9;
 // clang-format off
 constexpr int kingbuckets[64] = {
-   0,  2,  4,  6,  7,  5,  3,  1,
-   8, 10, 12, 14, 15, 13, 11,  9,
-  16, 18, 20, 22, 23, 21, 19, 17,
-  16, 18, 20, 22, 23, 21, 19, 17,
-  24, 24, 26, 26, 27, 27, 25, 25,
-  24, 24, 26, 26, 27, 27, 25, 25,
-  28, 28, 30, 30, 31, 31, 29, 29,
-  28, 28, 30, 30, 31, 31, 29, 29,
+   0,  0,  0,  0,  1,  1,  1,  1,
+   2,  2,  2,  2,  3,  3,  3,  3,
+   4,  4,  4,  4,  5,  5,  5,  5,
+   4,  4,  4,  4,  5,  5,  5,  5,
+   6,  6,  6,  6,  7,  7,  7,  7,
+   6,  6,  6,  6,  7,  7,  7,  7,
+   6,  6,  6,  6,  7,  7,  7,  7,
+   6,  6,  6,  6,  7,  7,  7,  7
 };
 // clang-format on
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
 constexpr int bucketdivisor = 32 / outputbuckets;
-#define MULTI_LAYER
+// #define MULTI_LAYER
 #ifdef MULTI_LAYER
 constexpr bool multilayer = true;
 constexpr int L2Qbits = 7;
-#define DUAL_ACTIVATION
+// #define DUAL_ACTIVATION
 #else
 constexpr bool multilayer = false;
 constexpr int L2Qbits = 6;
