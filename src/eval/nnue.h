@@ -10,19 +10,10 @@ class Searcher;
 using Layer2Affine = SparseAffine<L1size, L2size>;
 #ifdef DUAL_ACTIVATION
 using Layer2Activation = DualActivation<L2size>;
-using Layer2Shift = DivideShift<L2size, 2 * L1bits - pairwiseshiftbits>;
-constexpr int activatedL2size = L2size * 2;
-constexpr int totalL2Q = L2Q;
-constexpr int totalL3Q = L2Q * L2Q * L3Q;
-constexpr int totalL4Q = totalL3Q * L4Q;
 #else
 using Layer2Activation = CReLUActivation<L2size>;
-using Layer2Shift = DivideShift<L2size, 0>;
-constexpr int activatedL2size = L2size;
-constexpr int totalL2Q = ((L1Q * L1Q) >> pairwiseshiftbits) * L2Q;
-constexpr int totalL3Q = totalL2Q * L3Q;
-constexpr int totalL4Q = totalL3Q * L4Q;
 #endif
+using Layer2Shift = DivideShift<L2size, L2shiftbits>;
 using Layer3Affine = DenseAffine<activatedL2size, L3size>;
 using Layer3Activation = CReLUActivation<L3size>;
 using Layer4Affine = DenseAffine<L3size, 1>;
@@ -56,10 +47,8 @@ struct MultiLayerWeights {
 
 #ifdef MULTI_LAYER
 using LayerWeights = MultiLayerWeights;
-using AccumulatorOutputType = U8;
 #else
 using LayerWeights = PerspectiveWeights<L1size>;
-using AccumulatorOutputType = I16;
 #endif
 
 struct PSQNNUEWeights {
@@ -97,6 +86,7 @@ struct SingleLayerStack {
 
 struct MultiLayerStack {
   MultiLayerWeights *weights;
+  U8 pairwiseoutput[L1size];
   I32 layer2raw[L2size];
   I32 layer2activated[activatedL2size];
   I32 layer3raw[L3size];
@@ -105,7 +95,7 @@ struct MultiLayerStack {
 
   void load(NNUEWeights *EUNNweights);
   int propagate(const int bucket, const int color,
-                const U8 *input);
+                const I16 *input);
 };
 
 struct PSQAccumulatorStack {
@@ -155,19 +145,19 @@ struct SingleAccumulatorStack {
   void initialize(const U64 *Bitboards);
   void make(const int notation, const U64 *Bitboards);
   void unmake(const int notation, const U64 *Bitboards);
-  const AccumulatorOutputType *transform(int color);
+  const I16 *transform(int color);
 };
 
 struct DualAccumulatorStack {
   PSQAccumulatorStack psqaccumulators;
   ThreatAccumulatorStack threataccumulators;
-  AccumulatorOutputType output[L1size * (1 + multilayer)];
+  I16 output[L1size * (1 + multilayer)];
 
   void load(NNUEWeights *EUNNweights);
   void initialize(const U64 *Bitboards);
   void make(const int notation, const U64 *Bitboards);
   void unmake(const int notation, const U64 *Bitboards);
-  const AccumulatorOutputType *transform(int color);
+  const I16 *transform(int color);
 };
 
 #ifdef THREAT_INPUTS

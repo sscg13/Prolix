@@ -21,15 +21,25 @@ template <int inputsize, int outputsize> struct SparseAffineWeights {
 
 template <int inputsize, int outputsize> struct SparseAffine {
   static void transform(const U8 *input, I32 *output, const SparseAffineWeights<inputsize, outputsize>* weights, int bucket) {
-    memcpy(output, weights->bias, 4 * outputsize);
+    for (int i = 0; i < outputsize; i++) {
+      output[i] = 0;
+    }
     for (int i = 0; i < inputsize; i++) {
       if (input[i]) {
-        const I8* vector = &(weights->weights[bucket * inputsize * outputsize + i * outputsize]);
+        const I8* vector = &(weights->weights[bucket * inputsize * outputsize + (i - (i % 4)) * outputsize + (i % 4)]);
         const int factor = input[i];
         for (int j = 0; j < outputsize; j++) {
-          output[j] += vector[j] * factor;
+          output[j] += vector[j * 4] * factor;
         }
       }
+    }
+  }
+};
+
+template <int inputsize> struct VectorAdd {
+  static void transform(const I32 *input, I32 *output) {
+    for (int i = 0; i < inputsize; i++) {
+      output[i] += input[i];
     }
   }
 };
@@ -48,11 +58,16 @@ template <int inputsize, int outputsize> struct DenseAffineWeights {
 
 template <int inputsize, int outputsize> struct DenseAffine {
   static void transform(const I32 *input, I32 *output, const DenseAffineWeights<inputsize, outputsize>* weights, int bucket) {
-    memcpy(output, weights->bias, 4 * outputsize);
-    for (int j = 0; j < outputsize; j++) {
-      const I32* vector = &(weights->weights[bucket * outputsize * inputsize + j * inputsize]);
-      for (int i = 0; i < inputsize; i++) {
-        output[j] += input[i]*vector[i];
+    for (int i = 0; i < outputsize; i++) {
+      output[i] = weights->bias[bucket * outputsize + i];
+    }
+    for (int i = 0; i < inputsize; i++) {
+      if (input[i]) {
+        const I32* vector = &(weights->weights[bucket * inputsize * outputsize + i * outputsize]);
+        const int factor = input[i];
+        for (int j = 0; j < outputsize; j++) {
+          output[j] += vector[j] * factor;
+        }
       }
     }
   }
@@ -67,6 +82,17 @@ template <int inputsize> struct PerspectiveWeights {
     memcpy(weights, stream + offset, 4 * outputbuckets * inputsize);
     offset += 4 * outputbuckets * inputsize;
     memcpy(bias, stream + offset, 2 * outputbuckets);
+  }
+};
+
+struct PerspectivePairwise {
+  static void transform(const I16 *input, U8 *output, int color) {
+    for (int i = 0; i < L1size / 2; i++) {
+      output[i] = crelu<I16>(input[color * L1size + i], L1Q)
+      * crelu<I16>(input[color * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
+      output[L1size / 2 + i] = crelu<I16>(input[(color ^ 1) * L1size + i], L1Q)
+      * crelu<I16>(input[(color ^ 1) * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
+    }
   }
 };
 

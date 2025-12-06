@@ -1,12 +1,13 @@
 #include "nnue.h"
 #include <fstream>
+#include <iostream>
 #define INCBIN_PREFIX
 #include "../external/incbin/incbin.h"
 
 INCBIN(char, NNUE, EUNNfile);
 template<typename T>
 T crelu(T x, T Q) { return std::max(std::min(x, Q), (T)0); }
-I32 csqr(I32 x, I32 Q) { return std::min(x * x, Q); }
+I32 csqr(I32 x, I32 Q) { return std::min(x * x, Q * Q); }
 
 void PSQFeatureWeights::load(const char *stream) {
   int offset = 0;
@@ -279,22 +280,10 @@ void SingleAccumulatorStack::make(int notation, const U64 *Bitboards) {
 void SingleAccumulatorStack::unmake(int notation, const U64 *Bitboards) {
   psqaccumulators.backwardaccumulators(notation, Bitboards);
 }
-const AccumulatorOutputType *SingleAccumulatorStack::transform(int color) {
-  // todo multilayer
-  if (multilayer) {
-    const I16* accumulator = psqaccumulators.currentaccumulator();
-    for (int i = 0; i < L1size / 2; i++) {
-      pairwise[i] = crelu<I16>(accumulator[color * L1size + i], L1Q)
-      * crelu<I16>(accumulator[color * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
-      pairwise[L1size / 2 + i] = crelu<I16>(accumulator[(color ^ 1) * L1size + i], L1Q)
-      * crelu<I16>(accumulator[(color ^ 1) * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
-    }
-  }
-  else {
-    return psqaccumulators.currentaccumulator();
-  }
+const I16 *SingleAccumulatorStack::transform(int color) {
+  return psqaccumulators.currentaccumulator();
 }
-void SingleLayerStack::load(NNUEWeights *EUNNweights) {
+void LayerStack::load(NNUEWeights *EUNNweights) {
   weights = &(EUNNweights->layerweights);
 }
 int SingleLayerStack::propagate(int bucket, int color,
@@ -310,17 +299,19 @@ int SingleLayerStack::propagate(int bucket, int color,
   eval /= (L1Q * L2Q);
   return eval;
 }
-int MultiLayerStack::propagate(int bucket, int color, const U8 *input) {
-  Layer2Affine::transform(input, layer2raw, &(weights->layer2weights), bucket);
+int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
+  PerspectivePairwise::transform(input, pairwiseoutput, color);
+  Layer2Affine::transform(pairwiseoutput, layer2raw, &(weights->layer2weights), bucket);
   Layer2Shift::transform(layer2raw);
+  VectorAdd<L2size>::transform(&((weights->layer2weights).bias[bucket * L2size]), layer2raw);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
   Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights), bucket);
   Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
   Layer4Affine::transform(layer3activated, output, &(weights->layer4weights), bucket);
   int eval = output[0];
-  eval /= (L3Q * L4Q);
+  eval /= (L4Q);
   eval *= evalscale;
-  eval /= totalL2Q;
+  eval /= totalL3Q;
   return eval;
 }
 void NNUE::load(NNUEWeights *EUNNweights) {
@@ -350,6 +341,6 @@ void NNUE::unmake(int notation, const U64 *Bitboards) {
 }
 int NNUE::evaluate(int color) {
   int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
-  const AccumulatorOutputType *layerstackinput = accumulators.transform(color);
+  const I16 *layerstackinput = accumulators.transform(color);
   return layers.propagate(bucket, color, layerstackinput);
 }
