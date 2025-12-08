@@ -303,7 +303,6 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   PerspectivePairwise::transform(input, pairwiseoutput, color);
   Layer2Affine::transform(pairwiseoutput, layer2raw, &(weights->layer2weights), bucket);
   Layer2Shift::transform(layer2raw);
-  VectorAdd<L2size>::transform(&((weights->layer2weights).bias[bucket * L2size]), layer2raw);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
   Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights), bucket);
   Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);

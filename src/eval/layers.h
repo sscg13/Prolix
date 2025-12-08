@@ -22,14 +22,14 @@ template <int inputsize, int outputsize> struct SparseAffineWeights {
 template <int inputsize, int outputsize> struct SparseAffine {
   static void transform(const U8 *input, I32 *output, const SparseAffineWeights<inputsize, outputsize>* weights, int bucket) {
     for (int i = 0; i < outputsize; i++) {
-      output[i] = 0;
+      output[i] = weights->bias[bucket * outputsize + i];
     }
     for (int i = 0; i < inputsize; i++) {
       if (input[i]) {
-        const I8* vector = &(weights->weights[bucket * inputsize * outputsize + (i - (i % 4)) * outputsize + (i % 4)]);
+        const I8* vector = &(weights->weights[bucket * inputsize * outputsize + i]);
         const int factor = input[i];
         for (int j = 0; j < outputsize; j++) {
-          output[j] += vector[j * 4] * factor;
+          output[j] += vector[j * inputsize] * factor;
         }
       }
     }
@@ -63,10 +63,10 @@ template <int inputsize, int outputsize> struct DenseAffine {
     }
     for (int i = 0; i < inputsize; i++) {
       if (input[i]) {
-        const I32* vector = &(weights->weights[bucket * inputsize * outputsize + i * outputsize]);
+        const I32* vector = &(weights->weights[bucket * inputsize * outputsize + i]);
         const int factor = input[i];
         for (int j = 0; j < outputsize; j++) {
-          output[j] += vector[j] * factor;
+          output[j] += vector[j * inputsize] * factor;
         }
       }
     }
