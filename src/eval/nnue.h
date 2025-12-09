@@ -38,9 +38,10 @@ struct MultiLayerWeights {
   SparseAffineWeights<L1size, L2size> layer2weights;
   DenseAffineWeights<activatedL2size, L3size> layer3weights;
   DenseAffineWeights<L3size, 1> layer4weights;
-  static constexpr int size = SparseAffineWeights<L1size, L2size>::size 
-  + DenseAffineWeights<activatedL2size, L3size>::size
-  + DenseAffineWeights<L3size, 1>::size;
+  static constexpr int size =
+      SparseAffineWeights<L1size, L2size>::size +
+      DenseAffineWeights<activatedL2size, L3size>::size +
+      DenseAffineWeights<L3size, 1>::size;
 
   void load(const char *stream);
 };
@@ -80,8 +81,7 @@ struct SingleLayerStack {
   PerspectiveWeights<L1size> *weights;
 
   void load(NNUEWeights *EUNNweights);
-  int propagate(const int bucket, const int color,
-                const I16 *input);
+  int propagate(const int bucket, const int color, const I16 *input);
 };
 
 struct MultiLayerStack {
@@ -94,8 +94,7 @@ struct MultiLayerStack {
   I32 output[1];
 
   void load(NNUEWeights *EUNNweights);
-  int propagate(const int bucket, const int color,
-                const I16 *input);
+  int propagate(const int bucket, const int color, const I16 *input);
 };
 
 struct PSQAccumulatorStack {

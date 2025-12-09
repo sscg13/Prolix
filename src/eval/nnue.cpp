@@ -5,8 +5,9 @@
 #include "../external/incbin/incbin.h"
 
 INCBIN(char, NNUE, EUNNfile);
-template<typename T>
-T crelu(T x, T Q) { return std::max(std::min(x, Q), (T)0); }
+template <typename T> T crelu(T x, T Q) {
+  return std::max(std::min(x, Q), (T)0);
+}
 I32 csqr(I32 x, I32 Q) { return std::min(x * x, Q * Q); }
 
 void PSQFeatureWeights::load(const char *stream) {
@@ -76,8 +77,8 @@ void ThreatNNUEWeights::readnnuefile(std::string file) {
 int PSQAccumulatorStack::getbucket(int kingsquare, int color) {
   return kingbuckets[(56 * color) ^ kingsquare];
 }
-int PSQAccumulatorStack::featureindex(int bucket, int color,
-                                      int piece, int square) {
+int PSQAccumulatorStack::featureindex(int bucket, int color, int piece,
+                                      int square) {
   int piececolor = piece / 6;
   int perspectivepiece = (color ^ piececolor) * 6 + (piece % 6);
   bool hmactive = mirrored && (bucket % 2 == 1);
@@ -90,9 +91,8 @@ int PSQAccumulatorStack::differencecount(int bucket, int color,
       (cachebitboards[bucket][color][0] | cachebitboards[bucket][color][1]) ^
       (Bitboards[0] | Bitboards[1]));
 }
-const I16 *PSQAccumulatorStack::layer1weights(int kingsquare,
-                                              int color, int piece,
-                                              int square) {
+const I16 *PSQAccumulatorStack::layer1weights(int kingsquare, int color,
+                                              int piece, int square) {
   int bucket = getbucket(kingsquare, color);
   return weights->nnuelayer1[bucket / mirrordivisor]
                             [featureindex(bucket, color, piece, square)];
@@ -120,24 +120,21 @@ void PSQAccumulatorStack::addsubsub(I16 *oldaccptr, I16 *newaccptr,
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
   }
 }
-void PSQAccumulatorStack::activatepiece(I16 *accptr, int kingsquare,
-                                        int color, int piece,
-                                        int square) {
+void PSQAccumulatorStack::activatepiece(I16 *accptr, int kingsquare, int color,
+                                        int piece, int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < L1size; i++) {
     accptr[i] += weightsptr[i];
   }
 }
 void PSQAccumulatorStack::deactivatepiece(I16 *accptr, int kingsquare,
-                                          int color, int piece,
-                                          int square) {
+                                          int color, int piece, int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < L1size; i++) {
     accptr[i] -= weightsptr[i];
   }
 }
-void PSQAccumulatorStack::refreshfromcache(int kingsquare,
-                                           int color,
+void PSQAccumulatorStack::refreshfromcache(int kingsquare, int color,
                                            const U64 *Bitboards) {
   U64 add[12];
   U64 remove[12];
@@ -173,8 +170,7 @@ void PSQAccumulatorStack::refreshfromcache(int kingsquare,
     accptr[i] = cacheaccptr[i];
   }
 }
-void PSQAccumulatorStack::refreshfromscratch(int kingsquare,
-                                             int color,
+void PSQAccumulatorStack::refreshfromscratch(int kingsquare, int color,
                                              const U64 *Bitboards) {
   I16 *accptr = accumulation[2 * ply + color];
   I16 *cacheaccptr = cacheaccumulators[getbucket(kingsquare, color)][color];
@@ -286,27 +282,30 @@ const I16 *SingleAccumulatorStack::transform(int color) {
 void LayerStack::load(NNUEWeights *EUNNweights) {
   weights = &(EUNNweights->layerweights);
 }
-int SingleLayerStack::propagate(int bucket, int color,
-                                const I16 *input) {
-  //int eval = 0;
+int SingleLayerStack::propagate(int bucket, int color, const I16 *input) {
+  // int eval = 0;
   const I16 *stmaccptr = input + color * L1size;
   const I16 *nstmaccptr = input + (color ^ 1) * L1size;
   const I16 *stmweightsptr = &(weights->weights[bucket * 2 * L1size]);
-  const I16 *nstmweightsptr =
-      &(weights->weights[bucket * 2 * L1size + L1size]);
-  int eval = SingleLayerAffine::transform(stmaccptr, nstmaccptr, stmweightsptr, nstmweightsptr, weights->bias[bucket], L1Q);
+  const I16 *nstmweightsptr = &(weights->weights[bucket * 2 * L1size + L1size]);
+  int eval =
+      SingleLayerAffine::transform(stmaccptr, nstmaccptr, stmweightsptr,
+                                   nstmweightsptr, weights->bias[bucket], L1Q);
   eval *= evalscale;
   eval /= (L1Q * L2Q);
   return eval;
 }
 int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   PerspectivePairwise::transform(input, pairwiseoutput, color);
-  Layer2Affine::transform(pairwiseoutput, layer2raw, &(weights->layer2weights), bucket);
+  Layer2Affine::transform(pairwiseoutput, layer2raw, &(weights->layer2weights),
+                          bucket);
   Layer2Shift::transform(layer2raw);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
-  Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights), bucket);
+  Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights),
+                          bucket);
   Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
-  Layer4Affine::transform(layer3activated, output, &(weights->layer4weights), bucket);
+  Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
+                          bucket);
   int eval = output[0];
   eval /= (L4Q);
   eval *= evalscale;
