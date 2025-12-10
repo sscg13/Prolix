@@ -86,7 +86,7 @@ struct SingleLayerStack {
 
 struct MultiLayerStack {
   MultiLayerWeights *weights;
-  U8 pairwiseoutput[L1size];
+  alignas(64) U8 pairwiseoutput[L1size];
   I32 layer2raw[L2size];
   I32 layer2activated[activatedL2size];
   I32 layer3raw[L3size];

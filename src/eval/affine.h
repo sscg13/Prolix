@@ -37,67 +37,27 @@ template <int inputsize, int outputsize> struct SparseAffineWeights {
 
 template <int inputsize, int outputsize> struct SparseAffine {
   static void
-  transform_avxvnni(const U8 *input, I32 *output,
-            const SparseAffineWeights<inputsize, outputsize> *weights,
-            int bucket) {
-    for (int i = 0; i < outputsize; i++) {
-      output[i] = weights->bias[bucket * outputsize + i];
-    }
-    int offset = bucket * inputsize * outputsize;
-    const __m256i *weightptr = (const __m256i *)(&(weights->weights[offset]));
-    // Use two accumulators to break dependency chains
-    __m256i outvec1 = _mm256_loadu_si256((__m256i *)output);
-    __m256i outvec2 = _mm256_setzero_si256();
-
-    // Process 8 steps of K per iteration (2 blocks of 4)
-    for (int k = 0; k < inputsize / 4; k += 2) {
-      // --- Block 1 (k) ---
-      __m256i w1 = _mm256_load_si256((__m256i *)(weightptr + k));
-      __m256i in1 = _mm256_set1_epi32(*(const int32_t *)&input[4 * k]);
-      outvec1 = _mm256_dpbusd_epi32(outvec1, in1, w1);
-
-      // --- Block 2 (k+1) ---
-      // This can execute while Block 1 is still calculating!
-      __m256i w2 = _mm256_load_si256((__m256i *)(weightptr + k + 1));
-      __m256i in2 = _mm256_set1_epi32(*(const int32_t *)&input[4 * (k + 1)]);
-      outvec2 = _mm256_dpbusd_epi32(outvec2, in2, w2);
-    }
-
-    // Sum the two accumulators at the end
-    outvec1 = _mm256_add_epi32(outvec1, outvec2);
-    _mm256_storeu_si256((__m256i *)output, outvec1);
-  }
-
-  static void
   transform_avx2(const U8 *input, I32 *output,
             const SparseAffineWeights<inputsize, outputsize> *weights,
             int bucket) {
-    for (int i = 0; i < outputsize; i++) {
-      output[i] = weights->bias[bucket * outputsize + i];
+    int weightoffset = bucket * inputsize * outputsize;
+    int biasoffset = bucket * outputsize;
+    const __m256i *weightptr = (const __m256i *)(&(weights->weights[weightoffset]));
+    constexpr int numaccums = outputsize / 8;
+    __m256i outvec[numaccums];   
+    for (int i = 0; i < numaccums; i++) {
+        outvec[i] = _mm256_load_si256((__m256i *)(&(weights->bias[biasoffset + 8 * i])));
     }
-    int offset = bucket * inputsize * outputsize;
-    const __m256i *weightptr = (const __m256i *)(&(weights->weights[offset]));
-    // Use two accumulators to break dependency chains
-    __m256i outvec1 = _mm256_loadu_si256((__m256i *)output);
-    __m256i outvec2 = _mm256_setzero_si256();
-
-    // Process 8 steps of K per iteration (2 blocks of 4)
-    for (int k = 0; k < inputsize / 4; k += 2) {
-      // --- Block 1 (k) ---
-      __m256i w1 = _mm256_load_si256((__m256i *)(weightptr + k));
-      __m256i in1 = _mm256_set1_epi32(*(const int32_t *)&input[4 * k]);
-      outvec1 = _mm256_add_epi32(outvec1, _mm256_madd_epi16(_mm256_maddubs_epi16(in1, w1), _mm256_set1_epi16(1)));
-
-      // --- Block 2 (k+1) ---
-      // This can execute while Block 1 is still calculating!
-      __m256i w2 = _mm256_load_si256((__m256i *)(weightptr + k + 1));
-      __m256i in2 = _mm256_set1_epi32(*(const int32_t *)&input[4 * (k + 1)]);
-      outvec2 = _mm256_add_epi32(outvec2, _mm256_madd_epi16(_mm256_maddubs_epi16(in2, w2), _mm256_set1_epi16(1)));
+    for (int k = 0; k < inputsize / 4; k++) {
+      for (int i = 0; i < numaccums; i++) {
+        __m256i w = _mm256_load_si256((__m256i *)(weightptr + k * numaccums + i));
+        __m256i in = _mm256_set1_epi32(*(const int32_t *)(&input[4 * k]));
+        outvec[i] = _mm256_add_epi32(outvec[i], _mm256_madd_epi16(_mm256_maddubs_epi16(in, w), _mm256_set1_epi16(1)));
+      }
     }
-
-    // Sum the two accumulators at the end
-    outvec1 = _mm256_add_epi32(outvec1, outvec2);
-    _mm256_storeu_si256((__m256i *)output, outvec1);
+    for (int i = 0; i < numaccums; i++) {
+        _mm256_store_si256((__m256i *)output, outvec[i]);
+    }
   }
 
   static void
