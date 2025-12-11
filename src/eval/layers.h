@@ -7,8 +7,6 @@
 template <typename T> T crelu(T x, T Q);
 I32 csqr(I32 x, I32 Q);
 
-
-
 template <int inputsize> struct VectorAdd {
   static void transform(const I32 *input, I32 *output) {
     for (int i = 0; i < inputsize; i++) {
