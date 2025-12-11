@@ -58,16 +58,34 @@ template <int inputsize> struct PerspectiveWeights {
   }
 };
 
-struct PerspectivePairwise {
+struct PerspectiveTransform {
   static void transform(const I16 *input, U8 *output, int color) {
-    for (int i = 0; i < L1size / 2; i++) {
-      output[i] = crelu<I16>(input[color * L1size + i], L1Q) *
-                  crelu<I16>(input[color * L1size + L1size / 2 + i], L1Q) /
-                  (1 << pairwiseshiftbits);
-      output[L1size / 2 + i] =
-          crelu<I16>(input[(color ^ 1) * L1size + i], L1Q) *
-          crelu<I16>(input[(color ^ 1) * L1size + L1size / 2 + i], L1Q) /
-          (1 << pairwiseshiftbits);
+    if (pairwise) {
+      for (int i = 0; i < L1size / 2; i++) {
+        output[i] = (crelu<I16>(input[color * L1size + i], L1Q) *
+                     crelu<I16>(input[color * L1size + L1size / 2 + i], L1Q)) >>
+                    l1shiftbits;
+        output[L1size / 2 + i] =
+            (crelu<I16>(input[(color ^ 1) * L1size + i], L1Q) *
+             crelu<I16>(input[(color ^ 1) * L1size + L1size / 2 + i], L1Q)) >>
+            l1shiftbits;
+      }
+    } else if (perspectivecrelu) {
+      for (int i = 0; i < L1size; i++) {
+        output[i] = (crelu<I16>(input[color * L1size + i], L1Q) >> l1shiftbits);
+        output[L1size + i] =
+            (crelu<I16>(input[(color ^ 1) * L1size + i], L1Q) >> l1shiftbits);
+      }
+    } else {
+      for (int i = 0; i < L1size; i++) {
+        output[i] = (crelu<I16>(input[color * L1size + i], L1Q) *
+                     crelu<I16>(input[color * L1size + i], L1Q)) >>
+                    l1shiftbits;
+        output[L1size + i] =
+            (crelu<I16>(input[(color ^ 1) * L1size + i], L1Q) *
+             crelu<I16>(input[(color ^ 1) * L1size + i], L1Q)) >>
+            l1shiftbits;
+      }
     }
   }
 };
@@ -99,40 +117,30 @@ template <int inputsize, int bits> struct DivideShift {
   }
 };
 
-template <int inputsize> struct PerspectiveSCReLU {
+template <int inputsize> struct SingleLayerAffine {
   static I32 transform(const I16 *stminput, const I16 *nstminput,
                        const I16 *stmweights, const I16 *nstmweights, I16 bias,
                        I16 Q) {
-    int eval = 0;
-    for (int i = 0; i < inputsize; i++) {
-      I16 stmclipped = crelu<I16>(stminput[i], Q);
-      I16 nstmclipped = crelu<I16>(nstminput[i], Q);
-      eval += I16(stmclipped * stmweights[i]) * stmclipped;
-      eval += I16(nstmclipped * nstmweights[i]) * nstmclipped;
+    if (perspectivecrelu) {
+      int eval = bias;
+      for (int i = 0; i < inputsize; i++) {
+        I16 stmclipped = crelu<I16>(stminput[i], Q);
+        I16 nstmclipped = crelu<I16>(nstminput[i], Q);
+        eval += I16(stmclipped * stmweights[i]);
+        eval += I16(nstmclipped * nstmweights[i]);
+      }
+      return eval;
+    } else {
+      int eval = 0;
+      for (int i = 0; i < inputsize; i++) {
+        I16 stmclipped = crelu<I16>(stminput[i], Q);
+        I16 nstmclipped = crelu<I16>(nstminput[i], Q);
+        eval += I16(stmclipped * stmweights[i]) * stmclipped;
+        eval += I16(nstmclipped * nstmweights[i]) * nstmclipped;
+      }
+      eval /= Q;
+      eval += bias;
+      return eval;
     }
-    eval /= Q;
-    eval += bias;
-    return eval;
   }
 };
-
-template <int inputsize> struct PerspectiveCReLU {
-  static I32 transform(const I16 *stminput, const I16 *nstminput,
-                       const I16 *stmweights, const I16 *nstmweights, I16 bias,
-                       I16 Q) {
-    int eval = bias;
-    for (int i = 0; i < inputsize; i++) {
-      I16 stmclipped = crelu<I16>(stminput[i], Q);
-      I16 nstmclipped = crelu<I16>(nstminput[i], Q);
-      eval += I16(stmclipped * stmweights[i]);
-      eval += I16(nstmclipped * nstmweights[i]);
-    }
-    return eval;
-  }
-};
-
-#ifdef SINGLE_LAYER_CRELU
-using SingleLayerAffine = PerspectiveCReLU<L1size>;
-#else
-using SingleLayerAffine = PerspectiveSCReLU<L1size>;
-#endif

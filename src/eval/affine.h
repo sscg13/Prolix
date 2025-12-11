@@ -38,25 +38,30 @@ template <int inputsize, int outputsize> struct SparseAffineWeights {
 template <int inputsize, int outputsize> struct SparseAffine {
   static void
   transform_avx2(const U8 *input, I32 *output,
-            const SparseAffineWeights<inputsize, outputsize> *weights,
-            int bucket) {
+                 const SparseAffineWeights<inputsize, outputsize> *weights,
+                 int bucket) {
     int weightoffset = bucket * inputsize * outputsize;
     int biasoffset = bucket * outputsize;
-    const __m256i *weightptr = (const __m256i *)(&(weights->weights[weightoffset]));
+    const __m256i *weightptr =
+        (const __m256i *)(&(weights->weights[weightoffset]));
     constexpr int numaccums = outputsize / 8;
-    __m256i outvec[numaccums];   
+    __m256i outvec[numaccums];
     for (int i = 0; i < numaccums; i++) {
-        outvec[i] = _mm256_load_si256((__m256i *)(&(weights->bias[biasoffset + 8 * i])));
+      outvec[i] =
+          _mm256_load_si256((__m256i *)(&(weights->bias[biasoffset + 8 * i])));
     }
     for (int k = 0; k < inputsize / 4; k++) {
       for (int i = 0; i < numaccums; i++) {
-        __m256i w = _mm256_load_si256((__m256i *)(weightptr + k * numaccums + i));
+        __m256i w =
+            _mm256_load_si256((__m256i *)(weightptr + k * numaccums + i));
         __m256i in = _mm256_set1_epi32(*(const int32_t *)(&input[4 * k]));
-        outvec[i] = _mm256_add_epi32(outvec[i], _mm256_madd_epi16(_mm256_maddubs_epi16(in, w), _mm256_set1_epi16(1)));
+        outvec[i] = _mm256_add_epi32(
+            outvec[i], _mm256_madd_epi16(_mm256_maddubs_epi16(in, w),
+                                         _mm256_set1_epi16(1)));
       }
     }
     for (int i = 0; i < numaccums; i++) {
-        _mm256_store_si256((__m256i *)output, outvec[i]);
+      _mm256_store_si256((__m256i *)output, outvec[i]);
     }
   }
 
@@ -81,14 +86,13 @@ template <int inputsize, int outputsize> struct SparseAffine {
 
   static void
   transform(const U8 *input, I32 *output,
-                   const SparseAffineWeights<inputsize, outputsize> *weights,
-                   int bucket) {
-    //avx2 gives better performance than avxvnni so fall back to avx2 for now
+            const SparseAffineWeights<inputsize, outputsize> *weights,
+            int bucket) {
+    // avx2 gives better performance than avxvnni so fall back to avx2 for now
     if (!__builtin_cpu_supports("avx2")) {
-        transform_scalar(input, output, weights, bucket);
-    }
-    else {
-        transform_avx2(input, output, weights, bucket);
+      transform_scalar(input, output, weights, bucket);
+    } else {
+      transform_avx2(input, output, weights, bucket);
     }
   }
 };

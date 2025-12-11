@@ -288,15 +288,15 @@ int SingleLayerStack::propagate(int bucket, int color, const I16 *input) {
   const I16 *nstmaccptr = input + (color ^ 1) * L1size;
   const I16 *stmweightsptr = &(weights->weights[bucket * 2 * L1size]);
   const I16 *nstmweightsptr = &(weights->weights[bucket * 2 * L1size + L1size]);
-  int eval =
-      SingleLayerAffine::transform(stmaccptr, nstmaccptr, stmweightsptr,
-                                   nstmweightsptr, weights->bias[bucket], L1Q);
+  int eval = SingleLayerAffine<L1size>::transform(stmaccptr, nstmaccptr,
+                                                  stmweightsptr, nstmweightsptr,
+                                                  weights->bias[bucket], L1Q);
   eval *= evalscale;
   eval /= (L1Q * L2Q);
   return eval;
 }
 int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
-  PerspectivePairwise::transform(input, pairwiseoutput, color);
+  PerspectiveTransform::transform(input, pairwiseoutput, color);
   Layer2Affine::transform(pairwiseoutput, layer2raw, &(weights->layer2weights),
                           bucket);
   Layer2Shift::transform(layer2raw);
