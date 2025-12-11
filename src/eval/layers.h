@@ -1,40 +1,11 @@
 #include "../consts.h"
+#include "affine.h"
 #include "arch.h"
 #include <cmath>
-#include <string.h>
 #pragma once
 
-template<typename T> T crelu(T x, T Q);
+template <typename T> T crelu(T x, T Q);
 I32 csqr(I32 x, I32 Q);
-
-template <int inputsize, int outputsize> struct SparseAffineWeights {
-  alignas(64) I8 weights[outputbuckets * inputsize * outputsize];
-  alignas(64) I32 bias[outputbuckets * outputsize];
-  static constexpr int size = outputbuckets * outputsize * (inputsize + 4);
-  void load(const char* stream) {
-    int offset = 0;
-    memcpy(weights, stream + offset, outputbuckets * inputsize * outputsize);
-    offset += outputbuckets * inputsize * outputsize;
-    memcpy(bias, stream + offset, 4 * outputbuckets * outputsize);
-  }
-};
-
-template <int inputsize, int outputsize> struct SparseAffine {
-  static void transform(const U8 *input, I32 *output, const SparseAffineWeights<inputsize, outputsize>* weights, int bucket) {
-    for (int i = 0; i < outputsize; i++) {
-      output[i] = 0;
-    }
-    for (int i = 0; i < inputsize; i++) {
-      if (input[i]) {
-        const I8* vector = &(weights->weights[bucket * inputsize * outputsize + (i - (i % 4)) * outputsize + (i % 4)]);
-        const int factor = input[i];
-        for (int j = 0; j < outputsize; j++) {
-          output[j] += vector[j * 4] * factor;
-        }
-      }
-    }
-  }
-};
 
 template <int inputsize> struct VectorAdd {
   static void transform(const I32 *input, I32 *output) {
@@ -48,26 +19,28 @@ template <int inputsize, int outputsize> struct DenseAffineWeights {
   alignas(64) I32 weights[outputbuckets * outputsize * inputsize];
   alignas(64) I32 bias[outputbuckets * outputsize];
   static constexpr int size = 4 * outputbuckets * outputsize * (inputsize + 1);
-  void load(const char* stream) {
+  void load(const char *stream) {
     int offset = 0;
-    memcpy(weights, stream + offset, 4 * outputbuckets * inputsize * outputsize);
+    memcpy(weights, stream + offset,
+           4 * outputbuckets * inputsize * outputsize);
     offset += 4 * outputbuckets * inputsize * outputsize;
     memcpy(bias, stream + offset, 4 * outputbuckets * outputsize);
   }
 };
 
 template <int inputsize, int outputsize> struct DenseAffine {
-  static void transform(const I32 *input, I32 *output, const DenseAffineWeights<inputsize, outputsize>* weights, int bucket) {
+  static void
+  transform(const I32 *input, I32 *output,
+            const DenseAffineWeights<inputsize, outputsize> *weights,
+            int bucket) {
     for (int i = 0; i < outputsize; i++) {
       output[i] = weights->bias[bucket * outputsize + i];
     }
-    for (int i = 0; i < inputsize; i++) {
-      if (input[i]) {
-        const I32* vector = &(weights->weights[bucket * inputsize * outputsize + i * outputsize]);
-        const int factor = input[i];
-        for (int j = 0; j < outputsize; j++) {
-          output[j] += vector[j] * factor;
-        }
+    for (int j = 0; j < outputsize; j++) {
+      const I32 *vector =
+          &(weights->weights[bucket * inputsize * outputsize + j * inputsize]);
+      for (int i = 0; i < inputsize; i++) {
+        output[j] += vector[i] * input[i];
       }
     }
   }
@@ -77,7 +50,7 @@ template <int inputsize> struct PerspectiveWeights {
   alignas(64) I16 weights[2 * outputbuckets * inputsize];
   alignas(64) I16 bias[outputbuckets];
   static constexpr int size = outputbuckets * (4 * inputsize + 2);
-  void load(const char* stream) {
+  void load(const char *stream) {
     int offset = 0;
     memcpy(weights, stream + offset, 4 * outputbuckets * inputsize);
     offset += 4 * outputbuckets * inputsize;
@@ -88,10 +61,13 @@ template <int inputsize> struct PerspectiveWeights {
 struct PerspectivePairwise {
   static void transform(const I16 *input, U8 *output, int color) {
     for (int i = 0; i < L1size / 2; i++) {
-      output[i] = crelu<I16>(input[color * L1size + i], L1Q)
-      * crelu<I16>(input[color * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
-      output[L1size / 2 + i] = crelu<I16>(input[(color ^ 1) * L1size + i], L1Q)
-      * crelu<I16>(input[(color ^ 1) * L1size + L1size / 2 + i], L1Q) / (1 << pairwiseshiftbits);
+      output[i] = crelu<I16>(input[color * L1size + i], L1Q) *
+                  crelu<I16>(input[color * L1size + L1size / 2 + i], L1Q) /
+                  (1 << pairwiseshiftbits);
+      output[L1size / 2 + i] =
+          crelu<I16>(input[(color ^ 1) * L1size + i], L1Q) *
+          crelu<I16>(input[(color ^ 1) * L1size + L1size / 2 + i], L1Q) /
+          (1 << pairwiseshiftbits);
     }
   }
 };
@@ -116,7 +92,7 @@ template <int inputsize> struct DualActivation {
 };
 
 template <int inputsize, int bits> struct DivideShift {
-  static void transform(I32* input) {
+  static void transform(I32 *input) {
     for (int i = 0; i < inputsize; i++) {
       input[i] >>= bits;
     }
@@ -124,7 +100,9 @@ template <int inputsize, int bits> struct DivideShift {
 };
 
 template <int inputsize> struct PerspectiveSCReLU {
-  static I32 transform(const I16 *stminput, const I16* nstminput, const I16* stmweights, const I16* nstmweights, I16 bias, I16 Q) {
+  static I32 transform(const I16 *stminput, const I16 *nstminput,
+                       const I16 *stmweights, const I16 *nstmweights, I16 bias,
+                       I16 Q) {
     int eval = 0;
     for (int i = 0; i < inputsize; i++) {
       I16 stmclipped = crelu<I16>(stminput[i], Q);
@@ -139,7 +117,9 @@ template <int inputsize> struct PerspectiveSCReLU {
 };
 
 template <int inputsize> struct PerspectiveCReLU {
-  static I32 transform(const I16 *stminput, const I16* nstminput, const I16* stmweights, const I16* nstmweights, I16 bias, I16 Q) {
+  static I32 transform(const I16 *stminput, const I16 *nstminput,
+                       const I16 *stmweights, const I16 *nstmweights, I16 bias,
+                       I16 Q) {
     int eval = bias;
     for (int i = 0; i < inputsize; i++) {
       I16 stmclipped = crelu<I16>(stminput[i], Q);

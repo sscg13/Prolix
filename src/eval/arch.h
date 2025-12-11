@@ -5,7 +5,7 @@ constexpr bool mirrored = true;
 constexpr int mirrordivisor = mirrored ? 2 : 1;
 constexpr int realbuckets = inputbuckets / mirrordivisor;
 constexpr int L1size = 768;
-constexpr int L2size = 16;
+constexpr int L2size = 8;
 
 constexpr int L3size = 32;
 constexpr int outputbuckets = 8;
@@ -33,7 +33,7 @@ constexpr int bucketdivisor = 32 / outputbuckets;
 // #define MULTI_LAYER
 #ifdef MULTI_LAYER
 constexpr bool multilayer = true;
-constexpr int L2Qbits = 7;
+constexpr int L2Qbits = 6;
 // #define DUAL_ACTIVATION
 #else
 constexpr bool multilayer = false;

@@ -1,14 +1,15 @@
 EXE := Prolix
 EVALFILE := shatranj-net44.nnue
 ARCH := native
+TUNE := native
 
 SOURCES := src/Prolix.cpp src/uci.cpp src/xboard.cpp src/search.cpp src/datagen/datagen.cpp src/eval/nnue.cpp src/tt.cpp src/history.cpp src/datagen/viriformat.cpp src/board.cpp src/external/probetool/jtbprobe.c src/external/probetool/jtbinterface_bb.c
 
 CXX := clang++
 
-CXXFLAGS := -O3 -march=$(ARCH) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+CXXFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
 
-DEBUGFLAGS := -g -march=$(ARCH) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+DEBUGFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
 
 SUFFIX :=
 
