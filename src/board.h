@@ -1,13 +1,10 @@
 #include "consts.h"
+#include "zobrist.h"
 #include <algorithm>
-#include <cstdint>
 #include <fstream>
 #include <iostream>
-#include <random>
 #include <string>
 #pragma once
-using U64 = uint64_t;
-using U8 = uint8_t;
 
 struct TB_Position;
 
@@ -16,9 +13,10 @@ class Board {
   int evale[2] = {0, 0};
   int mobilitym[2] = {0, 0};
   int mobilitye[2] = {0, 0};
-  U64 zobrist[1024];
-  int history[1024];
+  U64 zobrist[256];
+  int history[256];
   int root = 0;
+  Zobrist hashes;
   TB_Position *tbpos = nullptr;
   int startpiece[16] = {4, 3, 1, 5, 2, 1, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0};
 

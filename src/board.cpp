@@ -11,8 +11,6 @@ U64 KnightAttacks[64];
 U64 RankMask[64];
 U64 FileMask[64];
 U64 RankAttacks[512];
-U64 hashes[8][64];
-const U64 colorhash = 0xE344F58E0F3B26E5;
 U64 shift_w(U64 bitboard) { return (bitboard & ~FileA) >> 1; }
 U64 shift_n(U64 bitboard) { return bitboard << 8; }
 U64 shift_s(U64 bitboard) { return bitboard >> 8; }
@@ -93,14 +91,6 @@ U64 GetRankAttacks(U64 occupied, int square) {
   int file = square & 7;
   int relevant = (occupied >> (row + 1)) & 63;
   return (RankAttacks[8 * relevant + file] << row);
-}
-void initializezobrist() {
-  std::mt19937_64 mt(20346892);
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 64; j++) {
-      hashes[i][j] = mt();
-    }
-  }
 }
 std::string algebraic(int notation) {
   std::string convert[64] = {
@@ -207,7 +197,6 @@ std::string get129600FEN(int seed1, int seed2) {
   FEN += " w - - 0 1";
   return FEN;
 }
-
 void Board::get_tbpos_pointer() {
   tbpos = TBitf_alloc_position();
 }
@@ -215,18 +204,8 @@ void Board::free_tbpos_pointer() {
   TBitf_free_position(tbpos);
 }
 U64 Board::scratchzobrist() {
-  U64 scratch = 0ULL;
-  for (int i = 0; i < 64; i++) {
-    int piece = pieces[i];
-    if (piece > 0) {
-      scratch ^= hashes[piece / 8][i];
-      scratch ^= hashes[piece % 8][i];
-    }
-  }
-  if (position & 1) {
-    scratch ^= colorhash;
-  }
-  return scratch;
+  hashes.reset(pieces);
+  return hashes.fullhash(position & 1);
 }
 void Board::initialize() {
   Bitboards[0] = Rank1 | Rank2;
@@ -263,7 +242,7 @@ void Board::initialize() {
   gamephase[0] = 24;
   gamephase[1] = 24;
   gamelength = 0;
-  zobrist[0] = zobristhash = scratchzobrist();
+  zobrist[0] = scratchzobrist();
   if (tbpos == nullptr) {
     get_tbpos_pointer();
   }
@@ -355,8 +334,8 @@ void Board::makemove(int notation, bool reversible) {
   evalm[color] -= pstm[piece - 2][(56 * color) ^ from];
   evale[color] += pste[piece - 2][(56 * color) ^ to];
   evale[color] -= pste[piece - 2][(56 * color) ^ from];
-  zobristhash ^= (hashes[color][from] ^ hashes[color][to]);
-  zobristhash ^= (hashes[piece][from] ^ hashes[piece][to]);
+  hashes.modpiece(piece, from);
+  hashes.modpiece(piece, to);
   int captured = (notation >> 17) & 7;
   int halfmove = (position >> 1);
   position ^= (halfmove << 1);
@@ -371,7 +350,7 @@ void Board::makemove(int notation, bool reversible) {
   if (notation & (1 << 16)) {
     Bitboards[color ^ 1] ^= (1ULL << to);
     Bitboards[captured] ^= (1ULL << to);
-    zobristhash ^= (hashes[color ^ 1][to] ^ hashes[captured][to]);
+    hashes.modpiece(8 * (color ^ 1) + captured, to);
     evalm[color ^ 1] -= materialm[captured - 2];
     evale[color ^ 1] -= materiale[captured - 2];
     evalm[color ^ 1] -= pstm[captured - 2][(56 * (color ^ 1)) ^ to];
@@ -386,7 +365,8 @@ void Board::makemove(int notation, bool reversible) {
     Bitboards[2] ^= (1ULL << to);
     Bitboards[4] ^= (1ULL << to);
     pieces[to] = 8 * color + 4;
-    zobristhash ^= (hashes[2][to] ^ hashes[4][to]);
+    hashes.modpiece(8 * color + 2, to);
+    hashes.modpiece(8 * color + 4, to);
     evalm[color] -= (materialm[0] + pstm[0][(56 * color) ^ from]);
     evalm[color] += (materialm[2] + pstm[2][(56 * color) ^ from]);
     evale[color] -= (materiale[0] + pste[0][(56 * color) ^ from]);
@@ -399,15 +379,13 @@ void Board::makemove(int notation, bool reversible) {
   }
   position ^= 1;
   position ^= (halfmove << 1);
-  zobristhash ^= colorhash;
   history[gamelength] = position;
-  zobrist[gamelength] = zobristhash;
+  zobrist[gamelength] = hashes.fullhash(position & 1);
   nodecount++;
 }
 void Board::unmakemove(int notation) {
   gamelength--;
   position = history[gamelength];
-  zobristhash = zobrist[gamelength];
   int from = notation & 63;
   int to = (notation >> 6) & 63;
   int color = (notation >> 12) & 1;
@@ -420,11 +398,14 @@ void Board::unmakemove(int notation) {
   evalm[color] -= pstm[piece - 2][(56 * color) ^ to];
   evale[color] += pste[piece - 2][(56 * color) ^ from];
   evale[color] -= pste[piece - 2][(56 * color) ^ to];
+  hashes.modpiece(piece, from);
+  hashes.modpiece(piece, to);
   int captured = (notation >> 17) & 7;
   if (notation & (1 << 16)) {
     Bitboards[color ^ 1] ^= (1ULL << to);
     Bitboards[captured] ^= (1ULL << to);
     pieces[to] = 8 * (color ^ 1) + captured;
+    hashes.modpiece(8 * (color ^ 1) + captured, to);
     evalm[color ^ 1] += materialm[captured - 2];
     evale[color ^ 1] += materiale[captured - 2];
     evalm[color ^ 1] += pstm[captured - 2][(56 * (color ^ 1)) ^ to];
@@ -435,6 +416,8 @@ void Board::unmakemove(int notation) {
     Bitboards[2] ^= (1ULL << to);
     Bitboards[4] ^= (1ULL << to);
     pieces[from] = 8 * color + 2;
+    hashes.modpiece(8 * color + 2, to);
+    hashes.modpiece(8 * color + 4, to);
     evalm[color] += (materialm[0] + pstm[0][(56 * color) ^ from]);
     evalm[color] -= (materialm[2] + pstm[2][(56 * color) ^ from]);
     evale[color] += (materiale[0] + pste[0][(56 * color) ^ from]);
