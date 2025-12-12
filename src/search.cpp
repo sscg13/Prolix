@@ -369,6 +369,9 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         r = std::min(1024 * (depth - 1), lmr_reductions[depth][quiets]);
       }
     }
+    else if (i > 1) {
+      r = 1024;
+    }
     r -= 1024 * isPV;
     r -= 1024 * improving;
     r += 512 * (nodetype == EXPECTED_CUT_NODE);
