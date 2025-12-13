@@ -1,13 +1,15 @@
 #include "engine.h"
 #include <sstream>
-int lmr_reductions[maxmaxdepth][maxmoves];
+int quiet_reductions[maxmaxdepth][maxmoves];
+int noisy_reductions[maxmaxdepth][maxmoves];
 std::chrono::time_point<std::chrono::steady_clock> start =
     std::chrono::steady_clock::now();
 bool iscapture(int notation) { return ((notation >> 16) & 1); }
 void initializelmr() {
   for (int i = 0; i < maxmaxdepth; i++) {
     for (int j = 0; j < maxmoves; j++) {
-      lmr_reductions[i][j] = floor(788.5 + log(i + 1) * log(j + 1) * 471);
+      quiet_reductions[i][j] = floor(788.5 + log(i + 1) * log(j + 1) * 471);
+      noisy_reductions[i][j] = floor(666 + log(i + 1) * log(j + 1) * 365);
     }
   }
 }
@@ -366,11 +368,11 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         break;
       }
       if (quiets > 1 + isttPV + isPV) {
-        r = std::min(1024 * (depth - 1), lmr_reductions[depth][quiets]);
+        r = std::min(1024 * (depth - 1), quiet_reductions[depth][quiets]);
       }
     }
     else if (i > 1) {
-      r = 1024;
+      r = noisy_reductions[depth][i];
     }
     r -= 1024 * isPV;
     r -= 1024 * improving;

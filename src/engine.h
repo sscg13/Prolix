@@ -9,7 +9,7 @@
 #include <time.h>
 #pragma once
 extern std::string proto;
-extern int lmr_reductions[maxmaxdepth][maxmoves];
+extern int quiet_reductions[maxmaxdepth][maxmoves];
 extern std::chrono::time_point<std::chrono::steady_clock> start;
 extern std::string inputfile;
 class Engine {
