@@ -2,7 +2,7 @@
 
 constexpr int inputbuckets = 8;
 constexpr bool mirrored = true;
-constexpr bool pairwise = false;
+constexpr bool pairwise = true;
 constexpr bool perspectivecrelu = false;
 constexpr int mirrordivisor = mirrored ? 2 : 1;
 constexpr int realbuckets = inputbuckets / mirrordivisor;
@@ -17,7 +17,7 @@ constexpr int L1Q = (1 << L1Qbits) - 1;
 constexpr int L3Qbits = 6;
 constexpr int L3Q = (1 << L3Qbits);
 constexpr int L4Q = 64;
-constexpr int l1shiftbits = 8;
+constexpr int l1shiftbits = 9;
 // clang-format off
 constexpr int kingbuckets[64] = {
    0,  0,  0,  0,  1,  1,  1,  1,

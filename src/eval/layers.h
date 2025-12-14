@@ -23,7 +23,6 @@ template <int inputsize, int outputsize> struct DenseAffineWeights {
     int offset = 0;
     memcpy(weights, stream + offset,
            4 * outputbuckets * inputsize * outputsize);
-    offset += 4 * outputbuckets * inputsize * outputsize;
     memcpy(bias, stream + offset, 4 * outputbuckets * outputsize);
   }
 };

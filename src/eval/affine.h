@@ -61,7 +61,7 @@ template <int inputsize, int outputsize> struct SparseAffine {
       }
     }
     for (int i = 0; i < numaccums; i++) {
-      _mm256_store_si256((__m256i *)output, outvec[i]);
+      _mm256_store_si256((__m256i *)(&output[8 * i]), outvec[i]);
     }
   }
 
