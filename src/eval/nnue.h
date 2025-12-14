@@ -7,7 +7,7 @@
 
 class Searcher;
 
-using Layer2Affine = SparseAffine<L1size, L2size>;
+using Layer2Affine = SparseAffine<activatedL1size, L2size>;
 #ifdef DUAL_ACTIVATION
 using Layer2Activation = DualActivation<L2size>;
 #else
@@ -35,7 +35,7 @@ struct ThreatFeatureWeights {
 };
 
 struct MultiLayerWeights {
-  SparseAffineWeights<L1size, L2size> layer2weights;
+  SparseAffineWeights<activatedL1size, L2size> layer2weights;
   DenseAffineWeights<activatedL2size, L3size> layer3weights;
   DenseAffineWeights<L3size, 1> layer4weights;
   static constexpr int size =
@@ -86,7 +86,7 @@ struct SingleLayerStack {
 
 struct MultiLayerStack {
   MultiLayerWeights *weights;
-  alignas(64) U8 pairwiseoutput[L1size];
+  alignas(64) U8 layer1activated[activatedL1size];
   I32 layer2raw[L2size];
   I32 layer2activated[activatedL2size];
   I32 layer3raw[L3size];
@@ -138,7 +138,6 @@ struct ThreatAccumulatorStack {
 
 struct SingleAccumulatorStack {
   PSQAccumulatorStack psqaccumulators;
-  U8 pairwise[L1size];
 
   void load(NNUEWeights *EUNNweights);
   void initialize(const U64 *Bitboards);

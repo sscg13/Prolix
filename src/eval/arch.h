@@ -2,12 +2,13 @@
 
 constexpr int inputbuckets = 8;
 constexpr bool mirrored = true;
+constexpr bool pairwise = false;
+constexpr bool perspectivecrelu = false;
 constexpr int mirrordivisor = mirrored ? 2 : 1;
 constexpr int realbuckets = inputbuckets / mirrordivisor;
 constexpr int L1size = 768;
+constexpr int activatedL1size = 768 * (2 - pairwise);
 constexpr int L2size = 8;
-constexpr bool pairwise = true;
-constexpr bool perspectivecrelu = false;
 constexpr int L3size = 32;
 constexpr int outputbuckets = 8;
 constexpr int evalscale = 400;
@@ -16,7 +17,7 @@ constexpr int L1Q = (1 << L1Qbits) - 1;
 constexpr int L3Qbits = 6;
 constexpr int L3Q = (1 << L3Qbits);
 constexpr int L4Q = 64;
-constexpr int l1shiftbits = 9;
+constexpr int l1shiftbits = 8;
 // clang-format off
 constexpr int kingbuckets[64] = {
    0,  0,  0,  0,  1,  1,  1,  1,
@@ -31,7 +32,7 @@ constexpr int kingbuckets[64] = {
 // clang-format on
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
 constexpr int bucketdivisor = 32 / outputbuckets;
-// #define MULTI_LAYER
+#define MULTI_LAYER
 #ifdef MULTI_LAYER
 constexpr bool multilayer = true;
 constexpr int L2Qbits = 6;
