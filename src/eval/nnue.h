@@ -39,7 +39,7 @@ struct MultiLayerWeights {
   DenseAffineWeights<activatedL2size, L3size> layer3weights;
   DenseAffineWeights<L3size, 1> layer4weights;
   static constexpr int size =
-      SparseAffineWeights<L1size, L2size>::size +
+      SparseAffineWeights<activatedL1size, L2size>::size +
       DenseAffineWeights<activatedL2size, L3size>::size +
       DenseAffineWeights<L3size, 1>::size;
 
