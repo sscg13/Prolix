@@ -58,7 +58,7 @@ template <int inputsize> struct PerspectiveWeights {
 };
 
 struct PerspectiveTransform {
-  static void transform(const I16 *input, U8 *output, int color) {
+  static void transform(const I16* __restrict input, U8* __restrict output, int color) {
     if (pairwise) {
       for (int i = 0; i < L1size / 2; i++) {
         output[i] = (crelu<I16>(input[color * L1size + i], L1Q) *

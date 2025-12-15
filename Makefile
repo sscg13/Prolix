@@ -12,8 +12,8 @@ CPP_OBJS := $(patsubst %.cpp,%.o,$(CPP_SRCS))
 C_OBJS := $(patsubst %.c,%.o,$(C_SRCS))
 OBJS := $(CPP_OBJS) $(C_OBJS)
 
-CXX := g++
-CC := gcc
+CXX := clang++
+CC := clang
 
 ifeq ($(CXX), g++)
 	CC := gcc
