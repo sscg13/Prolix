@@ -20,8 +20,8 @@ template <int inputsize, int outputsize> struct DenseAffineWeights {
   alignas(64) I32 bias[outputbuckets * outputsize];
   static constexpr int size = 4 * outputbuckets * outputsize * (inputsize + 1);
   void load(const char *stream) {
-    int offset = 0;
-    memcpy(weights, stream + offset,
+    int offset = 4 * outputbuckets * inputsize * outputsize;
+    memcpy(weights, stream,
            4 * outputbuckets * inputsize * outputsize);
     memcpy(bias, stream + offset, 4 * outputbuckets * outputsize);
   }
