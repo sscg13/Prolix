@@ -14,20 +14,22 @@ template <int inputsize, int outputsize> struct SparseAffineWeights {
           for (int i = 0; i < 4; i++) {
             int dest_idx = outputsize * k + 4 * j + i;
             int src_idx = j * inputsize + (k + i);
-            weights[b * inputsize * outputsize + dest_idx] = stream[b * inputsize * outputsize + src_idx];
+            weights[b * inputsize * outputsize + dest_idx] =
+                stream[b * inputsize * outputsize + src_idx];
           }
         }
       }
     }
-    memcpy(bias, stream + outputbuckets * outputsize * inputsize, 4 * outputbuckets * outputsize);
+    memcpy(bias, stream + outputbuckets * outputsize * inputsize,
+           4 * outputbuckets * outputsize);
   }
 };
 
 template <int inputsize, int outputsize> struct SparseAffine {
   static void
   transform(const U8 *input, I32 *output,
-                 const SparseAffineWeights<inputsize, outputsize> *weights,
-                 int bucket) {
+            const SparseAffineWeights<inputsize, outputsize> *weights,
+            int bucket) {
     int weightoffset = bucket * inputsize * outputsize;
     int biasoffset = bucket * outputsize;
     const __m256i *weightptr =

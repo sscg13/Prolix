@@ -21,8 +21,7 @@ template <int inputsize, int outputsize> struct DenseAffineWeights {
   static constexpr int size = 4 * outputbuckets * outputsize * (inputsize + 1);
   void load(const char *stream) {
     int offset = 4 * outputbuckets * inputsize * outputsize;
-    memcpy(weights, stream,
-           4 * outputbuckets * inputsize * outputsize);
+    memcpy(weights, stream, 4 * outputbuckets * inputsize * outputsize);
     memcpy(bias, stream + offset, 4 * outputbuckets * outputsize);
   }
 };
@@ -58,7 +57,8 @@ template <int inputsize> struct PerspectiveWeights {
 };
 
 struct PerspectiveTransform {
-  static void transform(const I16* __restrict input, U8* __restrict output, int color) {
+  static void transform(const I16 *__restrict input, U8 *__restrict output,
+                        int color) {
     if (pairwise) {
       for (int i = 0; i < L1size / 2; i++) {
         output[i] = (crelu<I16>(input[color * L1size + i], L1Q) *

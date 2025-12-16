@@ -34,7 +34,7 @@ constexpr int kingbuckets[64] = {
 // clang-format on
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
 constexpr int bucketdivisor = 32 / outputbuckets;
-#define MULTI_LAYER
+// #define MULTI_LAYER
 #ifdef MULTI_LAYER
 constexpr bool multilayer = true;
 // #define DUAL_ACTIVATION
@@ -55,4 +55,3 @@ constexpr int totalL3Q = totalL2Q * L3Q;
 constexpr int totalL4Q = totalL3Q * L4Q;
 #endif
 // #define THREAT_INPUTS
-// #define NO_AVX2

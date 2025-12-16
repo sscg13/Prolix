@@ -97,38 +97,45 @@ const I16 *PSQAccumulatorStack::layer1weights(int kingsquare, int color,
   return weights->nnuelayer1[bucket / mirrordivisor]
                             [featureindex(bucket, color, piece, square)];
 }
-void PSQAccumulatorStack::add(I16* __restrict accptr, const I16* __restrict addptr) {
+void PSQAccumulatorStack::add(I16 *__restrict accptr,
+                              const I16 *__restrict addptr) {
   for (int i = 0; i < L1size; i++) {
     accptr[i] += addptr[i];
   }
 }
-void PSQAccumulatorStack::sub(I16* __restrict accptr, const I16* __restrict subptr) {
+void PSQAccumulatorStack::sub(I16 *__restrict accptr,
+                              const I16 *__restrict subptr) {
   for (int i = 0; i < L1size; i++) {
     accptr[i] -= subptr[i];
   }
 }
-void PSQAccumulatorStack::addsub(I16* __restrict oldaccptr, I16* __restrict newaccptr,
-                                 const I16* __restrict addptr, const I16* __restrict subptr) {
+void PSQAccumulatorStack::addsub(I16 *__restrict oldaccptr,
+                                 I16 *__restrict newaccptr,
+                                 const I16 *__restrict addptr,
+                                 const I16 *__restrict subptr) {
   for (int i = 0; i < L1size; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr[i];
   }
 }
-void PSQAccumulatorStack::addsubsub(I16* __restrict oldaccptr, I16* __restrict newaccptr,
-                                    const I16* __restrict addptr, const I16* __restrict subptr1,
-                                    const I16* __restrict subptr2) {
+void PSQAccumulatorStack::addsubsub(I16 *__restrict oldaccptr,
+                                    I16 *__restrict newaccptr,
+                                    const I16 *__restrict addptr,
+                                    const I16 *__restrict subptr1,
+                                    const I16 *__restrict subptr2) {
   for (int i = 0; i < L1size; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
   }
 }
-void PSQAccumulatorStack::activatepiece(I16* __restrict accptr, int kingsquare, int color,
-                                        int piece, int square) {
+void PSQAccumulatorStack::activatepiece(I16 *__restrict accptr, int kingsquare,
+                                        int color, int piece, int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < L1size; i++) {
     accptr[i] += weightsptr[i];
   }
 }
-void PSQAccumulatorStack::deactivatepiece(I16* __restrict accptr, int kingsquare,
-                                          int color, int piece, int square) {
+void PSQAccumulatorStack::deactivatepiece(I16 *__restrict accptr,
+                                          int kingsquare, int color, int piece,
+                                          int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
   for (int i = 0; i < L1size; i++) {
     accptr[i] -= weightsptr[i];
