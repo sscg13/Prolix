@@ -2,17 +2,20 @@
 
 constexpr int inputbuckets = 8;
 constexpr bool mirrored = true;
+constexpr bool pairwise = true;
+constexpr bool perspectivecrelu = false;
 constexpr int mirrordivisor = mirrored ? 2 : 1;
 constexpr int realbuckets = inputbuckets / mirrordivisor;
 constexpr int L1size = 768;
+constexpr int activatedL1size = L1size * (2 - pairwise);
 constexpr int L2size = 8;
-constexpr bool pairwise = true;
-constexpr bool perspectivecrelu = false;
 constexpr int L3size = 32;
 constexpr int outputbuckets = 8;
 constexpr int evalscale = 400;
 constexpr int L1Qbits = 8;
 constexpr int L1Q = (1 << L1Qbits) - 1;
+constexpr int L2Qbits = 6;
+constexpr int L2Q = (1 << L2Qbits);
 constexpr int L3Qbits = 6;
 constexpr int L3Q = (1 << L3Qbits);
 constexpr int L4Q = 64;
@@ -34,13 +37,10 @@ constexpr int bucketdivisor = 32 / outputbuckets;
 // #define MULTI_LAYER
 #ifdef MULTI_LAYER
 constexpr bool multilayer = true;
-constexpr int L2Qbits = 6;
 // #define DUAL_ACTIVATION
 #else
 constexpr bool multilayer = false;
-constexpr int L2Qbits = 6;
 #endif
-constexpr int L2Q = (1 << L2Qbits);
 #ifdef DUAL_ACTIVATION
 constexpr int L2shiftbits = 2 * L1Qbits - l1shiftbits + L2Qbits - L3Qbits;
 constexpr int activatedL2size = L2size * 2;

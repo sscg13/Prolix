@@ -320,7 +320,7 @@ static const void *map_tb(const char *name, const char *suffix, map_t *mapping)
   return data;
 }
 
-static void add_to_hash(BaseEntry *ptr, uint64_t key)
+static void add_to_hash(void *ptr, uint64_t key)
 {
   int idx;
 
@@ -495,8 +495,8 @@ void TB_init(char *path)
   LOCK_INIT(mutex);
 
   if (!pieceEntry) {
-    pieceEntry = (PieceEntry *)malloc(TB_MAX_PIECE * sizeof *pieceEntry);
-    pawnEntry  = (PawnEntry *)malloc(TB_MAX_PAWN  * sizeof *pawnEntry );
+    pieceEntry = malloc(TB_MAX_PIECE * sizeof *pieceEntry);
+    pawnEntry  = malloc(TB_MAX_PAWN  * sizeof *pawnEntry );
     if (!pieceEntry || !pawnEntry) {
       fprintf(stderr, "Out of memory.\n");
       exit(EXIT_FAILURE);
@@ -991,7 +991,7 @@ static struct PairsData *setup_pairs(const uint8_t **ptr, size_t tb_size,
 
   *flags = data[0];
   if (data[0] & 0x80) {
-    d = (PairsData *)malloc(sizeof(*d));
+    d = malloc(sizeof(*d));
     d->idxBits = 0;
     d->constValue[0] = type == WDL ? data[1] : 0;
     d->constValue[1] = 0;
@@ -1008,7 +1008,7 @@ static struct PairsData *setup_pairs(const uint8_t **ptr, size_t tb_size,
   int minLen = data[9];
   int h = maxLen - minLen + 1;
   uint32_t numSyms = read_le_u16(&data[10 + 2 * h]);
-  d = (PairsData *)malloc(sizeof(*d) + h * sizeof(uint64_t) + numSyms);
+  d = malloc(sizeof(*d) + h * sizeof(uint64_t) + numSyms);
   d->blockSize = blockSize;
   d->idxBits = idxBits;
   d->offset = (uint16_t *)&data[10];
