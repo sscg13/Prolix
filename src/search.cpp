@@ -371,7 +371,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         r = std::min(1024 * (depth - 1), quiet_reductions[depth][quiets]);
       }
     }
-    else if (i > 1) {
+    else if (i > 1 + isttPV) {
       r = noisy_reductions[depth][i];
     }
     r -= 1024 * isPV;
