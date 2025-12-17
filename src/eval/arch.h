@@ -22,8 +22,8 @@ constexpr int L4Q = 64;
 constexpr int l1shiftbits = 9;
 // clang-format off
 constexpr int kingbuckets[64] = {
-   0,  0,  0,  0,  1,  1,  1,  1,
-   2,  2,  2,  2,  3,  3,  3,  3,
+   0,  0,  2,  2,  3,  3,  1,  1,
+   0,  0,  2,  2,  3,  3,  1,  1,
    4,  4,  4,  4,  5,  5,  5,  5,
    4,  4,  4,  4,  5,  5,  5,  5,
    6,  6,  6,  6,  7,  7,  7,  7,
