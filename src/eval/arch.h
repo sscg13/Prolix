@@ -1,6 +1,6 @@
 #pragma once
 
-constexpr int inputbuckets = 8;
+constexpr int inputbuckets = 12;
 constexpr bool mirrored = true;
 constexpr bool pairwise = true;
 constexpr bool perspectivecrelu = false;
@@ -23,13 +23,13 @@ constexpr int l1shiftbits = 9;
 // clang-format off
 constexpr int kingbuckets[64] = {
    0,  0,  2,  2,  3,  3,  1,  1,
-   0,  0,  2,  2,  3,  3,  1,  1,
-   4,  4,  4,  4,  5,  5,  5,  5,
-   4,  4,  4,  4,  5,  5,  5,  5,
-   6,  6,  6,  6,  7,  7,  7,  7,
-   6,  6,  6,  6,  7,  7,  7,  7,
-   6,  6,  6,  6,  7,  7,  7,  7,
-   6,  6,  6,  6,  7,  7,  7,  7
+   4,  4,  6,  6,  7,  7,  5,  5,
+   8,  8,  8,  8,  9,  9,  9,  9,
+   8,  8,  8,  8,  9,  9,  9,  9,
+  10, 10, 10, 10, 11, 11, 11, 11,
+  10, 10, 10, 10, 11, 11, 11, 11,
+  10, 10, 10, 10, 11, 11, 11, 11,
+  10, 10, 10, 10, 11, 11, 11, 11
 };
 // clang-format on
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
