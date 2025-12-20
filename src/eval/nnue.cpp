@@ -9,6 +9,35 @@ template <typename T> T crelu(T x, T Q) {
   return std::max(std::min(x, Q), (T)0);
 }
 I32 csqr(I32 x, I32 Q) { return std::min(x * x, Q * Q); }
+void vectoradd(I16 *__restrict accptr,
+                              const I16 *__restrict addptr) {
+  for (int i = 0; i < L1size; i++) {
+    accptr[i] += addptr[i];
+  }
+}
+void vectorsub(I16 *__restrict accptr,
+                              const I16 *__restrict subptr) {
+  for (int i = 0; i < L1size; i++) {
+    accptr[i] -= subptr[i];
+  }
+}
+void vectoraddsub(I16 *__restrict oldaccptr,
+                                 I16 *__restrict newaccptr,
+                                 const I16 *__restrict addptr,
+                                 const I16 *__restrict subptr) {
+  for (int i = 0; i < L1size; i++) {
+    newaccptr[i] = oldaccptr[i] + addptr[i] - subptr[i];
+  }
+}
+void vectoraddsubsub(I16 *__restrict oldaccptr,
+                                    I16 *__restrict newaccptr,
+                                    const I16 *__restrict addptr,
+                                    const I16 *__restrict subptr1,
+                                    const I16 *__restrict subptr2) {
+  for (int i = 0; i < L1size; i++) {
+    newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
+  }
+}
 
 void PSQFeatureWeights::load(const char *stream) {
   int offset = 0;
@@ -97,49 +126,17 @@ const I16 *PSQAccumulatorStack::layer1weights(int kingsquare, int color,
   return weights->nnuelayer1[bucket / mirrordivisor]
                             [featureindex(bucket, color, piece, square)];
 }
-void PSQAccumulatorStack::add(I16 *__restrict accptr,
-                              const I16 *__restrict addptr) {
-  for (int i = 0; i < L1size; i++) {
-    accptr[i] += addptr[i];
-  }
-}
-void PSQAccumulatorStack::sub(I16 *__restrict accptr,
-                              const I16 *__restrict subptr) {
-  for (int i = 0; i < L1size; i++) {
-    accptr[i] -= subptr[i];
-  }
-}
-void PSQAccumulatorStack::addsub(I16 *__restrict oldaccptr,
-                                 I16 *__restrict newaccptr,
-                                 const I16 *__restrict addptr,
-                                 const I16 *__restrict subptr) {
-  for (int i = 0; i < L1size; i++) {
-    newaccptr[i] = oldaccptr[i] + addptr[i] - subptr[i];
-  }
-}
-void PSQAccumulatorStack::addsubsub(I16 *__restrict oldaccptr,
-                                    I16 *__restrict newaccptr,
-                                    const I16 *__restrict addptr,
-                                    const I16 *__restrict subptr1,
-                                    const I16 *__restrict subptr2) {
-  for (int i = 0; i < L1size; i++) {
-    newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
-  }
-}
+
 void PSQAccumulatorStack::activatepiece(I16 *__restrict accptr, int kingsquare,
                                         int color, int piece, int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
-  for (int i = 0; i < L1size; i++) {
-    accptr[i] += weightsptr[i];
-  }
+  vectoradd(accptr, weightsptr);
 }
 void PSQAccumulatorStack::deactivatepiece(I16 *__restrict accptr,
                                           int kingsquare, int color, int piece,
                                           int square) {
   const I16 *weightsptr = layer1weights(kingsquare, color, piece, square);
-  for (int i = 0; i < L1size; i++) {
-    accptr[i] -= weightsptr[i];
-  }
+  vectorsub(accptr, weightsptr);
 }
 void PSQAccumulatorStack::refreshfromcache(int kingsquare, int color,
                                            const U64 *Bitboards) {
@@ -236,10 +233,10 @@ void PSQAccumulatorStack::forwardaccumulators(int notation,
   if (captured > 0) {
     const I16 *subweights2opp =
         layer1weights(oppksq, color ^ 1, 6 * (color ^ 1) + captured - 2, to);
-    addsubsub(oldaccptr, newaccptr, addweightsopp, subweightsopp,
+    vectoraddsubsub(oldaccptr, newaccptr, addweightsopp, subweightsopp,
               subweights2opp);
   } else {
-    addsub(oldaccptr, newaccptr, addweightsopp, subweightsopp);
+    vectoraddsub(oldaccptr, newaccptr, addweightsopp, subweightsopp);
   }
   if (piece == 7 && getbucket(to, color) != getbucket(from, color)) {
     int scratchrefreshtime = __builtin_popcountll(Bitboards[0] | Bitboards[1]);
@@ -260,10 +257,10 @@ void PSQAccumulatorStack::forwardaccumulators(int notation,
     if (captured > 0) {
       const I16 *subweights2us =
           layer1weights(ourksq, color, 6 * (color ^ 1) + captured - 2, to);
-      addsubsub(oldaccptr, newaccptr, addweightsus, subweightsus,
+      vectoraddsubsub(oldaccptr, newaccptr, addweightsus, subweightsus,
                 subweights2us);
     } else {
-      addsub(oldaccptr, newaccptr, addweightsus, subweightsus);
+      vectoraddsub(oldaccptr, newaccptr, addweightsus, subweightsus);
     }
   }
 }

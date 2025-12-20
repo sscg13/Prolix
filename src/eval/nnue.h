@@ -87,10 +87,10 @@ struct SingleLayerStack {
 struct MultiLayerStack {
   MultiLayerWeights *weights;
   alignas(64) U8 layer1activated[activatedL1size];
-  I32 layer2raw[L2size];
-  I32 layer2activated[activatedL2size];
-  I32 layer3raw[L3size];
-  I32 layer3activated[L3size];
+  alignas(64) I32 layer2raw[L2size];
+  alignas(64) I32 layer2activated[activatedL2size];
+  alignas(64) I32 layer3raw[L3size];
+  alignas(64) I32 layer3activated[L3size];
   I32 output[1];
 
   void load(NNUEWeights *EUNNweights);
@@ -100,9 +100,9 @@ struct MultiLayerStack {
 struct PSQAccumulatorStack {
   PSQFeatureWeights *weights;
   int ply;
-  I16 cacheaccumulators[inputbuckets][2][L1size];
-  U64 cachebitboards[inputbuckets][2][8];
-  I16 accumulation[2 * (maxmaxdepth + 32)][L1size];
+  alignas(64) I16 cacheaccumulators[inputbuckets][2][L1size];
+  alignas(64) U64 cachebitboards[inputbuckets][2][8];
+  alignas(64) I16 accumulation[2 * (maxmaxdepth + 32)][L1size];
 
   int getbucket(const int kingsquare, const int color);
   int featureindex(const int bucket, const int color, const int piece,
@@ -110,15 +110,9 @@ struct PSQAccumulatorStack {
   int differencecount(const int bucket, const int color, const U64 *Bitboards);
   const I16 *layer1weights(const int kingsquare, const int color,
                            const int piece, const int square);
-  void add(I16 *accptr, const I16 *addptr);
-  void sub(I16 *accptr, const I16 *subptr);
-  void addsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
-              const I16 *subptr);
-  void addsubsub(I16 *oldaccptr, I16 *newaccptr, const I16 *addptr,
-                 const I16 *subptr1, const I16 *subptr2);
-  void activatepiece(I16 *accptr, const int kingsquare, const int color,
+  void activatepiece(I16 *__restrict accptr, const int kingsquare, const int color,
                      const int piece, const int square);
-  void deactivatepiece(I16 *accptr, const int kingsquare, const int color,
+  void deactivatepiece(I16 *__restrict accptr, const int kingsquare, const int color,
                        const int piece, const int square);
   void refreshfromcache(const int kingsquare, const int color,
                         const U64 *Bitboards);
