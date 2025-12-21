@@ -9,31 +9,39 @@ template <typename T> T crelu(T x, T Q) {
   return std::max(std::min(x, Q), (T)0);
 }
 I32 csqr(I32 x, I32 Q) { return std::min(x * x, Q * Q); }
-void vectoradd(I16 *__restrict accptr,
-                              const I16 *__restrict addptr) {
+void vectoradd(I16 *__restrict accptr, const I16 *__restrict addptr) {
+  accptr = (I16 *)__builtin_assume_aligned(accptr, 64);
+  addptr = (I16 *)__builtin_assume_aligned(addptr, 64);
   for (int i = 0; i < L1size; i++) {
     accptr[i] += addptr[i];
   }
 }
-void vectorsub(I16 *__restrict accptr,
-                              const I16 *__restrict subptr) {
+void vectorsub(I16 *__restrict accptr, const I16 *__restrict subptr) {
+  accptr = (I16 *)__builtin_assume_aligned(accptr, 64);
+  subptr = (I16 *)__builtin_assume_aligned(subptr, 64);
   for (int i = 0; i < L1size; i++) {
     accptr[i] -= subptr[i];
   }
 }
-void vectoraddsub(I16 *__restrict oldaccptr,
-                                 I16 *__restrict newaccptr,
-                                 const I16 *__restrict addptr,
-                                 const I16 *__restrict subptr) {
+void vectoraddsub(I16 *__restrict oldaccptr, I16 *__restrict newaccptr,
+                  const I16 *__restrict addptr, const I16 *__restrict subptr) {
+  oldaccptr = (I16 *)__builtin_assume_aligned(oldaccptr, 64);
+  newaccptr = (I16 *)__builtin_assume_aligned(newaccptr, 64);
+  addptr = (I16 *)__builtin_assume_aligned(addptr, 64);
+  subptr = (I16 *)__builtin_assume_aligned(subptr, 64);
   for (int i = 0; i < L1size; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr[i];
   }
 }
-void vectoraddsubsub(I16 *__restrict oldaccptr,
-                                    I16 *__restrict newaccptr,
-                                    const I16 *__restrict addptr,
-                                    const I16 *__restrict subptr1,
-                                    const I16 *__restrict subptr2) {
+void vectoraddsubsub(I16 *__restrict oldaccptr, I16 *__restrict newaccptr,
+                     const I16 *__restrict addptr,
+                     const I16 *__restrict subptr1,
+                     const I16 *__restrict subptr2) {
+  oldaccptr = (I16 *)__builtin_assume_aligned(oldaccptr, 64);
+  newaccptr = (I16 *)__builtin_assume_aligned(newaccptr, 64);
+  addptr = (I16 *)__builtin_assume_aligned(addptr, 64);
+  subptr1 = (I16 *)__builtin_assume_aligned(subptr1, 64);
+  subptr2 = (I16 *)__builtin_assume_aligned(subptr2, 64);
   for (int i = 0; i < L1size; i++) {
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
   }
@@ -234,7 +242,7 @@ void PSQAccumulatorStack::forwardaccumulators(int notation,
     const I16 *subweights2opp =
         layer1weights(oppksq, color ^ 1, 6 * (color ^ 1) + captured - 2, to);
     vectoraddsubsub(oldaccptr, newaccptr, addweightsopp, subweightsopp,
-              subweights2opp);
+                    subweights2opp);
   } else {
     vectoraddsub(oldaccptr, newaccptr, addweightsopp, subweightsopp);
   }
@@ -258,7 +266,7 @@ void PSQAccumulatorStack::forwardaccumulators(int notation,
       const I16 *subweights2us =
           layer1weights(ourksq, color, 6 * (color ^ 1) + captured - 2, to);
       vectoraddsubsub(oldaccptr, newaccptr, addweightsus, subweightsus,
-                subweights2us);
+                      subweights2us);
     } else {
       vectoraddsub(oldaccptr, newaccptr, addweightsus, subweightsus);
     }

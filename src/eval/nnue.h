@@ -110,10 +110,10 @@ struct PSQAccumulatorStack {
   int differencecount(const int bucket, const int color, const U64 *Bitboards);
   const I16 *layer1weights(const int kingsquare, const int color,
                            const int piece, const int square);
-  void activatepiece(I16 *__restrict accptr, const int kingsquare, const int color,
-                     const int piece, const int square);
-  void deactivatepiece(I16 *__restrict accptr, const int kingsquare, const int color,
-                       const int piece, const int square);
+  void activatepiece(I16 *__restrict accptr, const int kingsquare,
+                     const int color, const int piece, const int square);
+  void deactivatepiece(I16 *__restrict accptr, const int kingsquare,
+                       const int color, const int piece, const int square);
   void refreshfromcache(const int kingsquare, const int color,
                         const U64 *Bitboards);
   void refreshfromscratch(const int kingsquare, const int color,
