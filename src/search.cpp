@@ -340,7 +340,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       movescore[ply][i] += 10000;
     }*/
     else if ((mov & 4095) == counter) {
-      movescore[i] += 10000;
+      movescore[i] += 20000;
     }
     /*if (see_exceeds(moves[ply][i], color, 0)) {
         movescore[ply][i]+=15000;
