@@ -414,27 +414,29 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       if (score > bestscore) {
         if (score > alpha) {
           if (score >= beta) {
-            if (update && !(*stopsearch)) {
-              ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth,
-                             ply, isttPV, score, EXPECTED_CUT_NODE, mov);
-            }
-            if (!iscapture(mov) && (killers[ply][0] != mov)) {
-              killers[ply][1] = killers[ply][0];
-              killers[ply][0] = mov;
-            }
-            Histories->updatemainhistory(mov, depth * depth);
-            if (!iscapture(mov)) {
-              Histories->updateconthist(previousmove, mov, depth * depth);
-            }
-            for (int j = 0; j < i; j++) {
-              int mov2 = moves[j];
-              Histories->updatemainhistory(mov2, -3 * depth);
-              if (!iscapture(mov2)) {
-                Histories->updateconthist(previousmove, mov2, -3 * depth);
+            if (!(*stopsearch)) {
+              if (update) {
+                ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth,
+                              ply, isttPV, score, EXPECTED_CUT_NODE, mov);
               }
-            }
-            if (ply > 0 && nmp && !iscapture(mov)) {
-              countermoves[previouspiece - 2][previoussquare] = (mov & 4095);
+              if (!iscapture(mov) && (killers[ply][0] != mov)) {
+                killers[ply][1] = killers[ply][0];
+                killers[ply][0] = mov;
+              }
+              Histories->updatemainhistory(mov, depth * depth);
+              if (!iscapture(mov)) {
+                Histories->updateconthist(previousmove, mov, depth * depth);
+              }
+              for (int j = 0; j < i; j++) {
+                int mov2 = moves[j];
+                Histories->updatemainhistory(mov2, -3 * depth);
+                if (!iscapture(mov2)) {
+                  Histories->updateconthist(previousmove, mov2, -3 * depth);
+                }
+              }
+              if (ply > 0 && nmp && !iscapture(mov)) {
+                countermoves[previouspiece - 2][previoussquare] = (mov & 4095);
+              }
             }
             return score;
           }
