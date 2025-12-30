@@ -36,6 +36,7 @@ void Searcher::datagenautoplayplain() {
   int drawcount = 0;
   while (!finished) {
     int color = Bitboards.position & 1;
+    searchlimits.softnodelimit = 10240 - 128 * __builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]);
     int score = iterative();
     if (((Bitboards.position >> 1) < 40) && (((bestmove >> 16) & 1) == 0) &&
         (Bitboards.checkers(color) == 0ULL) && (abs(score) < SCORE_WIN)) {
