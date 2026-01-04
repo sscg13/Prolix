@@ -103,6 +103,9 @@ struct PSQAccumulatorStack {
   alignas(64) I16 cacheaccumulators[inputbuckets][2][L1size];
   alignas(64) U64 cachebitboards[inputbuckets][2][8];
   alignas(64) I16 accumulation[2 * (maxmaxdepth + 32)][L1size];
+  int moves[(maxmaxdepth + 32)];
+  int kingsquares[2 * (maxmaxdepth + 32)];
+  bool computed[2 * (maxmaxdepth + 32)];
 
   int getbucket(const int kingsquare, const int color);
   int featureindex(const int bucket, const int color, const int piece,
@@ -119,9 +122,12 @@ struct PSQAccumulatorStack {
   void refreshfromscratch(const int kingsquare, const int color,
                           const U64 *Bitboards);
   void initializennue(const U64 *Bitboards);
-  void forwardaccumulators(const int notation, const U64 *Bitboards);
-  void backwardaccumulators(const int notation, const U64 *Bitboards);
-  const I16 *currentaccumulator() { return accumulation[2 * ply]; }
+  void reversechange(const int accply, int color);
+  void applychange(const int accply, int color);
+  void forwardaccumulators(const int notation);
+  void backwardaccumulators();
+  void computeaccumulator(int color, const U64* Bitboards);
+  const I16 *currentaccumulator(const U64* Bitboards);
 };
 
 struct ThreatAccumulatorStack {
@@ -137,7 +143,7 @@ struct SingleAccumulatorStack {
   void initialize(const U64 *Bitboards);
   void make(const int notation, const U64 *Bitboards);
   void unmake(const int notation, const U64 *Bitboards);
-  const I16 *transform(int color);
+  const I16 *transform(int color, const U64 *Bitboards);
 };
 
 struct DualAccumulatorStack {
@@ -175,5 +181,5 @@ public:
   void initialize(const U64 *Bitboards);
   void make(const int notation, const U64 *Bitboards);
   void unmake(const int notation, const U64 *Bitboards);
-  int evaluate(const int color);
+  int evaluate(const int color, const U64 *Bitboards);
 };

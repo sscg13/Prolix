@@ -58,31 +58,37 @@ void Searcher::syncwith(Engine &engine) {
 }
 int Searcher::staticeval() {
   int color = Bitboards.position & 1;
-  return searchoptions.useNNUE ? EUNN.evaluate(color)
+  return searchoptions.useNNUE ? EUNN.evaluate(color, Bitboards.Bitboards)
                                : Bitboards.evaluate(color);
 }
 int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
-  bool tthit = (ttentry.key == Bitboards.zobristhash);
+  bool tthit = ((ttentry.key >> 16) == (Bitboards.zobristhash >> 16));
   int tteval;
   int ttnodetype;
-  if (!isPV && tthit) {
-    tteval = std::min(std::max(ttentry.score(0), -SCORE_WIN), SCORE_WIN);
-    ttnodetype = ttentry.nodetype();
-    if (ttnodetype == EXPECTED_PV_NODE) {
-      return tteval;
-    }
-    if ((ttnodetype & EXPECTED_CUT_NODE) && (tteval >= beta)) {
-      return tteval;
-    }
-    if ((ttnodetype & EXPECTED_ALL_NODE) && (tteval <= alpha)) {
-      return tteval;
+  int eval;
+  if (tthit) {
+    eval = ttentry.staticeval();
+    if (!isPV) {
+      tteval = std::min(std::max(ttentry.score(0), -SCORE_WIN), SCORE_WIN);
+      ttnodetype = ttentry.nodetype();
+      if (ttnodetype == EXPECTED_PV_NODE) {
+        return tteval;
+      }
+      if ((ttnodetype & EXPECTED_CUT_NODE) && (tteval >= beta)) {
+        return tteval;
+      }
+      if ((ttnodetype & EXPECTED_ALL_NODE) && (tteval <= alpha)) {
+        return tteval;
+      }
     }
   }
+  else {
+    eval = staticeval();
+  }
   int color = Bitboards.position & 1;
-  int score =
-      searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+  int score = eval;
   if ((!isPV && tthit) &&
       ((tteval > score) ? (ttnodetype & EXPECTED_CUT_NODE)
                         : (ttnodetype & EXPECTED_ALL_NODE))) {
@@ -135,7 +141,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
       if (score >= beta) {
         if (!tthit) {
           ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0, ply,
-                         false, score, EXPECTED_CUT_NODE, mov);
+                         false, score, eval, EXPECTED_CUT_NODE, mov);
         }
         return score;
       }
@@ -164,7 +170,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   }
   if (!tthit) {
     ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0, ply,
-                   (savednodetype == EXPECTED_PV_NODE), score,
+                   (savednodetype == EXPECTED_PV_NODE), score, eval,
                    EXPECTED_CUT_NODE, bestmove1);
   }
   return bestscore;
@@ -202,18 +208,13 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   int ttdepth = ttentry.depth();
   int ttage = ttentry.age(Bitboards.gamelength);
   bool update = (depth >= ttdepth || ttage != 0);
-  bool tthit = (ttentry.key == Bitboards.zobristhash);
+  bool tthit = ((ttentry.key >> 16) == (Bitboards.zobristhash >> 16));
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (nodetype == EXPECTED_PV_NODE);
   bool isttPV = isPV;
-  int staticeval =
-      searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
-  int ttcorreval = staticeval;
-  searchstack[ply].eval = staticeval;
+  int eval;
+  int ttcorreval;
   bool improving = false;
-  if (ply > 1) {
-    improving = (staticeval > searchstack[ply - 2].eval);
-  }
   int quiets = 0;
   if (!isPV) {
     alpha = std::max(alpha, -SCORE_MATE + ply);
@@ -224,9 +225,14 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   }
   if (tthit) {
     score = ttentry.score(ply);
+    eval = ttentry.staticeval();
+    ttcorreval = eval;
     ttmove = ttentry.hashmove();
     int ttnodetype = ttentry.nodetype();
     isttPV |= ttentry.isttPV();
+    if (ply > 1) {
+      improving = (eval > searchstack[ply - 2].eval);
+    }
     if (ttdepth >= depth) {
       if (!isPV && Bitboards.repetitions() == 0) {
         if (ttnodetype == EXPECTED_PV_NODE) {
@@ -247,22 +253,30 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
           (margin < 500)) {
         return (score + beta) / 2;
       }
-      bool ttcorr = (score > staticeval && (ttnodetype & EXPECTED_CUT_NODE)) ||
-                    (score < staticeval && (ttnodetype & EXPECTED_ALL_NODE));
+      bool ttcorr = (score > eval && (ttnodetype & EXPECTED_CUT_NODE)) ||
+                    (score < eval && (ttnodetype & EXPECTED_ALL_NODE));
       if (ttcorr) {
         ttcorreval = score;
       }
       ttnmpgood = (score >= beta || ttnodetype == EXPECTED_CUT_NODE);
     }
   }
-  if (depth >= 3 && !tthit) {
-    depth--;
+  else {
+    if (depth >= 3) {
+      depth --;
+    }
+    eval = staticeval();
+    ttcorreval = eval;  
+    if (ply > 1) {
+      improving = (eval > searchstack[ply - 2].eval);
+    }
   }
+  searchstack[ply].eval = eval;
   int margin = std::max(20 * isttPV, 70 * depth - 70 * improving);
   if (ply > 0 && !tthit) {
-    if (staticeval - margin >= beta &&
+    if (eval - margin >= beta &&
         (abs(beta) < SCORE_MAX_EVAL && !incheck) && (margin < 500)) {
-      return (staticeval + beta) / 2;
+      return (eval + beta) / 2;
     }
   }
   int moves[maxmoves];
@@ -282,7 +296,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       int tbscore = (SCORE_TB_WIN - ply) * result;
       if (ttnodetype == EXPECTED_PV_NODE || (ttnodetype == EXPECTED_CUT_NODE && tbscore >= beta) || (ttnodetype == EXPECTED_ALL_NODE && tbscore <= alpha)) {
         ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
-                   isttPV, tbscore, ttnodetype, 0);
+                   isttPV, tbscore, eval, ttnodetype, 0);
         return tbscore;
       }
       if (isPV) {
@@ -417,7 +431,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
             if (!(*stopsearch)) {
               if (update) {
                 ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth,
-                              ply, isttPV, score, EXPECTED_CUT_NODE, mov);
+                              ply, isttPV, score, eval, EXPECTED_CUT_NODE, mov);
               }
               if (!iscapture(mov) && (killers[ply][0] != mov)) {
                 killers[ply][1] = killers[ply][0];
@@ -474,7 +488,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   int savedmove = improvedalpha ? moves[bestmove1] : ttmove;
   if (((update || (realnodetype == EXPECTED_PV_NODE)) && !(*stopsearch))) {
     ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
-                   isttPV, bestscore, realnodetype, savedmove);
+                   isttPV, bestscore, eval, realnodetype, savedmove);
   }
   return bestscore;
 }
@@ -507,8 +521,7 @@ int Searcher::iterative() {
   std::stringstream infoline;
   std::string lastinfoline;
   int color = Bitboards.position & 1;
-  int score =
-      searchoptions.useNNUE ? EUNN.evaluate(color) : Bitboards.evaluate(color);
+  int score = staticeval();
   int initialscore = 0;
   float complexitytmfactor = 1;
   int returnedscore = score;

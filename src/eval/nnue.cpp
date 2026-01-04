@@ -46,7 +46,19 @@ void vectoraddsubsub(I16 *__restrict oldaccptr, I16 *__restrict newaccptr,
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
   }
 }
-
+void vectoraddaddsub(I16 *__restrict oldaccptr, I16 *__restrict newaccptr,
+                     const I16 *__restrict addptr1,
+                     const I16 *__restrict addptr2,
+                     const I16 *__restrict subptr) {
+  oldaccptr = (I16 *)__builtin_assume_aligned(oldaccptr, 64);
+  newaccptr = (I16 *)__builtin_assume_aligned(newaccptr, 64);
+  addptr1 = (I16 *)__builtin_assume_aligned(addptr1, 64);
+  addptr2 = (I16 *)__builtin_assume_aligned(addptr2, 64);
+  subptr = (I16 *)__builtin_assume_aligned(subptr, 64);
+  for (int i = 0; i < L1size; i++) {
+    newaccptr[i] = oldaccptr[i] + addptr1[i] + addptr2[i] - subptr[i];
+  }
+}
 void PSQFeatureWeights::load(const char *stream) {
   int offset = 0;
   for (int k = 0; k < realbuckets; k++) {
@@ -181,6 +193,8 @@ void PSQAccumulatorStack::refreshfromcache(int kingsquare, int color,
   for (int i = 0; i < L1size; i++) {
     accptr[i] = cacheaccptr[i];
   }
+  kingsquares[2 * ply + color] = kingsquare;
+  computed[2 * ply + color] = true;
 }
 void PSQAccumulatorStack::refreshfromscratch(int kingsquare, int color,
                                              const U64 *Bitboards) {
@@ -204,9 +218,16 @@ void PSQAccumulatorStack::refreshfromscratch(int kingsquare, int color,
   for (int i = 0; i < L1size; i++) {
     cacheaccptr[i] = accptr[i];
   }
+  kingsquares[2 * ply + color] = kingsquare;
+  computed[2 * ply + color] = true;
 }
 void PSQAccumulatorStack::initializennue(const U64 *Bitboards) {
   ply = 0;
+  for (int i = 0; i < 2 * (maxmaxdepth + 32); i++) {
+    computed[i] = false;
+    moves[i / 2] = 0;
+    kingsquares[i] = -1;
+  }
   for (int color = 0; color < 2; color++) {
     refreshfromscratch(__builtin_ctzll(Bitboards[7] & Bitboards[color]), color,
                        Bitboards);
@@ -220,61 +241,101 @@ void PSQAccumulatorStack::initializennue(const U64 *Bitboards) {
     }
   }
 }
-void PSQAccumulatorStack::forwardaccumulators(int notation,
-                                              const U64 *Bitboards) {
+void PSQAccumulatorStack::reversechange(int accply, int color) {
+  int notation = moves[accply];
   int from = notation & 63;
   int to = (notation >> 6) & 63;
-  int color = (notation >> 12) & 1;
+  int movecolor = (notation >> 12) & 1;
   int piece = (notation >> 13) & 7;
   int captured = (notation >> 17) & 7;
   int promoted = (notation >> 20) & 1;
   int piece2 = (promoted > 0) ? 2 : piece - 2;
-  int oppksq = __builtin_ctzll(Bitboards[7] & Bitboards[color ^ 1]);
-  int ourksq = __builtin_ctzll(Bitboards[7] & Bitboards[color]);
-  I16 *newaccptr = accumulation[2 * (ply + 1) + (color ^ 1)];
-  I16 *oldaccptr = accumulation[2 * ply + (color ^ 1)];
-  const I16 *addweightsopp =
-      layer1weights(oppksq, color ^ 1, 6 * color + piece2, to);
-  const I16 *subweightsopp =
-      layer1weights(oppksq, color ^ 1, 6 * color + piece - 2, from);
-  ply++;
+  I16 *oldaccptr = accumulation[2 * (accply + 1) + color];
+  I16 *newaccptr = accumulation[2 * accply + color];
+  int kingsq = kingsquares[2 * accply + color];
+  const I16 *subweights = layer1weights(kingsq, color, 6 * movecolor + piece2, to);
+  const I16 *addweights = layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
   if (captured > 0) {
-    const I16 *subweights2opp =
-        layer1weights(oppksq, color ^ 1, 6 * (color ^ 1) + captured - 2, to);
-    vectoraddsubsub(oldaccptr, newaccptr, addweightsopp, subweightsopp,
-                    subweights2opp);
-  } else {
-    vectoraddsub(oldaccptr, newaccptr, addweightsopp, subweightsopp);
+    const I16 *addweights2 =
+        layer1weights(kingsq, color, 6 * (movecolor ^ 1) + captured - 2, to);
+      vectoraddaddsub(oldaccptr, newaccptr, addweights, addweights2,
+                    subweights);
+    } else {
+      vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
+    }
+  computed[2 * accply + color] = true;
+}
+void PSQAccumulatorStack::applychange(int accply, int color) {
+  int notation = moves[accply];
+  int from = notation & 63;
+  int to = (notation >> 6) & 63;
+  int movecolor = (notation >> 12) & 1;
+  int piece = (notation >> 13) & 7;
+  int captured = (notation >> 17) & 7;
+  int promoted = (notation >> 20) & 1;
+  int piece2 = (promoted > 0) ? 2 : piece - 2;
+  I16 *newaccptr = accumulation[2 * (accply + 1) + color];
+  I16 *oldaccptr = accumulation[2 * accply + color];
+  int kingsq = kingsquares[2 * accply + color];
+  const I16 *addweights = layer1weights(kingsq, color, 6 * movecolor + piece2, to);
+  const I16 *subweights = layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
+  if (captured > 0) {
+    const I16 *subweights2 =
+        layer1weights(kingsq, color, 6 * (movecolor ^ 1) + captured - 2, to);
+      vectoraddsubsub(oldaccptr, newaccptr, addweights, subweights,
+                    subweights2);
+    } else {
+      vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
+    }
+  computed[2 * (accply + 1) + color] = true;
+}
+void PSQAccumulatorStack::forwardaccumulators(int notation) {
+  moves[ply] = notation;
+  int to = (notation >> 6) & 63;
+  int color = (notation >> 12) & 1;
+  int piece = (notation >> 13) & 7;
+  kingsquares[2 * (ply + 1) + (color ^ 1)] = kingsquares[2 * ply + (color ^ 1)];
+  if (piece == 7) {
+    kingsquares[2 * (ply + 1) + color] = to;
   }
-  if (piece == 7 && getbucket(to, color) != getbucket(from, color)) {
-    int scratchrefreshtime = __builtin_popcountll(Bitboards[0] | Bitboards[1]);
-    int cacherefreshtime =
-        differencecount(getbucket(to, color), color, Bitboards);
-    if (scratchrefreshtime <= cacherefreshtime) {
-      refreshfromscratch(to, color, Bitboards);
-    } else {
-      refreshfromcache(to, color, Bitboards);
+  else {
+    kingsquares[2 * (ply + 1) + color] = kingsquares[2 * ply + color];
+  }
+  ply++;
+  computed[2 * ply] = false;
+  computed[2 * ply + 1] = false;
+}
+void PSQAccumulatorStack::backwardaccumulators() {
+  ply--;
+}
+void PSQAccumulatorStack::computeaccumulator(int color, const U64 *Bitboards) {
+  int accply = ply;
+  int bucket = getbucket(kingsquares[2 * ply + color], color);
+  while (!computed[2 * accply + color] && accply > 0) {
+    accply--;
+    if (getbucket(kingsquares[2 * accply + color], color) != bucket) {
+      int scratchrefreshtime = __builtin_popcountll(Bitboards[0] | Bitboards[1]);
+      int cacherefreshtime = differencecount(bucket, color, Bitboards);
+      if (scratchrefreshtime <= cacherefreshtime) {
+        refreshfromscratch(kingsquares[2 * ply + color], color, Bitboards);
+      } else {
+        refreshfromcache(kingsquares[2 * ply + color], color, Bitboards);
+      }
+      for (int j = ply-1; j > accply; j--) {
+        reversechange(j, color);
+      }
+      return;
     }
-  } else {
-    newaccptr = accumulation[2 * ply + color];
-    oldaccptr = accumulation[2 * (ply - 1) + color];
-    const I16 *addweightsus =
-        layer1weights(ourksq, color, 6 * color + piece2, to);
-    const I16 *subweightsus =
-        layer1weights(ourksq, color, 6 * color + piece - 2, from);
-    if (captured > 0) {
-      const I16 *subweights2us =
-          layer1weights(ourksq, color, 6 * (color ^ 1) + captured - 2, to);
-      vectoraddsubsub(oldaccptr, newaccptr, addweightsus, subweightsus,
-                      subweights2us);
-    } else {
-      vectoraddsub(oldaccptr, newaccptr, addweightsus, subweightsus);
-    }
+  }
+  while (accply < ply) {
+    applychange(accply, color);
+    accply++;
   }
 }
-void PSQAccumulatorStack::backwardaccumulators(int notation,
-                                               const U64 *Bitboards) {
-  ply--;
+const I16* PSQAccumulatorStack::currentaccumulator(const U64 *Bitboards) {
+  computeaccumulator(0, Bitboards);
+  computeaccumulator(1, Bitboards);
+  return accumulation[2 * ply];
 }
 void SingleAccumulatorStack::load(NNUEWeights *EUNNweights) {
   psqaccumulators.weights = &(EUNNweights->psqweights);
@@ -283,13 +344,13 @@ void SingleAccumulatorStack::initialize(const U64 *Bitboards) {
   psqaccumulators.initializennue(Bitboards);
 }
 void SingleAccumulatorStack::make(int notation, const U64 *Bitboards) {
-  psqaccumulators.forwardaccumulators(notation, Bitboards);
+  psqaccumulators.forwardaccumulators(notation);
 }
 void SingleAccumulatorStack::unmake(int notation, const U64 *Bitboards) {
-  psqaccumulators.backwardaccumulators(notation, Bitboards);
+  psqaccumulators.backwardaccumulators();
 }
-const I16 *SingleAccumulatorStack::transform(int color) {
-  return psqaccumulators.currentaccumulator();
+const I16 *SingleAccumulatorStack::transform(int color, const U64* Bitboards) {
+  return psqaccumulators.currentaccumulator(Bitboards);
 }
 void LayerStack::load(NNUEWeights *EUNNweights) {
   weights = &(EUNNweights->layerweights);
@@ -349,8 +410,8 @@ void NNUE::unmake(int notation, const U64 *Bitboards) {
   }
   accumulators.unmake(notation, Bitboards);
 }
-int NNUE::evaluate(int color) {
+int NNUE::evaluate(int color, const U64 *Bitboards) {
   int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
-  const I16 *layerstackinput = accumulators.transform(color);
+  const I16 *layerstackinput = accumulators.transform(color, Bitboards);
   return layers.propagate(bucket, color, layerstackinput);
 }
