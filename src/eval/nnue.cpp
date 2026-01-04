@@ -46,7 +46,19 @@ void vectoraddsubsub(I16 *__restrict oldaccptr, I16 *__restrict newaccptr,
     newaccptr[i] = oldaccptr[i] + addptr[i] - subptr1[i] - subptr2[i];
   }
 }
-
+void vectoraddaddsub(I16 *__restrict oldaccptr, I16 *__restrict newaccptr,
+                     const I16 *__restrict addptr1,
+                     const I16 *__restrict addptr2,
+                     const I16 *__restrict subptr) {
+  oldaccptr = (I16 *)__builtin_assume_aligned(oldaccptr, 64);
+  newaccptr = (I16 *)__builtin_assume_aligned(newaccptr, 64);
+  addptr1 = (I16 *)__builtin_assume_aligned(addptr1, 64);
+  addptr2 = (I16 *)__builtin_assume_aligned(addptr2, 64);
+  subptr = (I16 *)__builtin_assume_aligned(subptr, 64);
+  for (int i = 0; i < L1size; i++) {
+    newaccptr[i] = oldaccptr[i] + addptr1[i] + addptr2[i] - subptr[i];
+  }
+}
 void PSQFeatureWeights::load(const char *stream) {
   int offset = 0;
   for (int k = 0; k < realbuckets; k++) {
@@ -229,6 +241,30 @@ void PSQAccumulatorStack::initializennue(const U64 *Bitboards) {
     }
   }
 }
+void PSQAccumulatorStack::reversechange(int accply, int color) {
+  int notation = moves[accply];
+  int from = notation & 63;
+  int to = (notation >> 6) & 63;
+  int movecolor = (notation >> 12) & 1;
+  int piece = (notation >> 13) & 7;
+  int captured = (notation >> 17) & 7;
+  int promoted = (notation >> 20) & 1;
+  int piece2 = (promoted > 0) ? 2 : piece - 2;
+  I16 *oldaccptr = accumulation[2 * (accply + 1) + color];
+  I16 *newaccptr = accumulation[2 * accply + color];
+  int kingsq = kingsquares[2 * accply + color];
+  const I16 *subweights = layer1weights(kingsq, color, 6 * movecolor + piece2, to);
+  const I16 *addweights = layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
+  if (captured > 0) {
+    const I16 *addweights2 =
+        layer1weights(kingsq, color, 6 * (movecolor ^ 1) + captured - 2, to);
+      vectoraddaddsub(oldaccptr, newaccptr, addweights, addweights2,
+                    subweights);
+    } else {
+      vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
+    }
+  computed[2 * accply + color] = true;
+}
 void PSQAccumulatorStack::applychange(int accply, int color) {
   int notation = moves[accply];
   int from = notation & 63;
@@ -274,10 +310,20 @@ void PSQAccumulatorStack::backwardaccumulators() {
 }
 void PSQAccumulatorStack::computeaccumulator(int color, const U64 *Bitboards) {
   int accply = ply;
+  int bucket = getbucket(kingsquares[2 * ply + color], color);
   while (!computed[2 * accply + color] && accply > 0) {
     accply--;
-    if (getbucket(kingsquares[2 * accply + color], color) != getbucket(kingsquares[2 * ply + color], color)) {
-      refreshfromcache(kingsquares[2 * ply + color], color, Bitboards);
+    if (getbucket(kingsquares[2 * accply + color], color) != bucket) {
+      int scratchrefreshtime = __builtin_popcountll(Bitboards[0] | Bitboards[1]);
+      int cacherefreshtime = differencecount(bucket, color, Bitboards);
+      if (scratchrefreshtime <= cacherefreshtime) {
+        refreshfromscratch(kingsquares[2 * ply + color], color, Bitboards);
+      } else {
+        refreshfromcache(kingsquares[2 * ply + color], color, Bitboards);
+      }
+      for (int j = ply-1; j > accply; j--) {
+        reversechange(j, color);
+      }
       return;
     }
   }
@@ -289,7 +335,6 @@ void PSQAccumulatorStack::computeaccumulator(int color, const U64 *Bitboards) {
 const I16* PSQAccumulatorStack::currentaccumulator(const U64 *Bitboards) {
   computeaccumulator(0, Bitboards);
   computeaccumulator(1, Bitboards);
-  //std::cout << "Accumulator ply: " << ply << "\n";
   return accumulation[2 * ply];
 }
 void SingleAccumulatorStack::load(NNUEWeights *EUNNweights) {
@@ -340,20 +385,6 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   eval /= totalL3Q;
   return eval;
 }
-std::string algebraic2(int notation) {
-  std::string convert[64] = {
-      "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "a2", "b2", "c2",
-      "d2", "e2", "f2", "g2", "h2", "a3", "b3", "c3", "d3", "e3", "f3",
-      "g3", "h3", "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4", "a5",
-      "b5", "c5", "d5", "e5", "f5", "g5", "h5", "a6", "b6", "c6", "d6",
-      "e6", "f6", "g6", "h6", "a7", "b7", "c7", "d7", "e7", "f7", "g7",
-      "h7", "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"};
-  std::string header = convert[notation & 63] + convert[(notation >> 6) & 63];
-  if (notation & (1 << 20)) {
-    header = header + "q";
-  }
-  return header;
-}
 void NNUE::load(NNUEWeights *EUNNweights) {
   accumulators.load(EUNNweights);
   layers.load(EUNNweights);
@@ -371,7 +402,6 @@ void NNUE::make(int notation, const U64 *Bitboards) {
     totalmaterial -= material[captured - 2];
   }
   accumulators.make(notation, Bitboards);
-  std::cout << "NNUE made move " << algebraic2(notation) << "\n";
 }
 void NNUE::unmake(int notation, const U64 *Bitboards) {
   int captured = (notation >> 17) & 7;
@@ -379,11 +409,9 @@ void NNUE::unmake(int notation, const U64 *Bitboards) {
     totalmaterial += material[captured - 2];
   }
   accumulators.unmake(notation, Bitboards);
-  std::cout << "NNUE unmade move " << algebraic2(notation) << "\n";
 }
 int NNUE::evaluate(int color, const U64 *Bitboards) {
   int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
   const I16 *layerstackinput = accumulators.transform(color, Bitboards);
-  std::cout << "NNUE eval " << layers.propagate(bucket, color, layerstackinput) << "\n";
   return layers.propagate(bucket, color, layerstackinput);
 }

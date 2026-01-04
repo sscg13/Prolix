@@ -122,6 +122,7 @@ struct PSQAccumulatorStack {
   void refreshfromscratch(const int kingsquare, const int color,
                           const U64 *Bitboards);
   void initializennue(const U64 *Bitboards);
+  void reversechange(const int accply, int color);
   void applychange(const int accply, int color);
   void forwardaccumulators(const int notation);
   void backwardaccumulators();

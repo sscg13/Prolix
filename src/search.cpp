@@ -70,7 +70,6 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int eval;
   if (tthit) {
     eval = ttentry.staticeval();
-    std::cout << "tt static eval: " << eval << "\n";
     if (!isPV) {
       tteval = std::min(std::max(ttentry.score(0), -SCORE_WIN), SCORE_WIN);
       ttnodetype = ttentry.nodetype();
@@ -227,7 +226,6 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   if (tthit) {
     score = ttentry.score(ply);
     eval = ttentry.staticeval();
-    std::cout << "tt static eval: " << eval << "\n";
     ttcorreval = eval;
     ttmove = ttentry.hashmove();
     int ttnodetype = ttentry.nodetype();
