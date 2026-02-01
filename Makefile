@@ -1,5 +1,5 @@
 EXE := Prolix
-EVALFILE := shatranj-net47.nnue
+EVALFILE := shatranj-net48.nnue
 ARCH := native
 TUNE := native
 
