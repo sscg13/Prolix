@@ -8,7 +8,10 @@ INCBIN(char, NNUE, EUNNfile);
 template <typename T> T crelu(T x, T Q) {
   return std::max(std::min(x, Q), (T)0);
 }
-I32 csqr(I32 x, I32 Q) { return std::min(x * x, Q * Q); }
+I32 csqr(I32 x, I32 Q) {
+  I32 y = std::max(std::min(x, Q), -Q);
+  return y * y; 
+}
 void vectoradd(I16 *__restrict accptr, const I16 *__restrict addptr) {
   accptr = (I16 *)__builtin_assume_aligned(accptr, 64);
   addptr = (I16 *)__builtin_assume_aligned(addptr, 64);

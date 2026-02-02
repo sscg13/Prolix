@@ -2,6 +2,7 @@ EXE := Prolix
 EVALFILE := shatranj-net49.nnue
 ARCH := native
 TUNE := native
+DEBUG := no
 
 rwildcard = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
@@ -19,12 +20,15 @@ ifeq ($(CXX), g++)
 	CC := gcc
 endif
 
-CXXFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
-CFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE)
+ifeq ($(DEBUG), no)
+	CXXFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+	CFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE)
+else
+	CXXFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+	CFLAGS := -g -march=$(ARCH) -mtune=$(TUNE)
+endif
+
 LDFLAGS :=
-
-DEBUGFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
-
 SUFFIX :=
 
 ifeq ($(OS), Windows_NT)
@@ -42,9 +46,6 @@ OUT := $(EXE)$(SUFFIX)
 $(EXE): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(OUT) $^
 	@echo "Build complete. Run with ./$(EXE)"
-
-debug: $(SOURCES)
-	$(CXX) $^ $(DEBUGFLAGS) -o debug$(SUFFIX)
 
 clean:
 	rm -f $(OBJS)

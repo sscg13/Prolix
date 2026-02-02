@@ -1110,7 +1110,7 @@ bool Board::see_exceeds(int mov, int color, int threshold) {
   int previous[2] = {0, attacker - 2};
   int i = 0;
   while (true) {
-    while (pieces[i][next[i]] == 0 && next[i] < 6) {
+    while (next[i] < 6 && pieces[i][next[i]] == 0) {
       next[i]++;
     }
     if (next[i] > 5) {
