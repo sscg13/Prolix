@@ -81,8 +81,8 @@ void MultiLayerWeights::load(const char *stream) {
   layer2weights.load(stream + offset);
   offset += layer2weights.size;
   layer3weights.load(stream + offset);
-  offset += layer3weights.size;
-  layer4weights.load(stream + offset);
+  //offset += layer3weights.size;
+  //layer4weights.load(stream + offset);
 }
 void PSQNNUEWeights::loaddefaultnet() {
   psqweights.load(&NNUEData[0]);
@@ -372,17 +372,17 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   PerspectiveTransform::transform(input, layer1activated, color);
   Layer2Affine::transform(layer1activated, layer2raw, &(weights->layer2weights),
                           bucket);
-  Layer2Shift::transform(layer2raw);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
-  Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights),
+  Layer2Shift::transform(layer2activated);
+  Layer3Affine::transform(layer2activated, output, &(weights->layer3weights),
                           bucket);
-  Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
-  Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
-                          bucket);
+  //Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
+  //Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
+  //                        bucket);
   int eval = output[0];
-  eval /= (L4Q);
+  eval /= (L3Q);
   eval *= evalscale;
-  eval /= totalL3Q;
+  eval /= activatedL2Q;
   return eval;
 }
 void NNUE::load(NNUEWeights *EUNNweights) {

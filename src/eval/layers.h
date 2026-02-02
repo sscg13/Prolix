@@ -97,6 +97,14 @@ template <int inputsize> struct CReLUActivation {
   }
 };
 
+template <int inputsize> struct CSqrActivation {
+  static void transform(const I32 *input, I32 *output, I32 Q) {
+    for (int i = 0; i < inputsize; i++) {
+      output[i] = csqr(input[i], Q);
+    }
+  }
+};
+
 template <int inputsize> struct DualActivation {
   static void transform(const I32 *input, I32 *output, I32 Q) {
     for (int i = 0; i < inputsize; i++) {
