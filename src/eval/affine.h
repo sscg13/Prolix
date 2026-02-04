@@ -27,7 +27,33 @@ template <int inputsize, int outputsize> struct SparseAffineWeights {
 
 template <int inputsize, int outputsize> struct SparseAffine {
   static void
-  transform(const U8 *input, I32 *output,
+  transform_avx512vnni(const U8 *input, I32 *output,
+            const SparseAffineWeights<inputsize, outputsize> *weights,
+            int bucket) {
+    int weightoffset = bucket * inputsize * outputsize;
+    int biasoffset = bucket * outputsize;
+    const __m512i *weightptr =
+        (const __m512i *)(&(weights->weights[weightoffset]));
+    constexpr int numaccums = outputsize / 16;
+    __m512i outvec[numaccums];
+    for (int i = 0; i < numaccums; i++) {
+      outvec[i] = _mm512_load_si512(
+          (__m512i *)(&(weights->bias[biasoffset + 16 * i])));
+    }
+    for (int k = 0; k < inputsize / 4; k++) {
+      __m512i in = _mm512_set1_epi32(*(const int32_t *)(&input[4 * k]));
+      for (int i = 0; i < numaccums; i++) {
+        __m512i w = _mm512_load_si512((__m512i *)(weightptr + k * numaccums + i));
+        outvec[i] = _mm512_dpbusd_epi32(outvec[i], in, w);
+      }
+    }
+    for (int i = 0; i < numaccums; i++) {
+      _mm512_store_si512((__m512i *)(&output[16 * i]), outvec[i]);
+    }
+  }
+  
+  static void
+  transform_avx2(const U8 *input, I32 *output,
             const SparseAffineWeights<inputsize, outputsize> *weights,
             int bucket) {
     int weightoffset = bucket * inputsize * outputsize;
@@ -53,5 +79,12 @@ template <int inputsize, int outputsize> struct SparseAffine {
     for (int i = 0; i < numaccums; i++) {
       _mm256_store_si256((__m256i *)(&output[8 * i]), outvec[i]);
     }
+  }
+
+  static void
+  transform(const U8 *input, I32 *output,
+            const SparseAffineWeights<inputsize, outputsize> *weights,
+            int bucket) {
+    transform_avx2(input, output, weights, bucket);
   }
 };
