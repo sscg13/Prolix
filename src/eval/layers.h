@@ -57,43 +57,74 @@ template <int inputsize> struct PerspectiveWeights {
 };
 
 struct PerspectiveTransform {
-  static void pairwise_avx2(const I16 *__restrict input, U8 *__restrict output, int color) {
+  __attribute__((target("avx512f,avx512bw"))) static void
+  pairwise_avx512(const I16 *__restrict input, U8 *__restrict output,
+                  int color) {
     constexpr int halfL1 = L1size / 2;
-    const __m256i v_one  = _mm256_set1_epi16(L1Q);
+    const __m512i v_one = _mm512_set1_epi16(L1Q);
+    const __m512i v_zero = _mm512_setzero_si512();
+    const int16_t *in0_lo = &input[color * L1size];
+    const int16_t *in0_hi = &input[color * L1size + halfL1];
+    const int16_t *in1_lo = &input[(color ^ 1) * L1size];
+    const int16_t *in1_hi = &input[(color ^ 1) * L1size + halfL1];
+    auto compute_avx512 = [&](__m512i a, __m512i b) -> __m512i {
+      a = _mm512_max_epi16(_mm512_min_epi16(a, v_one), v_zero);
+      b = _mm512_min_epi16(b, v_one);
+      a = _mm512_slli_epi16(a, 16 - l1shiftbits);
+      return _mm512_mulhi_epi16(a, b);
+    };
+    for (int i = 0; i < halfL1; i += 64) {
+      __m512i a0 = _mm512_load_si512((const __m512i *)&in0_lo[i]);
+      __m512i b0 = _mm512_load_si512((const __m512i *)&in0_hi[i]);
+      __m512i c0 = _mm512_load_si512((const __m512i *)&in0_lo[i + 32]);
+      __m512i d0 = _mm512_load_si512((const __m512i *)&in0_hi[i + 32]);
+      __m512i res0_p1 = compute_avx512(a0, b0);
+      __m512i res0_p2 = compute_avx512(c0, d0);
+      __m512i p0 = _mm512_packus_epi16(res0_p1, res0_p2);
+      _mm512_store_si512((__m512i *)&output[i], p0);
+      __m512i a1 = _mm512_load_si512((const __m512i *)&in1_lo[i]);
+      __m512i b1 = _mm512_load_si512((const __m512i *)&in1_hi[i]);
+      __m512i c1 = _mm512_load_si512((const __m512i *)&in1_lo[i + 32]);
+      __m512i d1 = _mm512_load_si512((const __m512i *)&in1_hi[i + 32]);
+      __m512i res1_p1 = compute_avx512(a1, b1);
+      __m512i res1_p2 = compute_avx512(c1, d1);
+      __m512i p1 = _mm512_packus_epi16(res1_p1, res1_p2);
+      _mm512_store_si512((__m512i *)&output[halfL1 + i], p1);
+    }
+  }
+
+  static void pairwise_avx2(const I16 *__restrict input, U8 *__restrict output,
+                            int color) {
+    constexpr int halfL1 = L1size / 2;
+    const __m256i v_one = _mm256_set1_epi16(L1Q);
     const __m256i v_zero = _mm256_setzero_si256();
-    const int16_t* in0_lo = &input[color * L1size];
-    const int16_t* in0_hi = &input[color * L1size + halfL1];
-    const int16_t* in1_lo = &input[(color ^ 1) * L1size];
-    const int16_t* in1_hi = &input[(color ^ 1) * L1size + halfL1];
+    const int16_t *in0_lo = &input[color * L1size];
+    const int16_t *in0_hi = &input[color * L1size + halfL1];
+    const int16_t *in1_lo = &input[(color ^ 1) * L1size];
+    const int16_t *in1_hi = &input[(color ^ 1) * L1size + halfL1];
+    auto compute_avx2 = [&](__m256i a, __m256i b) -> __m256i {
+      a = _mm256_max_epi16(_mm256_min_epi16(a, v_one), v_zero);
+      b = _mm256_min_epi16(b, v_one);
+      a = _mm256_slli_epi16(a, 16 - l1shiftbits);
+      return _mm256_mulhi_epi16(a, b);
+    };
     for (int i = 0; i < halfL1; i += 32) {
-        __m256i a0 = _mm256_load_si256((const __m256i*)&in0_lo[i]);
-        __m256i b0 = _mm256_load_si256((const __m256i*)&in0_hi[i]);
-        __m256i c0 = _mm256_load_si256((const __m256i*)&in0_lo[i + 16]);
-        __m256i d0 = _mm256_load_si256((const __m256i*)&in0_hi[i + 16]);
-        a0 = _mm256_max_epi16(_mm256_min_epi16(a0, v_one), v_zero);
-        c0 = _mm256_max_epi16(_mm256_min_epi16(c0, v_one), v_zero);
-        b0 = _mm256_min_epi16(b0, v_one);
-        d0 = _mm256_min_epi16(d0, v_one);
-        a0 = _mm256_slli_epi16(a0, 16 - l1shiftbits);
-        c0 = _mm256_slli_epi16(c0, 16 - l1shiftbits);
-        __m256i res0_p1 = _mm256_mulhi_epi16(a0, b0);
-        __m256i res0_p2 = _mm256_mulhi_epi16(c0, d0);
-        __m256i p0 = _mm256_packus_epi16(res0_p1, res0_p2);
-        _mm256_store_si256((__m256i*)&output[i], p0);
-        __m256i a1 = _mm256_load_si256((const __m256i*)&in1_lo[i]);
-        __m256i b1 = _mm256_load_si256((const __m256i*)&in1_hi[i]);
-        __m256i c1 = _mm256_load_si256((const __m256i*)&in1_lo[i + 16]);
-        __m256i d1 = _mm256_load_si256((const __m256i*)&in1_hi[i + 16]);
-        a1 = _mm256_max_epi16(_mm256_min_epi16(a1, v_one), v_zero);
-        c1 = _mm256_max_epi16(_mm256_min_epi16(c1, v_one), v_zero);
-        b1 = _mm256_min_epi16(b1, v_one);
-        d1 = _mm256_min_epi16(d1, v_one);
-        a1 = _mm256_slli_epi16(a1, 16 - l1shiftbits);
-        c1 = _mm256_slli_epi16(c1, 16 - l1shiftbits);
-        __m256i res1_p1 = _mm256_mulhi_epi16(a1, b1);
-        __m256i res1_p2 = _mm256_mulhi_epi16(c1, d1);
-        __m256i p1 = _mm256_packus_epi16(res1_p1, res1_p2);
-        _mm256_store_si256((__m256i*)&output[halfL1 + i], p1);
+      __m256i a0 = _mm256_load_si256((const __m256i *)&in0_lo[i]);
+      __m256i b0 = _mm256_load_si256((const __m256i *)&in0_hi[i]);
+      __m256i c0 = _mm256_load_si256((const __m256i *)&in0_lo[i + 16]);
+      __m256i d0 = _mm256_load_si256((const __m256i *)&in0_hi[i + 16]);
+      __m256i res0_p1 = compute_avx2(a0, b0);
+      __m256i res0_p2 = compute_avx2(c0, d0);
+      __m256i p0 = _mm256_packus_epi16(res0_p1, res0_p2);
+      _mm256_store_si256((__m256i *)&output[i], p0);
+      __m256i a1 = _mm256_load_si256((const __m256i *)&in1_lo[i]);
+      __m256i b1 = _mm256_load_si256((const __m256i *)&in1_hi[i]);
+      __m256i c1 = _mm256_load_si256((const __m256i *)&in1_lo[i + 16]);
+      __m256i d1 = _mm256_load_si256((const __m256i *)&in1_hi[i + 16]);
+      __m256i res1_p1 = compute_avx2(a1, b1);
+      __m256i res1_p2 = compute_avx2(c1, d1);
+      __m256i p1 = _mm256_packus_epi16(res1_p1, res1_p2);
+      _mm256_store_si256((__m256i *)&output[halfL1 + i], p1);
     }
   }
 
