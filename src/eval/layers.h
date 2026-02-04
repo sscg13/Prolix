@@ -57,18 +57,46 @@ template <int inputsize> struct PerspectiveWeights {
 };
 
 struct PerspectiveTransform {
+  static void pairwise_avx2(const I16 *__restrict input, U8 *__restrict output, int color) {
+    constexpr int halfL1 = L1size / 2;
+    const __m256i v_zero = _mm256_setzero_si256();
+    const __m256i v_l1q  = _mm256_set1_epi16(L1Q);
+    const int16_t* in0_lo = &input[color * L1size];
+    const int16_t* in0_hi = &input[color * L1size + halfL1];
+    const int16_t* in1_lo = &input[(color ^ 1) * L1size];
+    const int16_t* in1_hi = &input[(color ^ 1) * L1size + halfL1];
+    for (int i = 0; i < halfL1; i += 32) {
+        __m256i a0 = _mm256_loadu_si256((const __m256i*)&in0_lo[i]);
+        __m256i b0 = _mm256_loadu_si256((const __m256i*)&in0_hi[i]);
+        __m256i c0 = _mm256_loadu_si256((const __m256i*)&in0_lo[i + 16]);
+        __m256i d0 = _mm256_loadu_si256((const __m256i*)&in0_hi[i + 16]);
+        a0 = _mm256_min_epi16(_mm256_max_epi16(a0, v_zero), v_l1q);
+        b0 = _mm256_min_epi16(_mm256_max_epi16(b0, v_zero), v_l1q);
+        c0 = _mm256_min_epi16(_mm256_max_epi16(c0, v_zero), v_l1q);
+        d0 = _mm256_min_epi16(_mm256_max_epi16(d0, v_zero), v_l1q);
+        __m256i res0_p1 = _mm256_srai_epi16(_mm256_mullo_epi16(a0, b0), l1shiftbits);
+        __m256i res0_p2 = _mm256_srai_epi16(_mm256_mullo_epi16(c0, d0), l1shiftbits);
+        __m256i p0 = _mm256_packus_epi16(res0_p1, res0_p2);
+        _mm256_storeu_si256((__m256i*)&output[i], p0);
+        __m256i a1 = _mm256_loadu_si256((const __m256i*)&in1_lo[i]);
+        __m256i b1 = _mm256_loadu_si256((const __m256i*)&in1_hi[i]);
+        __m256i c1 = _mm256_loadu_si256((const __m256i*)&in1_lo[i + 16]);
+        __m256i d1 = _mm256_loadu_si256((const __m256i*)&in1_hi[i + 16]);
+        a1 = _mm256_min_epi16(_mm256_max_epi16(a1, v_zero), v_l1q);
+        b1 = _mm256_min_epi16(_mm256_max_epi16(b1, v_zero), v_l1q);
+        c1 = _mm256_min_epi16(_mm256_max_epi16(c1, v_zero), v_l1q);
+        d1 = _mm256_min_epi16(_mm256_max_epi16(d1, v_zero), v_l1q);
+        __m256i res1_p1 = _mm256_srai_epi16(_mm256_mullo_epi16(a1, b1), l1shiftbits);
+        __m256i res1_p2 = _mm256_srai_epi16(_mm256_mullo_epi16(c1, d1), l1shiftbits);
+        __m256i p1 = _mm256_packus_epi16(res1_p1, res1_p2);
+        _mm256_storeu_si256((__m256i*)&output[halfL1 + i], p1);
+    }
+}
+
   static void transform(const I16 *__restrict input, U8 *__restrict output,
                         int color) {
     if (pairwise) {
-      for (int i = 0; i < L1size / 2; i++) {
-        output[i] = (crelu<I16>(input[color * L1size + i], L1Q) *
-                     crelu<I16>(input[color * L1size + L1size / 2 + i], L1Q)) >>
-                    l1shiftbits;
-        output[L1size / 2 + i] =
-            (crelu<I16>(input[(color ^ 1) * L1size + i], L1Q) *
-             crelu<I16>(input[(color ^ 1) * L1size + L1size / 2 + i], L1Q)) >>
-            l1shiftbits;
-      }
+      pairwise_avx2(input, output, color);
     } else if (perspectivecrelu) {
       for (int i = 0; i < L1size; i++) {
         output[i] = (crelu<I16>(input[color * L1size + i], L1Q) >> l1shiftbits);

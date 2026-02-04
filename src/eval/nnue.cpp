@@ -62,6 +62,16 @@ void vectoraddaddsub(I16 *__restrict oldaccptr, I16 *__restrict newaccptr,
     newaccptr[i] = oldaccptr[i] + addptr1[i] + addptr2[i] - subptr[i];
   }
 }
+void packuspermute_avx2(I16 *weights) {
+    for (int i = 0; i < L1size; i += 32) {
+        __m256i reg0 = _mm256_loadu_si256((__m256i*)&weights[i]);
+        __m256i reg1 = _mm256_loadu_si256((__m256i*)&weights[i + 16]);
+        __m256i perm0 = _mm256_permute2x128_si256(reg0, reg1, 0x20);
+        __m256i perm1 = _mm256_permute2x128_si256(reg0, reg1, 0x31);
+        _mm256_storeu_si256((__m256i*)&weights[i], perm0);
+        _mm256_storeu_si256((__m256i*)&weights[i + 16], perm1);
+    }
+}
 void PSQFeatureWeights::load(const char *stream) {
   int offset = 0;
   for (int k = 0; k < realbuckets; k++) {
@@ -70,11 +80,17 @@ void PSQFeatureWeights::load(const char *stream) {
       int square = i % 64;
       int convert[12] = {0, 3, 1, 4, 2, 5, 6, 9, 7, 10, 8, 11};
       memcpy(nnuelayer1[k][64 * convert[piece] + square], stream + offset,
-             2 * L1size);
+              2 * L1size);
       offset += 2 * L1size;
+      if (pairwise) {
+        packuspermute_avx2(nnuelayer1[k][64 * convert[piece] + square]);
+      }
     }
   }
   memcpy(layer1bias, stream + offset, 2 * L1size);
+  if (pairwise) {
+    packuspermute_avx2(layer1bias);
+  }
 }
 void ThreatFeatureWeights::load(const char *stream) {
   memcpy(nnuelayer1, stream, size);
