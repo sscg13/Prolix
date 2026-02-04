@@ -131,7 +131,11 @@ struct PerspectiveTransform {
   static void transform(const I16 *__restrict input, U8 *__restrict output,
                         int color) {
     if (pairwise) {
-      pairwise_avx2(input, output, color);
+      if (__builtin_cpu_supports("avx512bw")) {
+        pairwise_avx512(input, output, color);
+      } else {
+        pairwise_avx2(input, output, color);
+      }
     } else if (perspectivecrelu) {
       for (int i = 0; i < L1size; i++) {
         output[i] = (crelu<I16>(input[color * L1size + i], L1Q) >> l1shiftbits);
