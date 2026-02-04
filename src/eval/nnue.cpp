@@ -10,7 +10,7 @@ template <typename T> T crelu(T x, T Q) {
 }
 I32 csqr(I32 x, I32 Q) {
   I32 y = std::max(std::min(x, Q), -Q);
-  return y * y; 
+  return y * y;
 }
 void vectoradd(I16 *__restrict accptr, const I16 *__restrict addptr) {
   accptr = (I16 *)__builtin_assume_aligned(accptr, 64);
@@ -84,8 +84,8 @@ void MultiLayerWeights::load(const char *stream) {
   layer2weights.load(stream + offset);
   offset += layer2weights.size;
   layer3weights.load(stream + offset);
-  //offset += layer3weights.size;
-  //layer4weights.load(stream + offset);
+  // offset += layer3weights.size;
+  // layer4weights.load(stream + offset);
 }
 void PSQNNUEWeights::loaddefaultnet() {
   psqweights.load(&NNUEData[0]);
@@ -256,16 +256,17 @@ void PSQAccumulatorStack::reversechange(int accply, int color) {
   I16 *oldaccptr = accumulation[2 * (accply + 1) + color];
   I16 *newaccptr = accumulation[2 * accply + color];
   int kingsq = kingsquares[2 * accply + color];
-  const I16 *subweights = layer1weights(kingsq, color, 6 * movecolor + piece2, to);
-  const I16 *addweights = layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
+  const I16 *subweights =
+      layer1weights(kingsq, color, 6 * movecolor + piece2, to);
+  const I16 *addweights =
+      layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
   if (captured > 0) {
     const I16 *addweights2 =
         layer1weights(kingsq, color, 6 * (movecolor ^ 1) + captured - 2, to);
-      vectoraddaddsub(oldaccptr, newaccptr, addweights, addweights2,
-                    subweights);
-    } else {
-      vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
-    }
+    vectoraddaddsub(oldaccptr, newaccptr, addweights, addweights2, subweights);
+  } else {
+    vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
+  }
   computed[2 * accply + color] = true;
 }
 void PSQAccumulatorStack::applychange(int accply, int color) {
@@ -280,16 +281,17 @@ void PSQAccumulatorStack::applychange(int accply, int color) {
   I16 *newaccptr = accumulation[2 * (accply + 1) + color];
   I16 *oldaccptr = accumulation[2 * accply + color];
   int kingsq = kingsquares[2 * accply + color];
-  const I16 *addweights = layer1weights(kingsq, color, 6 * movecolor + piece2, to);
-  const I16 *subweights = layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
+  const I16 *addweights =
+      layer1weights(kingsq, color, 6 * movecolor + piece2, to);
+  const I16 *subweights =
+      layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
   if (captured > 0) {
     const I16 *subweights2 =
         layer1weights(kingsq, color, 6 * (movecolor ^ 1) + captured - 2, to);
-      vectoraddsubsub(oldaccptr, newaccptr, addweights, subweights,
-                    subweights2);
-    } else {
-      vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
-    }
+    vectoraddsubsub(oldaccptr, newaccptr, addweights, subweights, subweights2);
+  } else {
+    vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
+  }
   computed[2 * (accply + 1) + color] = true;
 }
 void PSQAccumulatorStack::forwardaccumulators(int notation) {
@@ -300,31 +302,29 @@ void PSQAccumulatorStack::forwardaccumulators(int notation) {
   kingsquares[2 * (ply + 1) + (color ^ 1)] = kingsquares[2 * ply + (color ^ 1)];
   if (piece == 7) {
     kingsquares[2 * (ply + 1) + color] = to;
-  }
-  else {
+  } else {
     kingsquares[2 * (ply + 1) + color] = kingsquares[2 * ply + color];
   }
   ply++;
   computed[2 * ply] = false;
   computed[2 * ply + 1] = false;
 }
-void PSQAccumulatorStack::backwardaccumulators() {
-  ply--;
-}
+void PSQAccumulatorStack::backwardaccumulators() { ply--; }
 void PSQAccumulatorStack::computeaccumulator(int color, const U64 *Bitboards) {
   int accply = ply;
   int bucket = getbucket(kingsquares[2 * ply + color], color);
   while (!computed[2 * accply + color] && accply > 0) {
     accply--;
     if (getbucket(kingsquares[2 * accply + color], color) != bucket) {
-      int scratchrefreshtime = __builtin_popcountll(Bitboards[0] | Bitboards[1]);
+      int scratchrefreshtime =
+          __builtin_popcountll(Bitboards[0] | Bitboards[1]);
       int cacherefreshtime = differencecount(bucket, color, Bitboards);
       if (scratchrefreshtime <= cacherefreshtime) {
         refreshfromscratch(kingsquares[2 * ply + color], color, Bitboards);
       } else {
         refreshfromcache(kingsquares[2 * ply + color], color, Bitboards);
       }
-      for (int j = ply-1; j > accply; j--) {
+      for (int j = ply - 1; j > accply; j--) {
         reversechange(j, color);
       }
       return;
@@ -335,7 +335,7 @@ void PSQAccumulatorStack::computeaccumulator(int color, const U64 *Bitboards) {
     accply++;
   }
 }
-const I16* PSQAccumulatorStack::currentaccumulator(const U64 *Bitboards) {
+const I16 *PSQAccumulatorStack::currentaccumulator(const U64 *Bitboards) {
   computeaccumulator(0, Bitboards);
   computeaccumulator(1, Bitboards);
   return accumulation[2 * ply];
@@ -352,7 +352,7 @@ void SingleAccumulatorStack::make(int notation, const U64 *Bitboards) {
 void SingleAccumulatorStack::unmake(int notation, const U64 *Bitboards) {
   psqaccumulators.backwardaccumulators();
 }
-const I16 *SingleAccumulatorStack::transform(int color, const U64* Bitboards) {
+const I16 *SingleAccumulatorStack::transform(int color, const U64 *Bitboards) {
   return psqaccumulators.currentaccumulator(Bitboards);
 }
 void LayerStack::load(NNUEWeights *EUNNweights) {
@@ -379,9 +379,9 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   Layer2Shift::transform(layer2activated);
   Layer3Affine::transform(layer2activated, output, &(weights->layer3weights),
                           bucket);
-  //Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
-  //Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
-  //                        bucket);
+  // Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
+  // Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
+  //                         bucket);
   int eval = output[0];
   eval /= (L3Q);
   eval *= evalscale;

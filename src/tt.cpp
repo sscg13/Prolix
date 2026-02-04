@@ -33,8 +33,6 @@ int TTentry::score(int ply) {
   }
   return score;
 }
-int TTentry::staticeval() {
-  return (int)(short int)(key & 0xFFFF);
-}
+int TTentry::staticeval() { return (int)(short int)(key & 0xFFFF); }
 int TTentry::nodetype() { return (int)(data >> 37) & 3; }
 bool TTentry::isttPV() { return (data >> 55) & 1; }

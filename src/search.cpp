@@ -83,8 +83,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
         return tteval;
       }
     }
-  }
-  else {
+  } else {
     eval = staticeval();
   }
   int color = Bitboards.position & 1;
@@ -260,13 +259,12 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       }
       ttnmpgood = (score >= beta || ttnodetype == EXPECTED_CUT_NODE);
     }
-  }
-  else {
+  } else {
     if (depth >= 3) {
-      depth --;
+      depth--;
     }
     eval = staticeval();
-    ttcorreval = eval;  
+    ttcorreval = eval;
     if (ply > 1) {
       improving = (eval > searchstack[ply - 2].eval);
     }
@@ -274,8 +272,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   searchstack[ply].eval = eval;
   int margin = std::max(20 * isttPV, 70 * depth - 70 * improving);
   if (ply > 0 && !tthit) {
-    if (eval - margin >= beta &&
-        (abs(beta) < SCORE_MAX_EVAL && !incheck) && (margin < 500)) {
+    if (eval - margin >= beta && (abs(beta) < SCORE_MAX_EVAL && !incheck) &&
+        (margin < 500)) {
       return (eval + beta) / 2;
     }
   }
@@ -287,23 +285,28 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   int tbwdl = -3;
   int piececount =
       __builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]);
-  if (ply > 0 && piececount <= MAX_TB_PIECES && searchoptions.useTB && Bitboards.halfmovecount() == 0) {
+  if (ply > 0 && piececount <= MAX_TB_PIECES && searchoptions.useTB &&
+      Bitboards.halfmovecount() == 0) {
     tbwdl = Bitboards.probetbwdl();
     if (tbwdl > -3) {
       tbhits++;
-      int result = searchoptions.TB70mr ? (tbwdl / 2) : ((tbwdl > 0) - (tbwdl < 0));
-      int ttnodetype = (result > 0) ? EXPECTED_CUT_NODE : ((result < 0) ? EXPECTED_ALL_NODE : EXPECTED_PV_NODE);
+      int result =
+          searchoptions.TB70mr ? (tbwdl / 2) : ((tbwdl > 0) - (tbwdl < 0));
+      int ttnodetype =
+          (result > 0) ? EXPECTED_CUT_NODE
+                       : ((result < 0) ? EXPECTED_ALL_NODE : EXPECTED_PV_NODE);
       int tbscore = (SCORE_TB_WIN - ply) * result;
-      if (ttnodetype == EXPECTED_PV_NODE || (ttnodetype == EXPECTED_CUT_NODE && tbscore >= beta) || (ttnodetype == EXPECTED_ALL_NODE && tbscore <= alpha)) {
+      if (ttnodetype == EXPECTED_PV_NODE ||
+          (ttnodetype == EXPECTED_CUT_NODE && tbscore >= beta) ||
+          (ttnodetype == EXPECTED_ALL_NODE && tbscore <= alpha)) {
         ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
-                   isttPV, tbscore, eval, ttnodetype, 0);
+                       isttPV, tbscore, eval, ttnodetype, 0);
         return tbscore;
       }
       if (isPV) {
         if (ttnodetype == EXPECTED_ALL_NODE) {
           maxtbscore = tbscore;
-        }
-        else {
+        } else {
           alpha = std::max(tbscore, alpha);
           mintbscore = tbscore;
         }
@@ -384,8 +387,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       if (quiets > 1 + isttPV + isPV) {
         r = std::min(1024 * (depth - 1), quiet_reductions[depth][quiets]);
       }
-    }
-    else if (i > 1) {
+    } else if (i > 1) {
       r = noisy_reductions[depth][i];
     }
     r -= 1024 * isPV;
@@ -430,8 +432,9 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
           if (score >= beta) {
             if (!(*stopsearch)) {
               if (update) {
-                ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth,
-                              ply, isttPV, score, eval, EXPECTED_CUT_NODE, mov);
+                ttentry.update(Bitboards.zobristhash, Bitboards.gamelength,
+                               depth, ply, isttPV, score, eval,
+                               EXPECTED_CUT_NODE, mov);
               }
               if (!iscapture(mov) && (killers[ply][0] != mov)) {
                 killers[ply][1] = killers[ply][0];
@@ -621,7 +624,7 @@ int Searcher::iterative() {
         if (depth >= 6 && ismaster && std::abs(score) < SCORE_MAX_EVAL) {
           int complexity = std::abs(score - initialscore);
           float factor = std::max(std::min(complexity / 120.0, 1.0), 0.2);
-          complexitytmfactor =  (0.8 + 0.5 * factor);
+          complexitytmfactor = (0.8 + 0.5 * factor);
         }
       }
       depth++;
@@ -632,7 +635,8 @@ int Searcher::iterative() {
     } else if (ismaster) {
       *stopsearch = true;
     }
-    if (ismaster && ((timetaken.count() > (int)(complexitytmfactor * searchlimits.softtimelimit) &&
+    if (ismaster && ((timetaken.count() > (int)(complexitytmfactor *
+                                                searchlimits.softtimelimit) &&
                       searchlimits.softtimelimit > 0) ||
                      (Bitboards.nodecount > searchlimits.softnodelimit &&
                       searchlimits.softnodelimit > 0))) {

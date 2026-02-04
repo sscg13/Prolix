@@ -19,7 +19,8 @@ constexpr int L3Q = 64;
 constexpr int L4Q = 64;
 constexpr int l1shiftbits = 9;
 constexpr int totalL2Q = ((L1Q * L1Q) >> l1shiftbits) * L2Q;
-constexpr int activatedL2Q = ((L1Q * L1Q) >> l1shiftbits) * ((L1Q * L1Q) >> l1shiftbits);
+constexpr int activatedL2Q =
+    ((L1Q * L1Q) >> l1shiftbits) * ((L1Q * L1Q) >> l1shiftbits);
 // clang-format off
 constexpr int kingbuckets[64] = {
    0,  0,  2,  2,  3,  3,  1,  1,
