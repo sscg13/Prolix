@@ -67,7 +67,9 @@ struct PerspectiveTransform {
     const int16_t *in0_hi = &input[color * L1size + halfL1];
     const int16_t *in1_lo = &input[(color ^ 1) * L1size];
     const int16_t *in1_hi = &input[(color ^ 1) * L1size + halfL1];
-    auto compute_avx512 = [&](__m512i a, __m512i b) -> __m512i {
+    auto compute_avx512 =
+        [&](__m512i a, __m512i b)
+            __attribute__((target("avx512f,avx512bw"))) -> __m512i {
       a = _mm512_max_epi16(_mm512_min_epi16(a, v_one), v_zero);
       b = _mm512_min_epi16(b, v_one);
       a = _mm512_slli_epi16(a, 16 - l1shiftbits);
@@ -172,13 +174,12 @@ template <int inputsize> struct CSqrActivation {
   }
 };
 
-template <int inputsize> struct DualActivation {
+template <int inputsize> struct DualCSqrActivation {
   static void transform(const I32 *input, I32 *output, I32 Q) {
     for (int i = 0; i < inputsize; i++) {
-      I32 *creluoutput = output;
-      I32 *csqroutput = &(output[inputsize]);
-      creluoutput[i] = Q * crelu<I32>(input[i], Q);
-      csqroutput[i] = csqr(input[i], Q);
+      output[i] = csqr(input[i], Q);
+      I32 clipped = std::min(std::max(input[i], -2 * Q), 2 * Q);
+      output[i + inputsize] = crelu<I32>(clipped * clipped - Q * Q, Q * Q);
     }
   }
 };
