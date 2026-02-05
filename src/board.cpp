@@ -208,12 +208,8 @@ std::string get129600FEN(int seed1, int seed2) {
   return FEN;
 }
 
-void Board::get_tbpos_pointer() {
-  tbpos = TBitf_alloc_position();
-}
-void Board::free_tbpos_pointer() {
-  TBitf_free_position(tbpos);
-}
+void Board::get_tbpos_pointer() { tbpos = TBitf_alloc_position(); }
+void Board::free_tbpos_pointer() { TBitf_free_position(tbpos); }
 U64 Board::scratchzobrist() {
   U64 scratch = 0ULL;
   for (int i = 0; i < 64; i++) {
@@ -1110,7 +1106,7 @@ bool Board::see_exceeds(int mov, int color, int threshold) {
   int previous[2] = {0, attacker - 2};
   int i = 0;
   while (true) {
-    while (pieces[i][next[i]] == 0 && next[i] < 6) {
+    while (next[i] < 6 && pieces[i][next[i]] == 0) {
       next[i]++;
     }
     if (next[i] > 5) {

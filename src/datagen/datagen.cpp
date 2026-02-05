@@ -66,12 +66,10 @@ void Searcher::datagenautoplayplain() {
       } else {
         result = "0.0";
       }
-    }
-    else if (drawcount >= 8) {
+    } else if (drawcount >= 8) {
       finished = true;
       result = "0.5";
-    }
-    else if (Bitboards.twokings()) {
+    } else if (Bitboards.twokings()) {
       finished = true;
       result = "0.5";
     } else if (Bitboards.bareking(color)) {

@@ -8,7 +8,10 @@ INCBIN(char, NNUE, EUNNfile);
 template <typename T> T crelu(T x, T Q) {
   return std::max(std::min(x, Q), (T)0);
 }
-I32 csqr(I32 x, I32 Q) { return std::min(x * x, Q * Q); }
+I32 csqr(I32 x, I32 Q) {
+  I32 y = std::max(std::min(x, Q), -Q);
+  return y * y;
+}
 void vectoradd(I16 *__restrict accptr, const I16 *__restrict addptr) {
   accptr = (I16 *)__builtin_assume_aligned(accptr, 64);
   addptr = (I16 *)__builtin_assume_aligned(addptr, 64);
@@ -59,6 +62,36 @@ void vectoraddaddsub(I16 *__restrict oldaccptr, I16 *__restrict newaccptr,
     newaccptr[i] = oldaccptr[i] + addptr1[i] + addptr2[i] - subptr[i];
   }
 }
+__attribute__((target("avx512f,avx512bw"))) void
+packuspermute_avx512(I16 *weights) {
+  const __m512i idx0 = _mm512_set_epi64(13, 12, 9, 8, 5, 4, 1, 0);
+  const __m512i idx1 = _mm512_set_epi64(15, 14, 11, 10, 7, 6, 3, 2);
+  for (int i = 0; i < L1size; i += 64) {
+    __m512i reg0 = _mm512_load_si512((const void *)&weights[i]);
+    __m512i reg1 = _mm512_load_si512((const void *)&weights[i + 32]);
+    __m512i perm0 = _mm512_permutex2var_epi64(reg0, idx0, reg1);
+    __m512i perm1 = _mm512_permutex2var_epi64(reg0, idx1, reg1);
+    _mm512_store_si512((void *)&weights[i], perm0);
+    _mm512_store_si512((void *)&weights[i + 32], perm1);
+  }
+}
+void packuspermute_avx2(I16 *weights) {
+  for (int i = 0; i < L1size; i += 32) {
+    __m256i reg0 = _mm256_load_si256((__m256i *)&weights[i]);
+    __m256i reg1 = _mm256_load_si256((__m256i *)&weights[i + 16]);
+    __m256i perm0 = _mm256_permute2x128_si256(reg0, reg1, 0x20);
+    __m256i perm1 = _mm256_permute2x128_si256(reg0, reg1, 0x31);
+    _mm256_store_si256((__m256i *)&weights[i], perm0);
+    _mm256_store_si256((__m256i *)&weights[i + 16], perm1);
+  }
+}
+void packuspermute(I16 *weights) {
+  if (__builtin_cpu_supports("avx512bw")) {
+    packuspermute_avx512(weights);
+  } else {
+    packuspermute_avx2(weights);
+  }
+}
 void PSQFeatureWeights::load(const char *stream) {
   int offset = 0;
   for (int k = 0; k < realbuckets; k++) {
@@ -69,9 +102,15 @@ void PSQFeatureWeights::load(const char *stream) {
       memcpy(nnuelayer1[k][64 * convert[piece] + square], stream + offset,
              2 * L1size);
       offset += 2 * L1size;
+      if (pairwise) {
+        packuspermute(nnuelayer1[k][64 * convert[piece] + square]);
+      }
     }
   }
   memcpy(layer1bias, stream + offset, 2 * L1size);
+  if (pairwise) {
+    packuspermute(layer1bias);
+  }
 }
 void ThreatFeatureWeights::load(const char *stream) {
   memcpy(nnuelayer1, stream, size);
@@ -81,8 +120,8 @@ void MultiLayerWeights::load(const char *stream) {
   layer2weights.load(stream + offset);
   offset += layer2weights.size;
   layer3weights.load(stream + offset);
-  offset += layer3weights.size;
-  layer4weights.load(stream + offset);
+  // offset += layer3weights.size;
+  // layer4weights.load(stream + offset);
 }
 void PSQNNUEWeights::loaddefaultnet() {
   psqweights.load(&NNUEData[0]);
@@ -253,16 +292,17 @@ void PSQAccumulatorStack::reversechange(int accply, int color) {
   I16 *oldaccptr = accumulation[2 * (accply + 1) + color];
   I16 *newaccptr = accumulation[2 * accply + color];
   int kingsq = kingsquares[2 * accply + color];
-  const I16 *subweights = layer1weights(kingsq, color, 6 * movecolor + piece2, to);
-  const I16 *addweights = layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
+  const I16 *subweights =
+      layer1weights(kingsq, color, 6 * movecolor + piece2, to);
+  const I16 *addweights =
+      layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
   if (captured > 0) {
     const I16 *addweights2 =
         layer1weights(kingsq, color, 6 * (movecolor ^ 1) + captured - 2, to);
-      vectoraddaddsub(oldaccptr, newaccptr, addweights, addweights2,
-                    subweights);
-    } else {
-      vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
-    }
+    vectoraddaddsub(oldaccptr, newaccptr, addweights, addweights2, subweights);
+  } else {
+    vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
+  }
   computed[2 * accply + color] = true;
 }
 void PSQAccumulatorStack::applychange(int accply, int color) {
@@ -277,16 +317,17 @@ void PSQAccumulatorStack::applychange(int accply, int color) {
   I16 *newaccptr = accumulation[2 * (accply + 1) + color];
   I16 *oldaccptr = accumulation[2 * accply + color];
   int kingsq = kingsquares[2 * accply + color];
-  const I16 *addweights = layer1weights(kingsq, color, 6 * movecolor + piece2, to);
-  const I16 *subweights = layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
+  const I16 *addweights =
+      layer1weights(kingsq, color, 6 * movecolor + piece2, to);
+  const I16 *subweights =
+      layer1weights(kingsq, color, 6 * movecolor + piece - 2, from);
   if (captured > 0) {
     const I16 *subweights2 =
         layer1weights(kingsq, color, 6 * (movecolor ^ 1) + captured - 2, to);
-      vectoraddsubsub(oldaccptr, newaccptr, addweights, subweights,
-                    subweights2);
-    } else {
-      vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
-    }
+    vectoraddsubsub(oldaccptr, newaccptr, addweights, subweights, subweights2);
+  } else {
+    vectoraddsub(oldaccptr, newaccptr, addweights, subweights);
+  }
   computed[2 * (accply + 1) + color] = true;
 }
 void PSQAccumulatorStack::forwardaccumulators(int notation) {
@@ -297,31 +338,29 @@ void PSQAccumulatorStack::forwardaccumulators(int notation) {
   kingsquares[2 * (ply + 1) + (color ^ 1)] = kingsquares[2 * ply + (color ^ 1)];
   if (piece == 7) {
     kingsquares[2 * (ply + 1) + color] = to;
-  }
-  else {
+  } else {
     kingsquares[2 * (ply + 1) + color] = kingsquares[2 * ply + color];
   }
   ply++;
   computed[2 * ply] = false;
   computed[2 * ply + 1] = false;
 }
-void PSQAccumulatorStack::backwardaccumulators() {
-  ply--;
-}
+void PSQAccumulatorStack::backwardaccumulators() { ply--; }
 void PSQAccumulatorStack::computeaccumulator(int color, const U64 *Bitboards) {
   int accply = ply;
   int bucket = getbucket(kingsquares[2 * ply + color], color);
   while (!computed[2 * accply + color] && accply > 0) {
     accply--;
     if (getbucket(kingsquares[2 * accply + color], color) != bucket) {
-      int scratchrefreshtime = __builtin_popcountll(Bitboards[0] | Bitboards[1]);
+      int scratchrefreshtime =
+          __builtin_popcountll(Bitboards[0] | Bitboards[1]);
       int cacherefreshtime = differencecount(bucket, color, Bitboards);
       if (scratchrefreshtime <= cacherefreshtime) {
         refreshfromscratch(kingsquares[2 * ply + color], color, Bitboards);
       } else {
         refreshfromcache(kingsquares[2 * ply + color], color, Bitboards);
       }
-      for (int j = ply-1; j > accply; j--) {
+      for (int j = ply - 1; j > accply; j--) {
         reversechange(j, color);
       }
       return;
@@ -332,7 +371,7 @@ void PSQAccumulatorStack::computeaccumulator(int color, const U64 *Bitboards) {
     accply++;
   }
 }
-const I16* PSQAccumulatorStack::currentaccumulator(const U64 *Bitboards) {
+const I16 *PSQAccumulatorStack::currentaccumulator(const U64 *Bitboards) {
   computeaccumulator(0, Bitboards);
   computeaccumulator(1, Bitboards);
   return accumulation[2 * ply];
@@ -349,7 +388,7 @@ void SingleAccumulatorStack::make(int notation, const U64 *Bitboards) {
 void SingleAccumulatorStack::unmake(int notation, const U64 *Bitboards) {
   psqaccumulators.backwardaccumulators();
 }
-const I16 *SingleAccumulatorStack::transform(int color, const U64* Bitboards) {
+const I16 *SingleAccumulatorStack::transform(int color, const U64 *Bitboards) {
   return psqaccumulators.currentaccumulator(Bitboards);
 }
 void LayerStack::load(NNUEWeights *EUNNweights) {
@@ -372,17 +411,17 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   PerspectiveTransform::transform(input, layer1activated, color);
   Layer2Affine::transform(layer1activated, layer2raw, &(weights->layer2weights),
                           bucket);
-  Layer2Shift::transform(layer2raw);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
-  Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights),
+  Layer2Shift::transform(layer2activated);
+  Layer3Affine::transform(layer2activated, output, &(weights->layer3weights),
                           bucket);
-  Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
-  Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
-                          bucket);
+  // Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
+  // Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
+  //                         bucket);
   int eval = output[0];
-  eval /= (L4Q);
+  eval /= (L3Q);
   eval *= evalscale;
-  eval /= totalL3Q;
+  eval /= activatedL2Q;
   return eval;
 }
 void NNUE::load(NNUEWeights *EUNNweights) {
