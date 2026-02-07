@@ -412,7 +412,6 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   Layer2Affine::transform(layer1activated, layer2raw, &(weights->layer2weights),
                           bucket);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
-  Layer2Shift::transform(layer2activated);
   Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights),
                           bucket);
   Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
@@ -420,9 +419,9 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
                           bucket);
   int eval = output[0];
-  eval /= (L3Q);
+  eval /= (L4Q);
   eval *= evalscale;
-  eval /= activatedL2Q;
+  eval /= activatedL3Q;
   return eval;
 }
 void NNUE::load(NNUEWeights *EUNNweights) {

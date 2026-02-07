@@ -174,6 +174,18 @@ template <int inputsize> struct CSqrActivation {
   }
 };
 
+template <int inputsize, int bits> struct CSqrDivide {
+  static void transform(const I32 *input, U8 *output, I32 Q) {
+    for (int i = 0; i < inputsize; i++) {
+      I32 clipped = input[i];
+      if (clipped < -Q) clipped = -Q;
+      if (clipped > Q) clipped = Q;
+      U32 csqrvalue = (U32)(clipped * clipped);
+      output[i] = (U8)(csqrvalue >> bits);
+    }
+  }
+};
+
 template <int inputsize> struct DualCSqrActivation {
   static void transform(const I32 *input, I32 *output, I32 Q) {
     for (int i = 0; i < inputsize; i++) {

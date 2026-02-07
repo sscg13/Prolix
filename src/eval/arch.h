@@ -10,7 +10,7 @@ constexpr int L1size = 768;
 constexpr int activatedL1size = L1size * (2 - pairwise);
 constexpr int L2size = 16;
 constexpr int activatedL2size = 16;
-constexpr int L3size = 8;
+constexpr int L3size = 16;
 constexpr int outputbuckets = 8;
 constexpr int evalscale = 400;
 constexpr int L1Q = 255;
@@ -18,10 +18,13 @@ constexpr int L2Q = 64;
 constexpr int L3Q = 64;
 constexpr int L4Q = 64;
 constexpr int l1shiftbits = 9;
+constexpr int l2shiftbits = 18;
+constexpr int l3shiftbits = 12;
 constexpr int totalL2Q = ((L1Q * L1Q) >> l1shiftbits) * L2Q;
-constexpr int activatedL2Q =
-    ((L1Q * L1Q) >> l1shiftbits) * ((L1Q * L1Q) >> l1shiftbits);
+constexpr int activatedL2Q = (totalL2Q * totalL2Q) >> l2shiftbits;
 constexpr int totalL3Q = activatedL2Q * L3Q;
+constexpr int activatedL3Q = (totalL3Q * totalL3Q) >> l3shiftbits;
+constexpr int totalL4Q = activatedL3Q * L4Q;
 // clang-format off
 constexpr int kingbuckets[64] = {
    0,  0,  2,  2,  3,  3,  1,  1,
