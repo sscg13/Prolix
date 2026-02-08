@@ -415,7 +415,6 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights),
                           bucket);
   Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
-  Layer3Shift::transform(layer3activated);
   Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
                           bucket);
   int eval = output[0];
