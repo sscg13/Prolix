@@ -412,7 +412,6 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   Layer2Affine::transform(layer1activated, layer2raw, &(weights->layer2weights),
                           bucket);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
-  Layer2Shift::transform(layer2activated);
   Layer3Affine::transform(layer2activated, output, &(weights->layer3weights),
                           bucket);
   // Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);

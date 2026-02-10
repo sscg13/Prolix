@@ -8,8 +8,7 @@
 class Searcher;
 
 using Layer2Affine = SparseAffine<activatedL1size, L2size>;
-using Layer2Activation = CSqrActivation<L2size>;
-using Layer2Shift = DivideShift<activatedL2size, 12>;
+using Layer2Activation = CSqrDivide<L2size, l2shiftbits>;
 using Layer3Affine = DenseAffine<activatedL2size, 1>;
 // using Layer3Activation = CReLUActivation<L3size>;
 // using Layer4Affine = DenseAffine<L3size, 1>;
