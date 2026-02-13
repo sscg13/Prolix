@@ -498,8 +498,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
 int Searcher::wdlmodel(int eval) {
   int material = Bitboards.material();
   double m = std::max(std::min(material, 64), 4) / 24.0;
-  double as[4] = {25.31918174, -110.26807200, 128.89604743, 179.29034199};
-  double bs[4] = {0.70633876, 0.06764485, 5.23894335, 45.58262508};
+  double as[4] = {-39.05358232, 205.46570655, -378.67069338, 514.98642797};
+  double bs[4] = {-37.23795926, 188.63177386, -290.76744661, 221.32660359};
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   double b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3];
   return int(0.5 + 1000 / (1 + exp((a - double(eval)) / b)));
@@ -510,7 +510,7 @@ int Searcher::normalize(int eval) {
   }
   int material = Bitboards.material();
   double m = std::max(std::min(material, 64), 4) / 24.0;
-  double as[4] = {25.31918174, -110.26807200, 128.89604743, 179.29034199};
+  double as[4] = {-39.05358232, 205.46570655, -378.67069338, 514.98642797};
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   return round(100 * eval / a);
 }
