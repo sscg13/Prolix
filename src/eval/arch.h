@@ -1,6 +1,6 @@
 #pragma once
 
-constexpr int inputbuckets = 12;
+constexpr int inputbuckets = 16;
 constexpr bool mirrored = true;
 constexpr bool pairwise = true;
 constexpr bool perspectivecrelu = false;
@@ -23,14 +23,14 @@ constexpr int totalL2Q = ((L1Q * L1Q) >> l1shiftbits) * L2Q;
 constexpr int activatedL2Q = (totalL2Q * totalL2Q) >> l2shiftbits;
 // clang-format off
 constexpr int kingbuckets[64] = {
-   0,  0,  2,  2,  3,  3,  1,  1,
-   4,  4,  6,  6,  7,  7,  5,  5,
-   8,  8,  8,  8,  9,  9,  9,  9,
-   8,  8,  8,  8,  9,  9,  9,  9,
-  10, 10, 10, 10, 11, 11, 11, 11,
-  10, 10, 10, 10, 11, 11, 11, 11,
-  10, 10, 10, 10, 11, 11, 11, 11,
-  10, 10, 10, 10, 11, 11, 11, 11
+   0,  2,  4,  6,  7,  5,  3,  1,
+   8,  8, 10, 10, 11, 11,  9,  9,
+  12, 12, 12, 12, 13, 13, 13, 13,
+  12, 12, 12, 12, 13, 13, 13, 13,
+  14, 14, 14, 14, 15, 15, 15, 15,
+  14, 14, 14, 14, 15, 15, 15, 15,
+  14, 14, 14, 14, 15, 15, 15, 15,
+  14, 14, 14, 14, 15, 15, 15, 15
 };
 // clang-format on
 constexpr int material[6] = {1, 1, 1, 1, 1, 0};
