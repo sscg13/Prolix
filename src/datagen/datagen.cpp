@@ -280,7 +280,7 @@ void Engine::filter(int lowerbound, int upperbound, int softnodes,
     int color = Bitboards.position & 1;
     master.syncwith(*this);
     int score = master.iterative();
-    if (abs(score) >= lowerbound && abs(score) <= upperbound) {
+    if (master.normalize(abs(score)) >= lowerbound && master.normalize(abs(score)) <= upperbound) {
       epdout << fen << "\n";
     }
   }
