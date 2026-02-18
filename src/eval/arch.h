@@ -14,11 +14,11 @@ constexpr int L3size = 32;
 constexpr int outputbuckets = 8;
 constexpr int evalscale = 400;
 constexpr int L1Q = 255;
-constexpr int L2Q = 64;
+constexpr int L2Q = 128;
 constexpr int L3Q = 128;
 constexpr int L4Q = 64;
 constexpr int l1shiftbits = 9;
-constexpr int l2shiftbits = 8;
+constexpr int l2shiftbits = 10;
 constexpr int totalL2Q = ((L1Q * L1Q) >> l1shiftbits) * L2Q;
 constexpr int activatedL2Q = (totalL2Q * totalL2Q) >> l2shiftbits;
 // clang-format off
