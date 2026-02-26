@@ -1184,10 +1184,6 @@ bool Board::see_exceeds(int mov, int color, int threshold) {
 }
 int Board::probetbwdl() {
   int success = 0;
-  /*int rule70 = 0;
-  TBitf_set_from_fen(tbpos, getFEN().c_str(), &rule70);
-  int result = TB_probe_wdl(tbpos, &success);
-  std::cout << "Raw result (fen): " << result << "\n";*/
   uint8_t convert[8] = {0, 0, 1, 3, 5, 2, 4, 6};
   tbpos->pt[0] = 6;
   tbpos->pt[1] = 14;

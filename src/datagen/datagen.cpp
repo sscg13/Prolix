@@ -229,7 +229,7 @@ void Engine::datagen(int dataformat, int threads, int n,
   } else {
     master.dataoutput.open(outputfile, std::ofstream::app);
   }
-  searchlimits.softnodelimit = 7168;
+  searchlimits.softnodelimit = 6144;
   searchlimits.hardnodelimit = 65536;
   searchlimits.softtimelimit = 0;
   searchlimits.hardtimelimit = 0;

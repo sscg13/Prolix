@@ -4,17 +4,17 @@
 
 // clang-format off
 std::string uciinfostring =
-    "id name Prolix \n"
-    "id author sscg13 \n"
-    "option name UCI_Variant type combo default shatranj var shatranj \n"
-    "option name Threads type spin default 1 min 1 max 8 \n"
-    "option name Hash type spin default 32 min 1 max 1024 \n"
-    "option name UseNNUE type check default true \n"
+    "id name Prolix\n"
+    "id author sscg13\n"
+    "option name UCI_Variant type combo default shatranj var shatranj\n"
+    "option name Threads type spin default 1 min 1 max 8\n"
+    "option name Hash type spin default 32 min 1 max 1024\n"
+    "option name UseNNUE type check default true\n"
     "option name MinimalReporting type check default false\n"
-    "option name NormalizeEval type check default true \n"
-    "option name EvalFile type string default <internal> \n"
-    "option name UCI_ShowWDL type check default true \n"
-    "option name SyzygyPath type string default <empty> \n"
+    "option name NormalizeEval type check default true\n"
+    "option name EvalFile type string default <internal>\n"
+    "option name UCI_ShowWDL type check default true\n"
+    "option name SyzygyPath type string default <empty>\n"
     "uciok\n";
 // clang-format on
 Limits infinitesearch = {0, 0, 0, 0, maxmaxdepth};
