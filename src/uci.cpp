@@ -219,21 +219,20 @@ void Engine::uci() {
     std::cout << "Raw eval: " << eval << "\n";
     std::cout << "Normalized eval: " << master.normalize(eval) << "\n";
   }
-  /*
-  if (ucicommand.substr(0, 3) == "see") {
-    std::string mov = ucicommand.substr(4, ucicommand.length() - 4);
+  if (token == "see") {
+    tokens >> token;
     int color = Bitboards.position & 1;
     int moves[maxmoves];
     int movcount = Bitboards.generatemoves(color, 0, moves);
     int internal = 0;
     for (int i = 0; i < movcount; i++) {
-      if (algebraic(moves[i]) == mov) {
-        internal = moves[i];
+      if (algebraic(moves[i]) == token || "all" == token) {
+        std::cout << algebraic(moves[i]) << " "
+                  << Bitboards.see_exceeds(moves[i], color, 0) << "\n";
       }
     }
-    std::cout << algebraic(internal) << " "
-              << Bitboards.see_exceeds(internal, color, 0) << "\n";
   }
+  /*
   if (ucicommand == "moveorder") {
     int color = Bitboards.position & 1;
     int moves[maxmoves];
