@@ -406,22 +406,25 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         EUNN.make(mov, Bitboards.Bitboards);
       }
       r /= 1024;
+      int newdepth = depth - 1 + e;
       if (nullwindow) {
-        score = -alphabeta(depth - 1 - r, ply + 1, -alpha - 1, -alpha, true,
+        score = -alphabeta(newdepth - r, ply + 1, -alpha - 1, -alpha, true,
                            EXPECTED_CUT_NODE);
         if (score > alpha && r > 0) {
-          score = -alphabeta(depth - 1, ply + 1, -alpha - 1, -alpha, true,
+          bool shallower = score < bestscore + newdepth;
+          newdepth -= shallower;
+          score = -alphabeta(newdepth, ply + 1, -alpha - 1, -alpha, true,
                              EXPECTED_CUT_NODE);
         }
         if (score > alpha && score < beta) {
-          score = -alphabeta(depth - 1, ply + 1, -beta, -alpha, true,
+          score = -alphabeta(newdepth, ply + 1, -beta, -alpha, true,
                              EXPECTED_PV_NODE);
         }
       } else {
         int childnode =
             (nodetype == EXPECTED_PV_NODE) ? EXPECTED_PV_NODE : 3 - nodetype;
         score =
-            -alphabeta(depth - 1 + e, ply + 1, -beta, -alpha, true, childnode);
+            -alphabeta(newdepth, ply + 1, -beta, -alpha, true, childnode);
       }
       Bitboards.unmakemove(mov);
       if (searchoptions.useNNUE) {
