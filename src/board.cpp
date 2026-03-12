@@ -207,7 +207,26 @@ std::string get129600FEN(int seed1, int seed2) {
   FEN += " w - - 0 1";
   return FEN;
 }
-
+U64 PseudoAttacks(int piece, int square) {
+  int type = piece % 8;
+  int color = piece / 8;
+  if (type == 2) {
+    return PawnAttacks[color][square];
+  }
+  if (type == 3) {
+    return AlfilAttacks[square];
+  }
+  if (type == 4) {
+    return FerzAttacks[square];
+  }
+  if (type == 5) {
+    return KnightAttacks[square];
+  }
+  if (type == 6) {
+    return GetRankAttacks(1ULL << square, square) | FileAttacks(1ULL << square, square);
+  }
+  return KingAttacks[square];
+}
 void Board::get_tbpos_pointer() { tbpos = TBitf_alloc_position(); }
 void Board::free_tbpos_pointer() { TBitf_free_position(tbpos); }
 U64 Board::scratchzobrist() {

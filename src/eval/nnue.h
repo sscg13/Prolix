@@ -1,6 +1,7 @@
 #include "../consts.h"
 #include "arch.h"
 #include "layers.h"
+#include "threats.h"
 #include <cstdint>
 #include <string>
 #pragma once
@@ -21,9 +22,8 @@ struct PSQFeatureWeights {
   void load(const char *stream);
 };
 // not correct right now
-static constexpr int threatcount = 7504;
 struct ThreatFeatureWeights {
-  alignas(64) I8 nnuelayer1[threatcount][L1size];
+  alignas(64) I16 nnuelayer1[threatcount][L1size];
   static constexpr int size = threatcount * L1size;
 
   void load(const char *stream);

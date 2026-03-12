@@ -42,3 +42,8 @@ constexpr bool multilayer = true;
 constexpr bool multilayer = false;
 #endif
 // #define THREAT_INPUTS
+#ifdef THREAT_INPUTS
+constexpr bool threatinputs = true;
+#else
+constexpr bool threatinputs = false;
+#endif

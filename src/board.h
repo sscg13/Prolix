@@ -62,3 +62,4 @@ void initializezobrist();
 std::string algebraic(int notation);
 std::string get8294400FEN(int seed1, int seed2);
 std::string get129600FEN(int seed1, int seed2);
+U64 PseudoAttacks(int piece, int square);
