@@ -3,6 +3,7 @@
 #pragma once
 
 constexpr int threatcount = 6624;
+constexpr int maxthreats = 96;
 void initializethreats();
 
 struct Threat {
@@ -14,3 +15,4 @@ struct Threat {
 
 
 int threatindex(int color, int ksq, Threat t);
+void findthreatdiff(int notation, const U64* Bitboards, const int* pieces, Threat* diff);

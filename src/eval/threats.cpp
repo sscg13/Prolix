@@ -45,3 +45,6 @@ int threatindex(int color, int ksq, Threat t) {
     return pieceoffset[attkr][0] + enemy * pieceoffset[attkr][1] + sourceoffset[attkr][from] + targetoffset[attkr][from][to];
 }
 
+void findthreatdiff(int notation, U64* Bitboards, int* pieces, Threat* diff) {
+    
+}

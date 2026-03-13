@@ -379,16 +379,16 @@ const I16 *PSQAccumulatorStack::currentaccumulator(const U64 *Bitboards) {
 void SingleAccumulatorStack::load(NNUEWeights *EUNNweights) {
   psqaccumulators.weights = &(EUNNweights->psqweights);
 }
-void SingleAccumulatorStack::initialize(const U64 *Bitboards) {
+void SingleAccumulatorStack::initialize(const U64 *Bitboards, const int* pieces) {
   psqaccumulators.initializennue(Bitboards);
 }
-void SingleAccumulatorStack::make(int notation, const U64 *Bitboards) {
+void SingleAccumulatorStack::make(int notation, const U64 *Bitboards, const int* pieces) {
   psqaccumulators.forwardaccumulators(notation);
 }
-void SingleAccumulatorStack::unmake(int notation, const U64 *Bitboards) {
+void SingleAccumulatorStack::unmake(int notation, const U64 *Bitboards, const int* pieces) {
   psqaccumulators.backwardaccumulators();
 }
-const I16 *SingleAccumulatorStack::transform(int color, const U64 *Bitboards) {
+const I16 *SingleAccumulatorStack::transform(int color, const U64 *Bitboards, const int* pieces) {
   return psqaccumulators.currentaccumulator(Bitboards);
 }
 void LayerStack::load(NNUEWeights *EUNNweights) {
@@ -427,29 +427,29 @@ void NNUE::load(NNUEWeights *EUNNweights) {
   accumulators.load(EUNNweights);
   layers.load(EUNNweights);
 }
-void NNUE::initialize(const U64 *Bitboards) {
+void NNUE::initialize(const U64 *Bitboards, const int* pieces) {
   totalmaterial = 0;
   for (int i = 0; i < 6; i++) {
     totalmaterial += material[i] * __builtin_popcountll(Bitboards[2 + i]);
   }
-  accumulators.initialize(Bitboards);
+  accumulators.initialize(Bitboards, pieces);
 }
-void NNUE::make(int notation, const U64 *Bitboards) {
+void NNUE::make(int notation, const U64 *Bitboards, const int* pieces) {
   int captured = (notation >> 17) & 7;
   if (captured > 0) {
     totalmaterial -= material[captured - 2];
   }
-  accumulators.make(notation, Bitboards);
+  accumulators.make(notation, Bitboards, pieces);
 }
-void NNUE::unmake(int notation, const U64 *Bitboards) {
+void NNUE::unmake(int notation, const U64 *Bitboards, const int* pieces) {
   int captured = (notation >> 17) & 7;
   if (captured > 0) {
     totalmaterial += material[captured - 2];
   }
-  accumulators.unmake(notation, Bitboards);
+  accumulators.unmake(notation, Bitboards, pieces);
 }
-int NNUE::evaluate(int color, const U64 *Bitboards) {
+int NNUE::evaluate(int color, const U64 *Bitboards, const int* pieces) {
   int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
-  const I16 *layerstackinput = accumulators.transform(color, Bitboards);
+  const I16 *layerstackinput = accumulators.transform(color, Bitboards, pieces);
   return layers.propagate(bucket, color, layerstackinput);
 }
