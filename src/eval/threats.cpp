@@ -45,6 +45,14 @@ int threatindex(int color, int ksq, Threat t) {
     return pieceoffset[attkr][0] + enemy * pieceoffset[attkr][1] + sourceoffset[attkr][from] + targetoffset[attkr][from][to];
 }
 
-void findthreatdiff(int notation, U64* Bitboards, int* pieces, Threat* diff) {
-    
+void findthreatdiff(int notation, U64* Bitboards, int* pieces, ThreatDiff &change) {
+    int from = notation & 63;
+    int to = (notation >> 6) & 63;
+    int movecolor = (notation >> 12) & 1;
+    int piece = (notation >> 13) & 7;
+    int captured = (notation >> 17) & 7;
+    int promoted = (notation >> 20) & 1;
+    int piece2 = (promoted > 0) ? 2 : piece - 2;
+    int addcount = 0;
+    int subcount = 0;
 }

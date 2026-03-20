@@ -129,7 +129,8 @@ struct ThreatAccumulatorStack {
   ThreatFeatureWeights *weights;
   int ply;
   alignas(64) I16 accumulation[2 * (maxmaxdepth + 32)][L1size];
-  Threat threatdiff[2 * (maxmaxdepth + 32)][maxthreats];
+  ThreatDiff threatdiff[(maxmaxdepth + 32)];
+  int changecount[2 * (maxmaxdepth + 32)];
 };
 
 struct SingleAccumulatorStack {
