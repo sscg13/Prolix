@@ -67,6 +67,7 @@ int main(int argc, char *argv[]) {
   initializeleaperattacks();
   initializemasks();
   initializerankattacks();
+  initializethreats();
   initializezobrist();
   initializelmr();
   TBitf_init();

@@ -1,6 +1,7 @@
 #include "../consts.h"
 #include "arch.h"
 #include "layers.h"
+#include "threats.h"
 #include <cstdint>
 #include <string>
 #pragma once
@@ -21,9 +22,8 @@ struct PSQFeatureWeights {
   void load(const char *stream);
 };
 // not correct right now
-static constexpr int threatcount = 7504;
 struct ThreatFeatureWeights {
-  alignas(64) I8 nnuelayer1[threatcount][L1size];
+  alignas(64) I16 nnuelayer1[threatcount][L1size];
   static constexpr int size = threatcount * L1size;
 
   void load(const char *stream);
@@ -128,17 +128,19 @@ struct PSQAccumulatorStack {
 struct ThreatAccumulatorStack {
   ThreatFeatureWeights *weights;
   int ply;
-  I16 accumulation[2 * (maxmaxdepth + 32)][L1size];
+  alignas(64) I16 accumulation[2 * (maxmaxdepth + 32)][L1size];
+  ThreatDiff threatdiff[(maxmaxdepth + 32)];
+  int changecount[2 * (maxmaxdepth + 32)];
 };
 
 struct SingleAccumulatorStack {
   PSQAccumulatorStack psqaccumulators;
 
   void load(NNUEWeights *EUNNweights);
-  void initialize(const U64 *Bitboards);
-  void make(const int notation, const U64 *Bitboards);
-  void unmake(const int notation, const U64 *Bitboards);
-  const I16 *transform(int color, const U64 *Bitboards);
+  void initialize(const U64 *Bitboards, const int* pieces);
+  void make(const int notation, const U64 *Bitboards, const int* pieces);
+  void unmake(const int notation, const U64 *Bitboards, const int* pieces);
+  const I16 *transform(int color, const U64 *Bitboards, const int* pieces);
 };
 
 struct DualAccumulatorStack {
@@ -147,9 +149,9 @@ struct DualAccumulatorStack {
   I16 output[L1size * (1 + multilayer)];
 
   void load(NNUEWeights *EUNNweights);
-  void initialize(const U64 *Bitboards);
-  void make(const int notation, const U64 *Bitboards);
-  void unmake(const int notation, const U64 *Bitboards);
+  void initialize(const U64 *Bitboards, const int* pieces);
+  void make(const int notation, const U64 *Bitboards, const int* pieces);
+  void unmake(const int notation, const U64 *Bitboards, const int* pieces);
   const I16 *transform(int color);
 };
 
@@ -173,8 +175,8 @@ class NNUE {
 
 public:
   void load(NNUEWeights *EUNNweights);
-  void initialize(const U64 *Bitboards);
-  void make(const int notation, const U64 *Bitboards);
-  void unmake(const int notation, const U64 *Bitboards);
-  int evaluate(const int color, const U64 *Bitboards);
+  void initialize(const U64 *Bitboards, const int* pieces);
+  void make(const int notation, const U64 *Bitboards, const int* pieces);
+  void unmake(const int notation, const U64 *Bitboards, const int* pieces);
+  int evaluate(const int color, const U64 *Bitboards, const int* pieces);
 };
