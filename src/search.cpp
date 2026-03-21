@@ -257,7 +257,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       if (ttcorr) {
         ttcorreval = score;
       }
-      ttnmpgood = (score >= beta - 10 * (depth - ttdepth) || ttnodetype == EXPECTED_CUT_NODE);
+      ttnmpgood = (score >= beta + 50 - 10 * (depth - ttdepth) || ttnodetype == EXPECTED_CUT_NODE);
     }
   } else {
     if (depth >= 3) {
