@@ -126,7 +126,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
     int mov = moves[i];
     int nextindex = (Bitboards.keyafter(mov) % *TTsize);
     __builtin_prefetch((&(*TT)[nextindex]), 0, 0);
-    bool good = (incheck || Bitboards.see_exceeds(mov, color, 0));
+    bool good = (incheck || Bitboards.see_exceeds(mov, color, -100));
     if (good && !(*stopsearch)) {
       Bitboards.makemove(mov, 1);
       if (searchoptions.useNNUE) {
