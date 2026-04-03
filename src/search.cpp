@@ -398,7 +398,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       int threshold = iscapture(mov) ? -30 * depth * depth : -100 * depth;
       prune = !Bitboards.see_exceeds(mov, color, threshold);
     }
-    int e = (movcount == 1);
+    int e = (isPV && movcount == 1);
     if (!(*stopsearch) && !prune) {
       Bitboards.makemove(mov, true);
       searchstack[ply].playedmove = mov;
