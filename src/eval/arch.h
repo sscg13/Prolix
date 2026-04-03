@@ -16,11 +16,15 @@ constexpr int evalscale = 400;
 constexpr int L1Q = 255;
 constexpr int L2Q = 64;
 constexpr int L3Q = 128;
-constexpr int L4Q = 64;
+constexpr int L4Q = 128;
 constexpr int l1shiftbits = 9;
-constexpr int l2shiftbits = 8;
+constexpr int l2shiftbits = 0;
+constexpr int l3shiftbits = 5;
+constexpr int a3shiftbits = 12;
 constexpr int totalL2Q = ((L1Q * L1Q) >> l1shiftbits) * L2Q;
-constexpr int activatedL2Q = (totalL2Q * totalL2Q) >> l2shiftbits;
+constexpr int activatedL2Q = totalL2Q >> l2shiftbits;
+constexpr int totalL3Q = (activatedL2Q * L3Q) >> l3shiftbits;
+constexpr int activatedL3Q = (totalL3Q * totalL3Q) >> a3shiftbits;
 // clang-format off
 constexpr int kingbuckets[64] = {
    0,  2,  4,  6,  7,  5,  3,  1,

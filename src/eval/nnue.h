@@ -9,10 +9,11 @@
 class Searcher;
 
 using Layer2Affine = SparseAffine<activatedL1size, L2size>;
-using Layer2Activation = CSqrDivide<L2size, l2shiftbits>;
-using Layer3Affine = DenseAffine<activatedL2size, 1>;
-// using Layer3Activation = CReLUActivation<L3size>;
-// using Layer4Affine = DenseAffine<L3size, 1>;
+using Layer2Activation = DivideShift<L2size, l2shiftbits>;
+using Layer3Affine = DenseAffine<activatedL2size, L3size>;
+using Layer3PreActivation = DivideShift<L3size, l3shiftbits>;
+using Layer3Activation = CSqrDivide<L3size, a3shiftbits>;
+using Layer4Affine = DenseAffine<L3size, 1>;
 
 struct PSQFeatureWeights {
   alignas(64) I16 nnuelayer1[realbuckets][768][L1size];
@@ -31,12 +32,12 @@ struct ThreatFeatureWeights {
 
 struct MultiLayerWeights {
   SparseAffineWeights<activatedL1size, L2size> layer2weights;
-  DenseAffineWeights<activatedL2size, 1> layer3weights;
-  // DenseAffineWeights<L3size, 1> layer4weights;
+  DenseAffineWeights<activatedL2size, L3size> layer3weights;
+  DenseAffineWeights<L3size, 1> layer4weights;
   static constexpr int size =
       SparseAffineWeights<activatedL1size, L2size>::size +
-      DenseAffineWeights<activatedL2size, 1>::size;
-  // DenseAffineWeights<L3size, 1>::size;
+      DenseAffineWeights<activatedL2size, L3size>::size +
+      DenseAffineWeights<L3size, 1>::size;
 
   void load(const char *stream);
 };
@@ -83,9 +84,9 @@ struct MultiLayerStack {
   MultiLayerWeights *weights;
   alignas(64) U8 layer1activated[activatedL1size];
   alignas(64) I32 layer2raw[L2size];
-  alignas(64) I32 layer2activated[activatedL2size];
-  // alignas(64) I32 layer3raw[L3size];
-  // alignas(64) I32 layer3activated[L3size];
+  // alignas(64) I32 layer2activated[activatedL2size];
+  alignas(64) I32 layer3raw[L3size];
+  alignas(64) I32 layer3activated[L3size];
   I32 output[1];
 
   void load(NNUEWeights *EUNNweights);
