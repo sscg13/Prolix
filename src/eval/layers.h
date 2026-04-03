@@ -28,17 +28,20 @@ template <int inputsize, int outputsize> struct DenseAffineWeights {
 
 template <int inputsize, int outputsize> struct DenseAffine {
   static void
-  transform(const I32 *input, I32 *output,
-            const DenseAffineWeights<inputsize, outputsize> *weights,
+  transform(const I32 * __restrict__ input, 
+            I32 * __restrict__ output,
+            const DenseAffineWeights<inputsize, outputsize> * __restrict__ weights,
             int bucket) {
-    for (int i = 0; i < outputsize; i++) {
-      output[i] = weights->bias[bucket * outputsize + i];
-    }
     for (int j = 0; j < outputsize; j++) {
-      const I32 *vector =
-          &(weights->weights[bucket * inputsize * outputsize + j * inputsize]);
-      for (int i = 0; i < inputsize; i++) {
-        output[j] += vector[i] * input[i];
+      output[j] = weights->bias[bucket * outputsize + j];
+    }
+    for (int i = 0; i < inputsize; i++) {
+      I32 factor = input[i];
+      const I32 * __restrict__ vector = 
+          &(weights->weights[bucket * inputsize * outputsize + i * outputsize]);
+      #pragma omp simd
+      for (int j = 0; j < outputsize; j++) {
+        output[j] += vector[j] * factor;
       }
     }
   }
