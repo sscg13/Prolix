@@ -1006,8 +1006,9 @@ void Board::parseFEN(std::string FEN) {
   tracker += 6;
   int halfmove = (int)(FEN[tracker]) - 48;
   tracker++;
-  if (FEN[tracker] != ' ') {
+  while (FEN[tracker] != ' ') {
     halfmove = 10 * halfmove + (int)(FEN[tracker]) - 48;
+    tracker++;
   }
   position |= (halfmove << 1);
   zobristhash = scratchzobrist();
