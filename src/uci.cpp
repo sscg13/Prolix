@@ -9,7 +9,7 @@ std::string uciinfostring =
     "option name UCI_Variant type combo default shatranj var shatranj\n"
     "option name Threads type spin default 1 min 1 max 8\n"
     "option name Hash type spin default 32 min 1 max 1024\n"
-    "option name UseNNUE type check default true\n"
+    "option name EvalLevel type spin default 4 min 1 max 4\n"
     "option name MinimalReporting type check default false\n"
     "option name NormalizeEval type check default true\n"
     "option name EvalFile type string default <internal>\n"
@@ -88,6 +88,9 @@ void Engine::uci() {
         TT.shrink_to_fit();
       }
     }
+    if (option == "EvalLevel") {
+      searchoptions.evallevel = std::stoi(value);
+    }
     if (option == "EvalFile") {
       std::string nnuefile = ucicommand.substr(30, ucicommand.length() - 30);
       if (nnuefile != "<internal>") {
@@ -113,13 +116,6 @@ void Engine::uci() {
         searchoptions.normalizeeval = true;
       } else {
         searchoptions.normalizeeval = false;
-      }
-    }
-    if (option == "UseNNUE") {
-      if (value == "true") {
-        searchoptions.useNNUE = true;
-      } else {
-        searchoptions.useNNUE = false;
       }
     }
     if (option == "MinimalReporting") {
