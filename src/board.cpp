@@ -1066,6 +1066,16 @@ std::string Board::getFEN() {
   FEN = FEN + bruh + " 1";
   return FEN;
 }
+int Board::piecevaluediff(int color) {
+  int material_values[5] = {100, 100, 170, 370, 640};
+  int value = 0;
+  for (int i = 2; i < 7; i++) {
+    value += material_values[i - 2] *
+             (__builtin_popcountll(Bitboards[color] & Bitboards[i]) -
+              __builtin_popcountll(Bitboards[!color] & Bitboards[i]));
+  }
+  return value;
+}
 int Board::evaluate(int color) {
   int midphase = std::min(48, gamephase[0] + gamephase[1]);
   int endphase = 48 - midphase;

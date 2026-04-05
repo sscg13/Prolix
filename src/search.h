@@ -21,13 +21,13 @@ struct Limits {
   int maxdepth;
 };
 struct Options {
-  bool useNNUE = true;
   bool minimal = false;
   bool normalizeeval = true;
   bool showWDL = true;
   bool suppressoutput = false;
   bool useTB = false;
   bool TB70mr = true;
+  int  evallevel = 4;
 };
 class Searcher {
   NNUE EUNN;
@@ -46,6 +46,9 @@ class Searcher {
   std::random_device rd;
   std::mt19937 mt;
   void resetauxdata();
+  void evalinit();
+  void evalmake(int notation);
+  void evalunmake(int notation);
   int staticeval();
   int quiesce(int alpha, int beta, int depth, bool isPV);
   int alphabeta(int depth, int ply, int alpha, int beta, bool nmp,

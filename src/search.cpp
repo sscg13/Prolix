@@ -56,10 +56,46 @@ void Searcher::syncwith(Engine &engine) {
   searchoptions = engine.searchoptions;
   EUNN.initialize(Bitboards.Bitboards, Bitboards.pieces);
 }
+void Searcher::evalinit() {
+  switch (searchoptions.evallevel) {
+    case 1:
+      break;
+    case 2:
+    break;
+    default:
+    EUNN.initialize(Bitboards.Bitboards, Bitboards.pieces);
+  }
+}
+void Searcher::evalmake(int notation) {
+  switch (searchoptions.evallevel) {
+    case 1:
+      break;
+    case 2:
+    break;
+    default:
+    EUNN.make(notation, Bitboards.Bitboards, Bitboards.pieces);
+  }
+}
+void Searcher::evalunmake(int notation) {
+  switch (searchoptions.evallevel) {
+    case 1:
+      break;
+    case 2:
+    break;
+    default:
+    EUNN.unmake(notation, Bitboards.Bitboards, Bitboards.pieces);
+  }
+}
 int Searcher::staticeval() {
   int color = Bitboards.position & 1;
-  return searchoptions.useNNUE ? EUNN.evaluate(color, Bitboards.Bitboards, Bitboards.pieces)
-                               : Bitboards.evaluate(color);
+  switch (searchoptions.evallevel) {
+    case 1:
+      return Bitboards.piecevaluediff(color) + Bitboards.zobristhash % 64;
+    case 2:
+      return Bitboards.evaluate(color);
+    default:
+      return EUNN.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
+  }
 }
 int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   int index = Bitboards.zobristhash % *TTsize;
@@ -129,14 +165,10 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
     bool good = (incheck || Bitboards.see_exceeds(mov, color, 0));
     if (good && !(*stopsearch)) {
       Bitboards.makemove(mov, 1);
-      if (searchoptions.useNNUE) {
-        EUNN.make(mov, Bitboards.Bitboards, Bitboards.pieces);
-      }
+      evalmake(mov);
       score = -quiesce(-beta, -alpha, ply + 1, isPV);
       Bitboards.unmakemove(mov);
-      if (searchoptions.useNNUE) {
-        EUNN.unmake(mov, Bitboards.Bitboards, Bitboards.pieces);
-      }
+      evalunmake(mov);
       if (score >= beta) {
         if (!tthit) {
           ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0, ply,
@@ -402,9 +434,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     if (!(*stopsearch) && !prune) {
       Bitboards.makemove(mov, true);
       searchstack[ply].playedmove = mov;
-      if (searchoptions.useNNUE) {
-        EUNN.make(mov, Bitboards.Bitboards, Bitboards.pieces);
-      }
+      evalmake(mov);
       r /= 1024;
       int newdepth = depth - 1 + e;
       if (nullwindow) {
@@ -427,9 +457,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
             -alphabeta(newdepth, ply + 1, -beta, -alpha, true, childnode);
       }
       Bitboards.unmakemove(mov);
-      if (searchoptions.useNNUE) {
-        EUNN.unmake(mov, Bitboards.Bitboards, Bitboards.pieces);
-      }
+      evalunmake(mov);
       if (score > bestscore) {
         if (score > alpha) {
           if (score >= beta) {
@@ -523,6 +551,7 @@ int Searcher::iterative() {
   if (ismaster) {
     *stopsearch = false;
   }
+  evalinit();
   start = std::chrono::steady_clock::now();
   std::stringstream infoline;
   std::string lastinfoline;
@@ -667,9 +696,6 @@ int Searcher::iterative() {
       std::cout << "move " << algebraic(bestmove1) << std::endl;
     }
     Bitboards.makemove(bestmove1, 0);
-    if (searchoptions.useNNUE) {
-      EUNN.make(bestmove1, Bitboards.Bitboards, Bitboards.pieces);
-    }
   }
   bestmove = bestmove1;
   if (!ismaster) {

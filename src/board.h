@@ -50,6 +50,7 @@ public:
   U64 perftnobulk(int depth, int initialdepth, int color);
   void parseFEN(std::string FEN);
   std::string getFEN();
+  int piecevaluediff(int color);
   int evaluate(int color);
   bool see_exceeds(int mov, int color, int threshold);
   int probetbwdl();
