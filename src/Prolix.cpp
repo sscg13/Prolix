@@ -42,7 +42,8 @@ void Engine::bench() {
   int nps = 1000 * (nodes / timetaken);
   std::cout << nodes << " nodes " << nps << " nps\n";
 }
-void Engine::evalscale(std::string inputfile) {
+void Engine::evalscale(int level, std::string inputfile) {
+  searchoptions.evallevel = level;
   U64 total = 0;
   U64 count = 0;
   std::ifstream epdin;
@@ -80,33 +81,51 @@ int main(int argc, char *argv[]) {
     }
     if (std::string(argv[1]) == "evalscale") {
       if (argc < 3) {
-        std::cerr << "Proper usage: ./(exe) evalscale filepath";
+        std::cerr << "Proper usage: ./(exe) evalscale evallevel filepath";
         return 0;
       }
       Engine Prolix;
-      Prolix.evalscale(std::string(argv[2]));
+      Prolix.evalscale(atoi(argv[2]), std::string(argv[3]));
       return 0;
     }
     if (std::string(argv[1]) == "datagen") {
-      if (argc < 6) {
-        std::cerr << "Proper usage: ./(exe) datagen <viriformat|plain> threads "
-                     "games outputfile";
+      if (argc < 8) {
+        std::cerr << "Proper usage: ./(exe) datagen threads positions "
+                     "evallevel softnodelimit hardnodelimit outputfile";
         return 0;
       }
-      int dataformat = (std::string(argv[2]) == "viriformat");
-      std::string extension = dataformat ? ".vf" : ".txt";
-      int threads = atoi(argv[3]);
-      int games = atoi(argv[4]);
-      std::cout << "Generating NNUE data with " << threads << " threads x "
-                << games << " games:\n";
+      std::string extension = ".txt";
+      int threads = atoi(argv[2]);
+      int positions = atoi(argv[3]);
+      int evallevel = atoi(argv[4]);
+      int softnodes = atoi(argv[5]);
+      int hardnodes = atoi(argv[6]);
+      std::cout << "Threads: " << threads << std::endl;
+      std::cout << "Positions per thread: " << positions << std::endl;
+      std::string leveldescription = [evallevel]() {
+        switch (evallevel) {
+        case 0:
+          return "Random";
+        case 1:
+          return "Material Count + Random";
+        case 2:
+          return "HCE";
+        default:
+          return "NNUE";
+        }
+      }();
+      std::cout << "Eval level: " << leveldescription << std::endl;
+      std::cout << "Soft node limit: " << softnodes << std::endl;
+      std::cout << "Hard node limit: " << hardnodes << std::endl;
       std::vector<std::thread> datagenerators(threads);
       std::vector<Engine> Engines(threads);
       for (int i = 0; i < threads; i++) {
         std::string outputfile =
             std::string(argv[5]) + std::to_string(i) + extension;
         Engines[i].startup();
-        datagenerators[i] = std::thread(&Engine::datagen, &Engines[i],
-                                        dataformat, 1, games, outputfile);
+        datagenerators[i] =
+            std::thread(&Engine::datagen, &Engines[i], positions, evallevel,
+                        softnodes, hardnodes, outputfile);
       }
       for (auto &thread : datagenerators) {
         thread.join();
@@ -133,7 +152,7 @@ int main(int argc, char *argv[]) {
         Engines[i].startup();
         datagenerators[i] =
             std::thread(&Engine::bookgen, &Engines[i], lowerbound, upperbound,
-                        1, games, outputfile);
+                        games, outputfile);
       }
       for (auto &thread : datagenerators) {
         thread.join();
@@ -181,7 +200,7 @@ int main(int argc, char *argv[]) {
         Engines[i].startup();
         workers[i] =
             std::thread(&Engine::filter, &Engines[i], lowerbound, upperbound,
-                        softnodes, hardnodes, 1, tempnames[i], outputfile);
+                        softnodes, hardnodes, tempnames[i], outputfile);
       }
       for (auto &thread : workers) {
         thread.join();

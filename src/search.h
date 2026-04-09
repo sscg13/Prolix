@@ -65,7 +65,7 @@ public:
   void seedrng();
   void syncwith(Engine &engine);
   int iterative();
-  void datagenautoplayplain();
+  int datagenautoplayplain();
   void datagenautoplayviriformat();
   void bookgenautoplay(int lowerbound, int upperbound);
 

@@ -1,7 +1,7 @@
 #include "../engine.h"
 #include "viriformat.h"
 std::ifstream datainput;
-void Searcher::datagenautoplayplain() {
+int Searcher::datagenautoplayplain() {
   resetauxdata();
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
@@ -11,7 +11,7 @@ void Searcher::datagenautoplayplain() {
   for (int i = 0; i < 16; i++) {
     int num_moves = Bitboards.generatemoves(i & 1, 0, moves);
     if (num_moves == 0) {
-      return;
+      return 0;
     }
     int rand_move = mt() % num_moves;
     Bitboards.makemove(moves[rand_move], 0);
@@ -20,11 +20,11 @@ void Searcher::datagenautoplayplain() {
   }
   evalinit();
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
-    return;
+    return 0;
   }
   int score = quiesce(-SCORE_INF, SCORE_INF, 0, true);
   if (std::abs(score) > 400) {
-    return;
+    return 0;
   }
   std::string fens[1024];
   int scores[1024];
@@ -101,6 +101,7 @@ void Searcher::datagenautoplayplain() {
   for (int i = 0; i < maxmove; i++) {
     dataoutput << fens[i] << " | " << scores[i] << " | " << result << "\n";
   }
+  return maxmove;
 }
 void Searcher::datagenautoplayviriformat() {
   resetauxdata();
@@ -215,30 +216,24 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     }
   }
 }
-void Engine::datagen(int dataformat, int threads, int n,
+void Engine::datagen(int n, int level, int softnodes, int hardnodes,
                      std::string outputfile) {
-  if (dataformat == 1) {
-    master.dataoutput.open(outputfile, std::ofstream::binary);
-  } else {
-    master.dataoutput.open(outputfile, std::ofstream::app);
-  }
-  searchlimits.softnodelimit = 6144;
-  searchlimits.hardnodelimit = 65536;
+  master.dataoutput.open(outputfile, std::ofstream::app);
+  searchlimits.softnodelimit = softnodes;
+  searchlimits.hardnodelimit = hardnodes;
   searchlimits.softtimelimit = 0;
   searchlimits.hardtimelimit = 0;
   searchoptions.suppressoutput = true;
+  searchoptions.evallevel = level;
   master.syncwith(*this);
-  for (int i = 0; i < n; i++) {
-    if (dataformat == 1) {
-      master.datagenautoplayviriformat();
-    } else {
-      master.datagenautoplayplain();
-    }
-    std::cout << i << "\n";
+  int positions = 0;
+  while (positions < n) {
+    positions += master.datagenautoplayplain();
+    std::cout << positions << "/" << n << std::endl;
   }
   master.dataoutput.close();
 }
-void Engine::bookgen(int lowerbound, int upperbound, int threads, int n,
+void Engine::bookgen(int lowerbound, int upperbound, int n,
                      std::string outputfile) {
   master.dataoutput.open(outputfile, std::ofstream::app);
   searchlimits.hardnodelimit = 65536;
@@ -252,7 +247,7 @@ void Engine::bookgen(int lowerbound, int upperbound, int threads, int n,
   }
 }
 void Engine::filter(int lowerbound, int upperbound, int softnodes,
-                    int hardnodes, int threads, std::string inputfile,
+                    int hardnodes, std::string inputfile,
                     std::string outputfile) {
   searchlimits.softnodelimit = softnodes;
   searchlimits.hardnodelimit = hardnodes;

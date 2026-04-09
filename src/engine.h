@@ -36,12 +36,12 @@ public:
   void startup();
   void bench();
   void spawnworker();
-  void evalscale(std::string inputfile);
-  void datagen(int dataformat, int threads, int n, std::string outputfile);
-  void bookgen(int lowerbound, int upperbound, int threads, int n,
+  void evalscale(int level, std::string inputfile);
+  void datagen(int n, int level, int softnodes, int hardnodes,
                std::string outputfile);
+  void bookgen(int lowerbound, int upperbound, int n, std::string outputfile);
   void filter(int lowerbound, int upperbound, int softnodes, int hardnodes,
-              int threads, std::string inputfile, std::string outputfile);
+              std::string inputfile, std::string outputfile);
   void uci();
   void xboard();
 };
