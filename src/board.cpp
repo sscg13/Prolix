@@ -223,7 +223,8 @@ U64 PseudoAttacks(int piece, int square) {
     return KnightAttacks[square];
   }
   if (type == 6) {
-    return GetRankAttacks(1ULL << square, square) | FileAttacks(1ULL << square, square);
+    return GetRankAttacks(1ULL << square, square) |
+           FileAttacks(1ULL << square, square);
   }
   return KingAttacks[square];
 }

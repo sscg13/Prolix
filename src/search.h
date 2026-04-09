@@ -27,7 +27,7 @@ struct Options {
   bool suppressoutput = false;
   bool useTB = false;
   bool TB70mr = true;
-  int  evallevel = 4;
+  int evallevel = 4;
 };
 class Searcher {
   NNUE EUNN;

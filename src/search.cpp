@@ -58,43 +58,49 @@ void Searcher::syncwith(Engine &engine) {
 }
 void Searcher::evalinit() {
   switch (searchoptions.evallevel) {
-    case 1:
-      break;
-    case 2:
+  case 1:
     break;
-    default:
+  case 2:
+    break;
+  default:
     EUNN.initialize(Bitboards.Bitboards, Bitboards.pieces);
   }
 }
 void Searcher::evalmake(int notation) {
   switch (searchoptions.evallevel) {
-    case 1:
-      break;
-    case 2:
+  case 0:
     break;
-    default:
+  case 1:
+    break;
+  case 2:
+    break;
+  default:
     EUNN.make(notation, Bitboards.Bitboards, Bitboards.pieces);
   }
 }
 void Searcher::evalunmake(int notation) {
   switch (searchoptions.evallevel) {
-    case 1:
-      break;
-    case 2:
+  case 0:
     break;
-    default:
+  case 1:
+    break;
+  case 2:
+    break;
+  default:
     EUNN.unmake(notation, Bitboards.Bitboards, Bitboards.pieces);
   }
 }
 int Searcher::staticeval() {
   int color = Bitboards.position & 1;
   switch (searchoptions.evallevel) {
-    case 1:
-      return Bitboards.piecevaluediff(color) + Bitboards.zobristhash % 64;
-    case 2:
-      return Bitboards.evaluate(color);
-    default:
-      return EUNN.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
+  case 0:
+    return Bitboards.zobristhash % 64;
+  case 1:
+    return Bitboards.piecevaluediff(color) + Bitboards.zobristhash % 64;
+  case 2:
+    return Bitboards.evaluate(color);
+  default:
+    return EUNN.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
   }
 }
 int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
@@ -289,7 +295,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       if (ttcorr) {
         ttcorreval = score;
       }
-      ttnmpgood = (score >= beta + 50 - 10 * (depth - ttdepth) || ttnodetype == EXPECTED_CUT_NODE);
+      ttnmpgood = (score >= beta + 50 - 10 * (depth - ttdepth) ||
+                   ttnodetype == EXPECTED_CUT_NODE);
     }
   } else {
     if (depth >= 3) {
@@ -453,8 +460,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       } else {
         int childnode =
             (nodetype == EXPECTED_PV_NODE) ? EXPECTED_PV_NODE : 3 - nodetype;
-        score =
-            -alphabeta(newdepth, ply + 1, -beta, -alpha, true, childnode);
+        score = -alphabeta(newdepth, ply + 1, -beta, -alpha, true, childnode);
       }
       Bitboards.unmakemove(mov);
       evalunmake(mov);

@@ -137,10 +137,10 @@ struct SingleAccumulatorStack {
   PSQAccumulatorStack psqaccumulators;
 
   void load(NNUEWeights *EUNNweights);
-  void initialize(const U64 *Bitboards, const int* pieces);
-  void make(const int notation, const U64 *Bitboards, const int* pieces);
-  void unmake(const int notation, const U64 *Bitboards, const int* pieces);
-  const I16 *transform(int color, const U64 *Bitboards, const int* pieces);
+  void initialize(const U64 *Bitboards, const int *pieces);
+  void make(const int notation, const U64 *Bitboards, const int *pieces);
+  void unmake(const int notation, const U64 *Bitboards, const int *pieces);
+  const I16 *transform(int color, const U64 *Bitboards, const int *pieces);
 };
 
 struct DualAccumulatorStack {
@@ -149,9 +149,9 @@ struct DualAccumulatorStack {
   I16 output[L1size * (1 + multilayer)];
 
   void load(NNUEWeights *EUNNweights);
-  void initialize(const U64 *Bitboards, const int* pieces);
-  void make(const int notation, const U64 *Bitboards, const int* pieces);
-  void unmake(const int notation, const U64 *Bitboards, const int* pieces);
+  void initialize(const U64 *Bitboards, const int *pieces);
+  void make(const int notation, const U64 *Bitboards, const int *pieces);
+  void unmake(const int notation, const U64 *Bitboards, const int *pieces);
   const I16 *transform(int color);
 };
 
@@ -175,8 +175,8 @@ class NNUE {
 
 public:
   void load(NNUEWeights *EUNNweights);
-  void initialize(const U64 *Bitboards, const int* pieces);
-  void make(const int notation, const U64 *Bitboards, const int* pieces);
-  void unmake(const int notation, const U64 *Bitboards, const int* pieces);
-  int evaluate(const int color, const U64 *Bitboards, const int* pieces);
+  void initialize(const U64 *Bitboards, const int *pieces);
+  void make(const int notation, const U64 *Bitboards, const int *pieces);
+  void unmake(const int notation, const U64 *Bitboards, const int *pieces);
+  int evaluate(const int color, const U64 *Bitboards, const int *pieces);
 };

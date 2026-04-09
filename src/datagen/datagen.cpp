@@ -188,7 +188,8 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     searchlimits.softnodelimit = color ? 2048 : 8192;
     int score = iterative();
     if ((bestmove > 0) && (((bestmove >> 16) & 1) == 0) &&
-        (Bitboards.checkers(color) == 0ULL) && (normalize(abs(score)) <= upperbound) &&
+        (Bitboards.checkers(color) == 0ULL) &&
+        (normalize(abs(score)) <= upperbound) &&
         (normalize(abs(score)) >= lowerbound)) {
       dataoutput << Bitboards.getFEN() << "\n";
       std::cout << "success\n";
@@ -272,7 +273,8 @@ void Engine::filter(int lowerbound, int upperbound, int softnodes,
     int color = Bitboards.position & 1;
     master.syncwith(*this);
     int score = master.iterative();
-    if (master.normalize(abs(score)) >= lowerbound && master.normalize(abs(score)) <= upperbound) {
+    if (master.normalize(abs(score)) >= lowerbound &&
+        master.normalize(abs(score)) <= upperbound) {
       epdout << fen << "\n";
     }
   }

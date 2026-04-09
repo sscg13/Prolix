@@ -178,8 +178,10 @@ template <int inputsize, int bits> struct CSqrDivide {
   static void transform(const I32 *input, I32 *output, I32 Q) {
     for (int i = 0; i < inputsize; i++) {
       I32 clipped = input[i];
-      if (clipped < -Q) clipped = -Q;
-      if (clipped > Q) clipped = Q;
+      if (clipped < -Q)
+        clipped = -Q;
+      if (clipped > Q)
+        clipped = Q;
       output[i] = (clipped * clipped) >> bits;
     }
   }
@@ -189,10 +191,13 @@ template <int inputsize, int bits> struct CSqrCReLUDivide {
   static void transform(const I32 *input, I32 *output, I32 Q) {
     for (int i = 0; i < inputsize; i++) {
       I32 clipped = input[i];
-      if (clipped < -Q) clipped = -Q;
-      if (clipped > Q) clipped = Q;
+      if (clipped < -Q)
+        clipped = -Q;
+      if (clipped > Q)
+        clipped = Q;
       output[i + inputsize] = (clipped * clipped) >> bits;
-      if (clipped < 0) clipped = 0;
+      if (clipped < 0)
+        clipped = 0;
       output[i] = (Q * clipped) >> bits;
     }
   }
