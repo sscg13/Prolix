@@ -1069,7 +1069,7 @@ std::string Board::getFEN() {
   return FEN;
 }
 int Board::piecevaluediff(int color) {
-  int material_values[5] = {88, 146, 185, 747, 1525};
+  int material_values[5] = {162, 184, 209, 910, 1527};
   int value = 0;
   for (int i = 2; i < 7; i++) {
     value += material_values[i - 2] *
