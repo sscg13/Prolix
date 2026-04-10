@@ -1069,14 +1069,14 @@ std::string Board::getFEN() {
   return FEN;
 }
 int Board::piecevaluediff(int color) {
-  int material_values[5] = {10, 72, 72, 106, 177};
+  int material_values[5] = {88, 146, 185, 747, 1525};
   int value = 0;
   for (int i = 2; i < 7; i++) {
     value += material_values[i - 2] *
              (__builtin_popcountll(Bitboards[color] & Bitboards[i]) -
               __builtin_popcountll(Bitboards[!color] & Bitboards[i]));
   }
-  return value - 34;
+  return value - 33;
 }
 int Board::evaluate(int color) {
   int midphase = std::min(48, gamephase[0] + gamephase[1]);
