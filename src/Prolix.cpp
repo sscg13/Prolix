@@ -89,9 +89,9 @@ int main(int argc, char *argv[]) {
       return 0;
     }
     if (std::string(argv[1]) == "datagen") {
-      if (argc < 8) {
+      if (argc < 7) {
         std::cerr << "Proper usage: ./(exe) datagen threads positions "
-                     "evallevel softnodelimit hardnodelimit outputfile";
+                     "evallevel softnodelimit hardnodelimit";
         return 0;
       }
       std::string extension = ".txt";
@@ -120,8 +120,7 @@ int main(int argc, char *argv[]) {
       std::vector<std::thread> datagenerators(threads);
       std::vector<Engine> Engines(threads);
       for (int i = 0; i < threads; i++) {
-        std::string outputfile =
-            std::string(argv[5]) + std::to_string(i) + extension;
+        std::string outputfile = std::to_string(i) + extension;
         Engines[i].startup();
         datagenerators[i] =
             std::thread(&Engine::datagen, &Engines[i], positions, evallevel,
@@ -133,22 +132,21 @@ int main(int argc, char *argv[]) {
       return 0;
     }
     if (std::string(argv[1]) == "bookgen") {
-      if (argc < 7) {
-        std::cerr << "Proper usage: ./(exe) bookgen threads games outputfile "
+      if (argc < 6) {
+        std::cerr << "Proper usage: ./(exe) bookgen threads games "
                      "low high";
         return 0;
       }
       int threads = atoi(argv[2]);
       int games = atoi(argv[3]);
-      int lowerbound = atoi(argv[5]);
-      int upperbound = atoi(argv[6]);
+      int lowerbound = atoi(argv[4]);
+      int upperbound = atoi(argv[5]);
       std::cout << "Generating book with lower bound " << lowerbound
                 << " and upper bound " << upperbound << "\n";
       std::vector<std::thread> datagenerators(threads);
       std::vector<Engine> Engines(threads);
       for (int i = 0; i < threads; i++) {
-        std::string outputfile =
-            std::string(argv[4]) + std::to_string(i) + ".txt";
+        std::string outputfile = std::to_string(i) + ".txt";
         Engines[i].startup();
         datagenerators[i] =
             std::thread(&Engine::bookgen, &Engines[i], lowerbound, upperbound,
@@ -160,9 +158,9 @@ int main(int argc, char *argv[]) {
       return 0;
     }
     if (std::string(argv[1]) == "filter") {
-      if (argc < 9) {
+      if (argc < 8) {
         std::cerr << "Proper usage: ./(exe) filter threads softnodelimit "
-                     "hardnodelimit inputfile outputfile low high";
+                     "hardnodelimit inputfile low high";
         return 0;
       }
       int threads = atoi(argv[2]);
@@ -188,15 +186,14 @@ int main(int argc, char *argv[]) {
       }
       int softnodes = atoi(argv[3]);
       int hardnodes = atoi(argv[4]);
-      int lowerbound = atoi(argv[7]);
-      int upperbound = atoi(argv[8]);
+      int lowerbound = atoi(argv[6]);
+      int upperbound = atoi(argv[7]);
       std::cout << "Filtering with lower bound " << lowerbound
                 << " and upper bound " << upperbound << "\n";
       std::vector<std::thread> workers(threads);
       std::vector<Engine> Engines(threads);
       for (int i = 0; i < threads; i++) {
-        std::string outputfile =
-            std::string(argv[6]) + std::to_string(i) + ".epd";
+        std::string outputfile = std::to_string(i) + ".epd";
         Engines[i].startup();
         workers[i] =
             std::thread(&Engine::filter, &Engines[i], lowerbound, upperbound,
