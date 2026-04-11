@@ -1,5 +1,6 @@
 #include "board.h"
 #include "consts.h"
+#include "eval.h"
 #include "eval/nnue.h"
 #include "external/probetool/jtbprobe.h"
 #include "history.h"
@@ -30,7 +31,6 @@ struct Options {
   int evallevel = 4;
 };
 class Searcher {
-  NNUE EUNN;
   History *Histories = new History;
   std::vector<TTentry> *TT;
   int *TTsize;
@@ -46,10 +46,6 @@ class Searcher {
   std::random_device rd;
   std::mt19937 mt;
   void resetauxdata();
-  void evalinit();
-  void evalmake(int notation);
-  void evalunmake(int notation);
-  int staticeval();
   int quiesce(int alpha, int beta, int depth, bool isPV);
   int alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
                 int nodetype);
@@ -57,6 +53,7 @@ class Searcher {
   int normalize(int eval);
 
 public:
+  Evaluator eval;
   Board Bitboards;
   Limits searchlimits;
   Options searchoptions;

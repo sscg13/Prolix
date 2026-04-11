@@ -94,7 +94,7 @@ void Engine::uci() {
     if (option == "EvalFile") {
       std::string nnuefile = ucicommand.substr(30, ucicommand.length() - 30);
       if (nnuefile != "<internal>") {
-        nnueweights->readnnuefile(nnuefile);
+        weights.nnueweights->readnnuefile(nnuefile);
         std::cout << "info string using nnue file " << nnuefile << std::endl;
       }
     }
@@ -210,8 +210,20 @@ void Engine::uci() {
   }
   if (token == "eval") {
     master.syncwith(*this);
-    int color = Bitboards.position & 1;
-    int eval = master.staticeval();
+    std::string leveldescription = [this]() {
+      switch (master.eval.level) {
+      case 0:
+        return "Random";
+      case 1:
+        return "Material Count + Random";
+      case 2:
+        return "HCE";
+      default:
+        return "NNUE";
+      }
+    }();
+    int eval = master.eval.evaluate(Bitboards);
+    std::cout << "Evaluation level: " << leveldescription << "\n";
     std::cout << "Raw eval: " << eval << "\n";
     std::cout << "Normalized eval: " << master.normalize(eval) << "\n";
   }

@@ -18,7 +18,7 @@ int Searcher::datagenautoplayplain() {
     game += algebraic(moves[rand_move]);
     game += " ";
   }
-  evalinit();
+  eval.init(Bitboards);
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return 0;
   }
@@ -95,7 +95,7 @@ int Searcher::datagenautoplayplain() {
       result = "0.5";
     }
     if (!finished && bestmove > 0) {
-      evalinit();
+      eval.init(Bitboards);
     }
   }
   for (int i = 0; i < maxmove; i++) {
@@ -120,7 +120,7 @@ void Searcher::datagenautoplayviriformat() {
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
   }
-  evalinit();
+  eval.init(Bitboards);
   Viriformat game;
   game.initialize(Bitboards);
   bool finished = false;
@@ -161,7 +161,7 @@ void Searcher::datagenautoplayviriformat() {
       result = 1;
     }
     if (bestmove > 0) {
-      evalinit();
+      eval.init(Bitboards);
     }
   }
   game.writewithwdl(dataoutput, result);
@@ -179,7 +179,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
     int rand_move = mt() % num_moves;
     Bitboards.makemove(moves[rand_move], 0);
   }
-  evalinit();
+  eval.init(Bitboards);
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return;
   }
@@ -201,7 +201,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
       Bitboards.makenullmove();
     } else {
       Bitboards.makemove(bestmove, 0);
-      evalinit();
+      eval.init(Bitboards);
     }
     if (Bitboards.twokings()) {
       finished = true;

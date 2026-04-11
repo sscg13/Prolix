@@ -56,7 +56,7 @@ void Engine::evalscale(int level, std::string inputfile) {
     }
     Bitboards.parseFEN(fen);
     master.syncwith(*this);
-    int absscore = std::abs(master.staticeval());
+    int absscore = std::abs(master.eval.evaluate(Bitboards));
     total += absscore;
     count++;
   }
