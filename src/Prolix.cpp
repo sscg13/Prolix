@@ -109,6 +109,8 @@ int main(int argc, char *argv[]) {
         case 1:
           return "Material Count + Random";
         case 2:
+          return "Piece Rank + Piece File";
+        case 3:
           return "HCE";
         default:
           return "NNUE";

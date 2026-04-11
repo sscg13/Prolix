@@ -1,3 +1,4 @@
+#pragma once
 // clang-format off
 const int materialm[6] = {100, 150, 200, 400, 650, 20000};
 const int materiale[6] = {100, 150, 200, 400, 650, 20000};
