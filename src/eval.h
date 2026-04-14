@@ -2,6 +2,7 @@
 #include "consts.h"
 #include "eval/nnue.h"
 #include "eval/prf.h"
+#include "eval/psqt.h"
 
 #pragma once
 struct EvalParams {
@@ -10,6 +11,7 @@ struct EvalParams {
 class Evaluator {
   NNUE EUNN;
   PRF PFR;
+  PSQT PST;
 
 public:
   int level;

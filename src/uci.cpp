@@ -9,7 +9,7 @@ std::string uciinfostring =
     "option name UCI_Variant type combo default shatranj var shatranj\n"
     "option name Threads type spin default 1 min 1 max 8\n"
     "option name Hash type spin default 32 min 1 max 1024\n"
-    "option name EvalLevel type spin default 4 min 0 max 4\n"
+    "option name EvalLevel type spin default 5 min 0 max 5\n"
     "option name MinimalReporting type check default false\n"
     "option name NormalizeEval type check default true\n"
     "option name EvalFile type string default <internal>\n"
@@ -219,6 +219,8 @@ void Engine::uci() {
       case 2:
         return "Piece Rank + Piece File";
       case 3:
+        return "Piece Square Table";
+      case 4:
         return "HCE";
       default:
         return "NNUE";

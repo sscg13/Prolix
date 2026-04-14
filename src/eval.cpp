@@ -11,6 +11,8 @@ void Evaluator::init(Board &Bitboards) {
     break;
   case 3:
     break;
+  case 4:
+    break;
   default:
     EUNN.initialize(Bitboards.Bitboards, Bitboards.pieces);
   }
@@ -24,6 +26,8 @@ void Evaluator::make(int notation, Board &Bitboards) {
   case 2:
     break;
   case 3:
+    break;
+  case 4:
     break;
   default:
     EUNN.make(notation, Bitboards.Bitboards, Bitboards.pieces);
@@ -39,6 +43,8 @@ void Evaluator::unmake(int notation, Board &Bitboards) {
     break;
   case 3:
     break;
+  case 4:
+    break;
   default:
     EUNN.unmake(notation, Bitboards.Bitboards, Bitboards.pieces);
   }
@@ -53,6 +59,8 @@ int Evaluator::evaluate(Board &Bitboards) {
   case 2:
     return PFR.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
   case 3:
+    return PST.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
+  case 4:
     return Bitboards.evaluate(color);
   default:
     return EUNN.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);

@@ -111,6 +111,8 @@ int main(int argc, char *argv[]) {
         case 2:
           return "Piece Rank + Piece File";
         case 3:
+          return "Piece Square Table";
+        case 4:
           return "HCE";
         default:
           return "NNUE";
