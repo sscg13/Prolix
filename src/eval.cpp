@@ -49,7 +49,7 @@ int Evaluator::evaluate(Board &Bitboards) {
   case 0:
     return Bitboards.zobristhash % 64;
   case 1:
-    return Bitboards.piecevaluediff(color) + Bitboards.zobristhash % 64;
+    return Bitboards.piecevaluediff(color);
   case 2:
     return PFR.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
   case 3:
