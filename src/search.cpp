@@ -307,7 +307,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     }
   }
   if ((!incheck && Bitboards.gamephase[color] > 3) && (depth > 1 && nmp) &&
-      (ttcorreval >= beta - 10 * depth && !isPV) && (!tthit || ttnmpgood)) {
+      (ttcorreval >= beta - 10 * depth && nodetype == EXPECTED_CUT_NODE) && (!tthit || ttnmpgood)) {
     Bitboards.makenullmove();
     searchstack[ply].playedmove = 0;
     int childnodetype = EXPECTED_ALL_NODE;
