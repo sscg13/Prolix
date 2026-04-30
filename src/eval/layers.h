@@ -20,26 +20,116 @@ template <int inputsize, int outputsize> struct DenseAffineWeights {
   alignas(64) I32 bias[outputbuckets * outputsize];
   static constexpr int size = 4 * outputbuckets * outputsize * (inputsize + 1);
   void load(const char *stream) {
-    int offset = 4 * outputbuckets * inputsize * outputsize;
-    memcpy(weights, stream, 4 * outputbuckets * inputsize * outputsize);
-    memcpy(bias, stream + offset, 4 * outputbuckets * outputsize);
+    const int weightbytes = 4 * outputbuckets * inputsize * outputsize;
+    if constexpr (outputsize == 1) {
+      memcpy(weights, stream, weightbytes);
+    } else {
+      const I32 *src = (const I32 *)stream;
+      for (int b = 0; b < outputbuckets; b++) {
+        for (int j = 0; j < outputsize; j++) {
+          for (int i = 0; i < inputsize; i++) {
+            weights[b * inputsize * outputsize + i * outputsize + j] =
+                src[b * inputsize * outputsize + j * inputsize + i];
+          }
+        }
+      }
+    }
+    memcpy(bias, stream + weightbytes, 4 * outputbuckets * outputsize);
   }
 };
 
 template <int inputsize, int outputsize> struct DenseAffine {
+  __attribute__((target("avx2"))) static void
+  transform_avx2(const I32 *__restrict input, I32 *__restrict output,
+                 const DenseAffineWeights<inputsize, outputsize> *weights,
+                 int bucket) {
+    int weightoffset = bucket * inputsize * outputsize;
+    int biasoffset = bucket * outputsize;
+    const I32 *weightptr = &weights->weights[weightoffset];
+    if constexpr (outputsize == 1) {
+      __m256i acc = _mm256_setzero_si256();
+      for (int k = 0; k < inputsize; k += 8) {
+        __m256i w = _mm256_load_si256((const __m256i *)(weightptr + k));
+        __m256i in = _mm256_loadu_si256((const __m256i *)(input + k));
+        acc = _mm256_add_epi32(acc, _mm256_mullo_epi32(w, in));
+      }
+      __m128i lo = _mm256_castsi256_si128(acc);
+      __m128i hi = _mm256_extracti128_si256(acc, 1);
+      __m128i sum = _mm_add_epi32(lo, hi);
+      sum = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, _MM_SHUFFLE(1, 0, 3, 2)));
+      sum = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, _MM_SHUFFLE(2, 3, 0, 1)));
+      output[0] = weights->bias[biasoffset] + _mm_cvtsi128_si32(sum);
+    } else {
+      constexpr int numaccums = outputsize / 8;
+      __m256i outvec[numaccums];
+      for (int i = 0; i < numaccums; i++)
+        outvec[i] = _mm256_load_si256(
+            (const __m256i *)(&weights->bias[biasoffset + 8 * i]));
+      for (int k = 0; k < inputsize; k++) {
+        __m256i in = _mm256_set1_epi32(input[k]);
+        for (int i = 0; i < numaccums; i++) {
+          __m256i w = _mm256_load_si256(
+              (const __m256i *)(weightptr + k * outputsize + 8 * i));
+          outvec[i] = _mm256_add_epi32(outvec[i], _mm256_mullo_epi32(w, in));
+        }
+      }
+      for (int i = 0; i < numaccums; i++)
+        _mm256_store_si256((__m256i *)(&output[8 * i]), outvec[i]);
+    }
+  }
+
+  __attribute__((target("avx512f,avx512bw"))) static void
+  transform_avx512(const I32 *__restrict input, I32 *__restrict output,
+                   const DenseAffineWeights<inputsize, outputsize> *weights,
+                   int bucket) {
+    int weightoffset = bucket * inputsize * outputsize;
+    int biasoffset = bucket * outputsize;
+    const I32 *weightptr = &weights->weights[weightoffset];
+    if constexpr (outputsize == 1) {
+      __m512i acc = _mm512_setzero_si512();
+      for (int k = 0; k < inputsize; k += 16) {
+        __m512i w = _mm512_load_si512((const __m512i *)(weightptr + k));
+        __m512i in = _mm512_loadu_si512((const __m512i *)(input + k));
+        acc = _mm512_add_epi32(acc, _mm512_mullo_epi32(w, in));
+      }
+      // Fold 512->128 using extracti32x4 (AVX-512F only, no DQ needed)
+      __m128i q0 = _mm512_extracti32x4_epi32(acc, 0);
+      __m128i q1 = _mm512_extracti32x4_epi32(acc, 1);
+      __m128i q2 = _mm512_extracti32x4_epi32(acc, 2);
+      __m128i q3 = _mm512_extracti32x4_epi32(acc, 3);
+      __m128i sum = _mm_add_epi32(_mm_add_epi32(q0, q1), _mm_add_epi32(q2, q3));
+      sum = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, _MM_SHUFFLE(1, 0, 3, 2)));
+      sum = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, _MM_SHUFFLE(2, 3, 0, 1)));
+      output[0] = weights->bias[biasoffset] + _mm_cvtsi128_si32(sum);
+    } else if constexpr (outputsize % 16 == 0) {
+      constexpr int numaccums = outputsize / 16;
+      __m512i outvec[numaccums];
+      for (int i = 0; i < numaccums; i++)
+        outvec[i] = _mm512_load_si512(
+            (const __m512i *)(&weights->bias[biasoffset + 16 * i]));
+      for (int k = 0; k < inputsize; k++) {
+        __m512i in = _mm512_set1_epi32(input[k]);
+        for (int i = 0; i < numaccums; i++) {
+          __m512i w = _mm512_load_si512(
+              (const __m512i *)(weightptr + k * outputsize + 16 * i));
+          outvec[i] = _mm512_add_epi32(outvec[i], _mm512_mullo_epi32(w, in));
+        }
+      }
+      for (int i = 0; i < numaccums; i++)
+        _mm512_store_si512((__m512i *)(&output[16 * i]), outvec[i]);
+    } else {
+      transform_avx2(input, output, weights, bucket);
+    }
+  }
+
   static void
   transform(const I32 *input, I32 *output,
             const DenseAffineWeights<inputsize, outputsize> *weights,
             int bucket) {
-    for (int i = 0; i < outputsize; i++) {
-      output[i] = weights->bias[bucket * outputsize + i];
-    }
-    for (int j = 0; j < outputsize; j++) {
-      const I32 *vector =
-          &(weights->weights[bucket * inputsize * outputsize + j * inputsize]);
-      for (int i = 0; i < inputsize; i++) {
-        output[j] += vector[i] * input[i];
-      }
+    if (__builtin_cpu_supports("avx512f")) {
+      transform_avx512(input, output, weights, bucket);
+    } else {
+      transform_avx2(input, output, weights, bucket);
     }
   }
 };
