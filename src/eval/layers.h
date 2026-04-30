@@ -50,7 +50,7 @@ template <int inputsize, int outputsize> struct DenseAffine {
       __m256i acc = _mm256_setzero_si256();
       for (int k = 0; k < inputsize; k += 8) {
         __m256i w = _mm256_load_si256((const __m256i *)(weightptr + k));
-        __m256i in = _mm256_loadu_si256((const __m256i *)(input + k));
+        __m256i in = _mm256_load_si256((const __m256i *)(input + k));
         acc = _mm256_add_epi32(acc, _mm256_mullo_epi32(w, in));
       }
       __m128i lo = _mm256_castsi256_si128(acc);
@@ -89,10 +89,9 @@ template <int inputsize, int outputsize> struct DenseAffine {
       __m512i acc = _mm512_setzero_si512();
       for (int k = 0; k < inputsize; k += 16) {
         __m512i w = _mm512_load_si512((const __m512i *)(weightptr + k));
-        __m512i in = _mm512_loadu_si512((const __m512i *)(input + k));
+        __m512i in = _mm512_load_si512((const __m512i *)(input + k));
         acc = _mm512_add_epi32(acc, _mm512_mullo_epi32(w, in));
       }
-      // Fold 512->128 using extracti32x4 (AVX-512F only, no DQ needed)
       __m128i q0 = _mm512_extracti32x4_epi32(acc, 0);
       __m128i q1 = _mm512_extracti32x4_epi32(acc, 1);
       __m128i q2 = _mm512_extracti32x4_epi32(acc, 2);
