@@ -113,6 +113,8 @@ int main(int argc, char *argv[]) {
         case 3:
           return "Piece Square Table";
         case 4:
+          return "King Bucketed Piece Square Table";
+        case 5:
           return "HCE";
         default:
           return "NNUE";

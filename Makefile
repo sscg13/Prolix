@@ -1,5 +1,6 @@
 EXE := Prolix
 EVALFILE := shatranj-net58.nnue
+KPFILE := shatranj-kp1.bin
 ARCH := native
 TUNE := native
 DEBUG := no
@@ -21,10 +22,10 @@ ifeq ($(CXX), g++)
 endif
 
 ifeq ($(DEBUG), no)
-	CXXFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+	CXXFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\"
 	CFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE)
 else
-	CXXFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\"
+	CXXFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\"
 	CFLAGS := -g -march=$(ARCH) -mtune=$(TUNE)
 endif
 

@@ -13,7 +13,7 @@ const int piecesquaretable[6][64] = {
 // clang-format on
 class PSQT {
   int evals[2];
-  int bias = 3;
+  int tempo = 3;
 
 public:
   int evaluate(const int color, const U64 *Bitboards, const int *pieces);

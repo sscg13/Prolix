@@ -28,7 +28,7 @@ struct Options {
   bool suppressoutput = false;
   bool useTB = false;
   bool TB70mr = true;
-  int evallevel = 5;
+  int evallevel = 6;
 };
 class Searcher {
   History *Histories = new History;

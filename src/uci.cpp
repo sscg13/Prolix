@@ -9,7 +9,7 @@ std::string uciinfostring =
     "option name UCI_Variant type combo default shatranj var shatranj\n"
     "option name Threads type spin default 1 min 1 max 8\n"
     "option name Hash type spin default 32 min 1 max 1024\n"
-    "option name EvalLevel type spin default 5 min 0 max 5\n"
+    "option name EvalLevel type spin default 6 min 0 max 6\n"
     "option name MinimalReporting type check default false\n"
     "option name NormalizeEval type check default true\n"
     "option name EvalFile type string default <internal>\n"
@@ -221,6 +221,8 @@ void Engine::uci() {
       case 3:
         return "Piece Square Table";
       case 4:
+        return "King Bucketed Piece Square Table";
+      case 5:
         return "HCE";
       default:
         return "NNUE";
@@ -244,16 +246,4 @@ void Engine::uci() {
       }
     }
   }
-  /*
-  if (ucicommand == "moveorder") {
-    int color = Bitboards.position & 1;
-    int moves[maxmoves];
-    int movcount = Bitboards.generatemoves(color, 0, moves);
-    std::cout << "Move scores:\n";
-    for (int i = 0; i < movcount; i++) {
-      int internal = moves[i];
-      std::cout << algebraic(internal) << ": " << Histories->movescore(internal)
-                << "\n";
-    }
-  }*/
 }

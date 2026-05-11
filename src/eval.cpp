@@ -1,6 +1,7 @@
 #include "eval.h"
 void Evaluator::load(EvalParams &params) {
   PFR.load();
+  kp.load();
   EUNN.load(params.nnueweights);
 }
 void Evaluator::init(Board &Bitboards) {
@@ -12,6 +13,8 @@ void Evaluator::init(Board &Bitboards) {
   case 3:
     break;
   case 4:
+    break;
+  case 5:
     break;
   default:
     EUNN.initialize(Bitboards.Bitboards, Bitboards.pieces);
@@ -29,6 +32,8 @@ void Evaluator::make(int notation, Board &Bitboards) {
     break;
   case 4:
     break;
+  case 5:
+    break;
   default:
     EUNN.make(notation, Bitboards.Bitboards, Bitboards.pieces);
   }
@@ -44,6 +49,8 @@ void Evaluator::unmake(int notation, Board &Bitboards) {
   case 3:
     break;
   case 4:
+    break;
+  case 5:
     break;
   default:
     EUNN.unmake(notation, Bitboards.Bitboards, Bitboards.pieces);
@@ -61,6 +68,8 @@ int Evaluator::evaluate(Board &Bitboards) {
   case 3:
     return PST.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
   case 4:
+    return kp.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
+  case 5:
     return Bitboards.evaluate(color);
   default:
     return EUNN.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
