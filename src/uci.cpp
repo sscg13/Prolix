@@ -9,7 +9,11 @@ std::string uciinfostring =
     "option name UCI_Variant type combo default shatranj var shatranj\n"
     "option name Threads type spin default 1 min 1 max 8\n"
     "option name Hash type spin default 32 min 1 max 1024\n"
+#ifdef HAS_EVALFILE
+    "option name EvalLevel type spin default 6 min 0 max 6\n"
+#else
     "option name EvalLevel type spin default 5 min 0 max 5\n"
+#endif
     "option name MinimalReporting type check default false\n"
     "option name NormalizeEval type check default true\n"
     "option name EvalFile type string default <internal>\n"
@@ -91,6 +95,7 @@ void Engine::uci() {
     if (option == "EvalLevel") {
       searchoptions.evallevel = std::stoi(value);
     }
+#ifdef HAS_EVALFILE
     if (option == "EvalFile") {
       std::string nnuefile = ucicommand.substr(30, ucicommand.length() - 30);
       if (nnuefile != "<internal>") {
@@ -98,6 +103,7 @@ void Engine::uci() {
         std::cout << "info string using nnue file " << nnuefile << std::endl;
       }
     }
+#endif
     if (option == "SyzygyPath") {
       searchoptions.useTB = (value != "<empty>");
       TB_init(value.data());
@@ -220,10 +226,18 @@ void Engine::uci() {
         return "Piece Rank + Piece File";
       case 3:
         return "Piece Square Table";
+#ifdef HAS_KPFILE
       case 4:
+        return "King Bucketed Piece Square Table";
+#endif
+      case 5:
         return "HCE";
       default:
+#ifdef HAS_EVALFILE
         return "NNUE";
+#else
+        return "HCE";
+#endif
       }
     }();
     int eval = master.eval.evaluate(Bitboards);
@@ -244,16 +258,4 @@ void Engine::uci() {
       }
     }
   }
-  /*
-  if (ucicommand == "moveorder") {
-    int color = Bitboards.position & 1;
-    int moves[maxmoves];
-    int movcount = Bitboards.generatemoves(color, 0, moves);
-    std::cout << "Move scores:\n";
-    for (int i = 0; i < movcount; i++) {
-      int internal = moves[i];
-      std::cout << algebraic(internal) << ": " << Histories->movescore(internal)
-                << "\n";
-    }
-  }*/
 }

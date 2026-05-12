@@ -4,7 +4,9 @@
 #define INCBIN_PREFIX
 #include "../external/incbin/incbin.h"
 
+#ifdef HAS_EVALFILE
 INCBIN(char, NNUE, EUNNfile);
+#endif
 template <typename T> T crelu(T x, T Q) {
   return std::max(std::min(x, Q), (T)0);
 }
@@ -124,13 +126,17 @@ void MultiLayerWeights::load(const char *stream) {
   // layer4weights.load(stream + offset);
 }
 void PSQNNUEWeights::loaddefaultnet() {
+#ifdef HAS_EVALFILE
   psqweights.load(&NNUEData[0]);
   layerweights.load(&NNUEData[psqweights.size]);
+#endif
 }
 void ThreatNNUEWeights::loaddefaultnet() {
+#ifdef HAS_EVALFILE
   threatweights.load(&NNUEData[0]);
   psqweights.load(&NNUEData[threatweights.size]);
   layerweights.load(&NNUEData[threatweights.size + psqweights.size]);
+#endif
 }
 void PSQNNUEWeights::readnnuefile(std::string file) {
   std::ifstream nnueweights;

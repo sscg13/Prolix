@@ -17,7 +17,7 @@ const int ranktable[6][8] = {{0, 50, 68, 64, 67, 61, 88, 0},
 class PRF {
   int piecetable[6][64];
   int evals[2];
-  int bias = 3;
+  int tempo = 3;
 
 public:
   void load();

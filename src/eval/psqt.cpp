@@ -10,5 +10,5 @@ int PSQT::evaluate(const int color, const U64 *Bitboards, const int *pieces) {
       evals[i] += piecesquaretable[pieces[sq] - 8 * i - 2][(56 * i) ^ sq];
     }
   }
-  return evals[color] - evals[color ^ 1] + bias;
+  return evals[color] - evals[color ^ 1] + tempo;
 }
