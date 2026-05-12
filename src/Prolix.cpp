@@ -112,12 +112,18 @@ int main(int argc, char *argv[]) {
           return "Piece Rank + Piece File";
         case 3:
           return "Piece Square Table";
+#ifdef HAS_KPFILE
         case 4:
           return "King Bucketed Piece Square Table";
+#endif
         case 5:
           return "HCE";
         default:
+#ifdef HAS_EVALFILE
           return "NNUE";
+#else
+          return "HCE";
+#endif
         }
       }();
       std::cout << "Eval level: " << leveldescription << std::endl;

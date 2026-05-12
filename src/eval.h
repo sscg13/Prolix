@@ -7,7 +7,9 @@
 
 #pragma once
 struct EvalParams {
+#ifdef HAS_EVALFILE
   NNUEWeights *nnueweights = new NNUEWeights;
+#endif
 };
 class Evaluator {
   NNUE EUNN;

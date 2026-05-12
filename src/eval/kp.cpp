@@ -2,13 +2,17 @@
 #include "kp.h"
 #include "../external/incbin/incbin.h"
 
+#ifdef HAS_KPFILE
 INCBIN(I16, KP, KPfile);
+#endif
 
 int KP::bucket(int sq) { return ((sq & 56) >> 1) | (sq & 3); }
 
 void KP::load() {
+#ifdef HAS_KPFILE
   weights = KPData;
   tempo = weights[22528];
+#endif
 }
 
 int KP::evaluate(const int color, const U64 *Bitboards, const int *pieces) {

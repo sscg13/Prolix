@@ -1,6 +1,8 @@
 EXE := Prolix
 EVALFILE := shatranj-net58.nnue
 KPFILE := shatranj-kp1.bin
+EVAL_EXISTS := $(wildcard $(EVALFILE))
+KP_EXISTS := $(wildcard $(KPFILE))
 ARCH := native
 TUNE := native
 DEBUG := no
@@ -27,6 +29,13 @@ ifeq ($(DEBUG), no)
 else
 	CXXFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\"
 	CFLAGS := -g -march=$(ARCH) -mtune=$(TUNE)
+endif
+
+ifneq ($(EVAL_EXISTS),)
+	CXXFLAGS += -DHAS_EVALFILE
+endif
+ifneq ($(KP_EXISTS),)
+	CXXFLAGS += -DHAS_KPFILE
 endif
 
 LDFLAGS :=
