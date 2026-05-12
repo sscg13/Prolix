@@ -1,5 +1,5 @@
 EXE := Prolix
-EVALFILE := shatranj-net58.nnue
+EVALFILE := shatranj-net59.nnue
 KPFILE := shatranj-kp1.bin
 EVAL_EXISTS := $(wildcard $(EVALFILE))
 KP_EXISTS := $(wildcard $(KPFILE))
