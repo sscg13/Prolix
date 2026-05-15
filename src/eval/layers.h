@@ -86,6 +86,10 @@ template <int inputsize, int outputsize> struct DenseAffine {
     int biasoffset = bucket * outputsize;
     const I32 *weightptr = &weights->weights[weightoffset];
     if constexpr (outputsize == 1) {
+      if constexpr (inputsize < 16) {
+        transform_avx2(input, output, weights, bucket);
+        return;
+      }
       __m512i acc = _mm512_setzero_si512();
       for (int k = 0; k < inputsize; k += 16) {
         __m512i w = _mm512_load_si512((const __m512i *)(weightptr + k));
