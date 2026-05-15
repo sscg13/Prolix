@@ -122,8 +122,8 @@ void MultiLayerWeights::load(const char *stream) {
   layer2weights.load(stream + offset);
   offset += layer2weights.size;
   layer3weights.load(stream + offset);
-  // offset += layer3weights.size;
-  // layer4weights.load(stream + offset);
+  offset += layer3weights.size;
+  layer4weights.load(stream + offset);
 }
 void PSQNNUEWeights::loaddefaultnet() {
 #ifdef HAS_EVALFILE
@@ -422,15 +422,13 @@ int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
   Layer2Affine::transform(layer1activated, layer2raw, &(weights->layer2weights),
                           bucket);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);
-  Layer3Affine::transform(layer2activated, output, &(weights->layer3weights),
+  Layer3Affine::transform(layer2activated, layer3raw, &(weights->layer3weights),
                           bucket);
-  // Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
-  // Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
-  //                         bucket);
-  int eval = output[0];
-  eval /= (L3Q);
-  eval *= evalscale;
-  eval /= activatedL2Q;
+  Layer3Activation::transform(layer3raw, layer3activated, totalL3Q);
+  Layer4Affine::transform(layer3activated, output, &(weights->layer4weights),
+                           bucket);
+  long long eval = output[0] * (long long) evalscale;
+  eval /= outputQ;
   return eval;
 }
 void NNUE::load(NNUEWeights *EUNNweights) {
