@@ -1,13 +1,11 @@
 # Prolix
 
-**Prolix plays _shatranj_, not chess**.
+**Prolix plays _shatranj_, not chess**. As of the last edit of this README, it is the strongest publicly available shatranj engine, with an estimated 3600+ elo equivalent strength.
 
 ## Compiling
-The same command as used by OpenBench:
-
 ```make EXE=(executable name) EVALFILE=(path to NNUE file)```
 
-Prolix compiles using `clang++`. A version at least 19 is ideal for maximum performance.
+Prolix compiles using either `clang \ clang++` or `gcc \ g++`. Later compiler versions may have better performance (e.g. due to better autovectorization).
 
 ## NNUE
 On compilation, Prolix embeds a NNUE file into the executable using [incbin](https://github.com/graphitemaster/incbin), which becomes the default NNUE file used for evaluation. You can download NNUE files from [Google Drive](https://drive.google.com/drive/folders/1d4HROM-7nbSpkQGt4e4TMEcmcVa00XoE?usp=sharing).
