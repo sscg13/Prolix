@@ -67,7 +67,7 @@ public:
   void syncwith(Engine &engine);
   int iterative();
   int datagenautoplayplain();
-  void datagenautoplayviriformat();
+  int datagenautoplayoranjformat();
   void bookgenautoplay(int lowerbound, int upperbound);
 
   friend class Engine;

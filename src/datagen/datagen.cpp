@@ -1,5 +1,5 @@
 #include "../engine.h"
-#include "viriformat.h"
+#include "oranjformat.h"
 std::ifstream datainput;
 int Searcher::datagenautoplayplain() {
   resetauxdata();
@@ -22,8 +22,8 @@ int Searcher::datagenautoplayplain() {
   if (Bitboards.generatemoves(0, 0, moves) == 0) {
     return 0;
   }
-  int score = quiesce(-SCORE_INF, SCORE_INF, 0, true);
-  if (std::abs(score) > 400) {
+  int balance = quiesce(-SCORE_INF, SCORE_INF, 0, true);
+  if (std::abs(balance) > 400) {
     return 0;
   }
   std::string fens[1024];
@@ -103,7 +103,7 @@ int Searcher::datagenautoplayplain() {
   }
   return maxmove;
 }
-void Searcher::datagenautoplayviriformat() {
+int Searcher::datagenautoplayoranjformat() {
   resetauxdata();
   int seed = mt() % 360;
   Bitboards.parseFEN(get129600FEN(seed, seed));
@@ -112,23 +112,30 @@ void Searcher::datagenautoplayviriformat() {
   for (int i = 0; i < 8; i++) {
     int num_moves = Bitboards.generatemoves(i & 1, 0, moves);
     if (num_moves == 0) {
-      return;
+      return 0;
     }
     int rand_move = mt() % num_moves;
     Bitboards.makemove(moves[rand_move], 0);
   }
-  if (Bitboards.generatemoves(0, 0, moves) == 0) {
-    return;
-  }
   eval.init(Bitboards);
-  Viriformat game;
-  game.initialize(Bitboards);
+  if (Bitboards.generatemoves(0, 0, moves) == 0) {
+    return 0;
+  }
+  int balance = quiesce(-SCORE_INF, SCORE_INF, 0, true);
+  if (std::abs(balance) > 400) {
+    return 0;
+  }
+  Oranjformat game;
+  game.initialize(Bitboards, 0);
   bool finished = false;
+  int wincount = 0;
+  int drawcount = 0;
+  int ply = 0;
   while (!finished) {
     int color = Bitboards.position & 1;
     int score = iterative();
     // Filter criteria: best (next) move non-capture, score not mate score, not
-    // in check
+    // in check, halfmove less than 40
     game.push(bestmove, score * (1 - 2 * color));
     if (bestmove == 0) {
       std::cout << "Null best move? mitigating by using proper null move \n";
@@ -136,7 +143,28 @@ void Searcher::datagenautoplayviriformat() {
     } else {
       Bitboards.makemove(bestmove, 0);
     }
-    if (Bitboards.twokings()) {
+    ply++;
+    if (abs(score) >= 1000) {
+      wincount++;
+    } else {
+      wincount = 0;
+    }
+    if (abs(score) <= 15 && ply >= 40) {
+      drawcount++;
+    } else {
+      drawcount = 0;
+    }
+    if (wincount >= 5) {
+      finished = true;
+      if (score * (1 - 2 * color) >= 1000) {
+        result = 2;
+      } else {
+        result = 0;
+      }
+    } else if (drawcount >= 8) {
+      finished = true;
+      result = 1;
+    } else if (Bitboards.twokings()) {
       finished = true;
       result = 1;
     } else if (Bitboards.bareking(color)) {
@@ -165,6 +193,7 @@ void Searcher::datagenautoplayviriformat() {
     }
   }
   game.writewithwdl(dataoutput, result);
+  return game.positioncount();
 }
 void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
   resetauxdata();
@@ -218,7 +247,7 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
 }
 void Engine::datagen(int n, int level, int softnodes, int hardnodes,
                      std::string outputfile) {
-  master.dataoutput.open(outputfile, std::ofstream::app);
+  master.dataoutput.open(outputfile, std::ofstream::app | std::ofstream::binary);
   searchlimits.softnodelimit = softnodes;
   searchlimits.hardnodelimit = hardnodes;
   searchlimits.softtimelimit = 0;
@@ -228,7 +257,7 @@ void Engine::datagen(int n, int level, int softnodes, int hardnodes,
   master.syncwith(*this);
   int positions = 0;
   while (positions < n) {
-    positions += master.datagenautoplayplain();
+    positions += master.datagenautoplayoranjformat();
     std::cout << positions << "/" << n << std::endl;
   }
   master.dataoutput.close();

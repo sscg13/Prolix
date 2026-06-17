@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
                      "evallevel softnodelimit hardnodelimit";
         return 0;
       }
-      std::string extension = ".txt";
+      std::string extension = ".data";
       int threads = atoi(argv[2]);
       int positions = atoi(argv[3]);
       int evallevel = atoi(argv[4]);
