@@ -2,7 +2,7 @@
 
 PackedBoard::PackedBoard(const Board &Bitboards, int eval)
     : occupancy(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]), pieces{},
-      stm(Bitboards.position & 1), halfmove(Bitboards.position >> 1),
+      stm((Bitboards.position & 1) << 7), halfmove(Bitboards.position >> 1),
       fullmove(0), score((U16)eval), wdl(0), padding(0) {
   U64 occupied = occupancy;
   int i = 0;
