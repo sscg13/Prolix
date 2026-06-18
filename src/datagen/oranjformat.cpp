@@ -3,7 +3,7 @@
 PackedBoard::PackedBoard(const Board &Bitboards, int eval)
     : occupancy(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]), pieces{},
       stm((Bitboards.position & 1) << 7), halfmove(Bitboards.position >> 1),
-      fullmove(0), score((U16)eval), wdl(0), padding(0) {
+      fullmove(0), score((I16)eval), wdl(0), padding(0) {
   U64 occupied = occupancy;
   int i = 0;
   while (occupied) {
@@ -15,7 +15,7 @@ PackedBoard::PackedBoard(const Board &Bitboards, int eval)
 }
 
 MoveScorePair::MoveScorePair(int mov, int eval)
-    : move(mov & 4095), score((U16)eval) {
+    : move(mov & 4095), score((I16)eval) {
   if (mov & (1 << 20)) {
     move |= 0x1000;
   }
