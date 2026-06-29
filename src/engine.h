@@ -28,6 +28,7 @@ class Engine {
   std::mt19937 mt;
   std::ofstream dataoutput;
   int threads = 1;
+  std::unique_ptr<PaddedNodeCount[]> threadnodecounts;
   Searcher master;
   void initializett();
 
@@ -35,7 +36,7 @@ public:
   friend class Searcher;
   void startup();
   void bench();
-  void spawnworker();
+  void spawnworker(int threadIndex);
   void evalscale(int level, std::string inputfile);
   void datagen(int n, int level, int softnodes, int hardnodes,
                std::string outputfile);
