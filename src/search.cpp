@@ -147,19 +147,23 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
       if (sharednode) {
         sharednode->count.store(Bitboards.nodecount, std::memory_order_relaxed);
       }
+      if (ismaster && threadcount == 1 && searchlimits.hardnodelimit > 0 &&
+          Bitboards.nodecount >= searchlimits.hardnodelimit) {
+        *stopsearch = true;
+      }
       if ((Bitboards.nodecount & 1023) == 0) {
         auto now = std::chrono::steady_clock::now();
         auto timetaken =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-        if (ismaster) {
+        if (ismaster && threadcount > 1) {
           if (searchlimits.hardnodelimit > 0 &&
               totalnodes() >= (uint64_t)searchlimits.hardnodelimit) {
             *stopsearch = true;
           }
-          if (timetaken.count() >= searchlimits.hardtimelimit &&
-              searchlimits.hardtimelimit > 0) {
-            *stopsearch = true;
-          }
+        }
+        if (ismaster && timetaken.count() >= searchlimits.hardtimelimit &&
+            searchlimits.hardtimelimit > 0) {
+          *stopsearch = true;
         }
       }
     }
@@ -470,19 +474,23 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
       if (sharednode) {
         sharednode->count.store(Bitboards.nodecount, std::memory_order_relaxed);
       }
+      if (ismaster && threadcount == 1 && searchlimits.hardnodelimit > 0 &&
+          Bitboards.nodecount >= searchlimits.hardnodelimit) {
+        *stopsearch = true;
+      }
       if ((Bitboards.nodecount & 1023) == 0) {
         auto now = std::chrono::steady_clock::now();
         auto timetaken =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-        if (ismaster) {
+        if (ismaster && threadcount > 1) {
           if (searchlimits.hardnodelimit > 0 &&
               totalnodes() >= (uint64_t)searchlimits.hardnodelimit) {
             *stopsearch = true;
           }
-          if (timetaken.count() >= searchlimits.hardtimelimit &&
-              searchlimits.hardtimelimit > 0) {
-            *stopsearch = true;
-          }
+        }
+        if (ismaster && timetaken.count() >= searchlimits.hardtimelimit &&
+            searchlimits.hardtimelimit > 0) {
+          *stopsearch = true;
         }
       }
     }
@@ -659,10 +667,10 @@ int Searcher::iterative() {
       if (searchoptions.minimal) {
         std::cout << lastinfoline << std::endl;
       }
-      uint64_t totalnodes_final = totalnodes();
-      int nps = 1000 * (totalnodes_final /
+      uint64_t nodes = totalnodes();
+      int nps = 1000 * (nodes /
                         std::max((uint64_t)1, (uint64_t)timetaken.count()));
-      std::cout << "info nodes " << totalnodes_final << " nps " << nps
+      std::cout << "info nodes " << nodes << " nps " << nps
                 << std::endl;
 
       std::cout << "bestmove " << algebraic(bestmove1) << std::endl;
