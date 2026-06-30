@@ -175,11 +175,26 @@ void Engine::uci() {
       searchlimits.softtimelimit = ourtime / 40 + ourinc / 3;
       searchlimits.hardtimelimit = ourtime / 10 + ourinc;
     }
+    if (threads > 1 && searchlimits.hardtimelimit == 0 &&
+        searchlimits.softtimelimit == 0 &&
+        (searchlimits.hardnodelimit > 0 ||
+         searchlimits.maxdepth < maxmaxdepth)) {
+      std::cout << "info string warning: multiple threads introduces "
+                   "nondeterministic behavior"
+                << std::endl;
+    }
     master.syncwith(*this);
+    threadnodecounts.reset(new PaddedNodeCount[threads]);
+    for (int i = 0; i < threads; i++) {
+      threadnodecounts[i].count.store(0, std::memory_order_relaxed);
+    }
+    master.sharednode = &threadnodecounts[0];
+    master.allnodes = threadnodecounts.get();
+    master.threadcount = threads;
     if (threads > 1) {
       std::vector<std::thread> workers(threads - 1);
       for (int i = 0; i < threads - 1; i++) {
-        workers[i] = std::thread(&Engine::spawnworker, this);
+        workers[i] = std::thread(&Engine::spawnworker, this, i + 1);
       }
       int score = master.iterative();
       for (auto &thread : workers) {

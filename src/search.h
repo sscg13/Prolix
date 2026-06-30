@@ -10,6 +10,9 @@
 #include <time.h>
 #pragma once
 class Engine;
+struct alignas(64) PaddedNodeCount {
+  std::atomic<uint64_t> count{0};
+};
 struct abinfo {
   int playedmove;
   int eval;
@@ -50,6 +53,7 @@ class Searcher {
   std::random_device rd;
   std::mt19937 mt;
   void resetauxdata();
+  uint64_t totalnodes() const;
   int quiesce(int alpha, int beta, int depth, bool isPV);
   int alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
                 int nodetype);
@@ -63,6 +67,9 @@ public:
   Options searchoptions;
   std::ofstream dataoutput;
   bool ismaster = true;
+  PaddedNodeCount *sharednode = nullptr;
+  PaddedNodeCount *allnodes = nullptr;
+  int threadcount = 1;
   void seedrng();
   void syncwith(Engine &engine);
   int iterative();

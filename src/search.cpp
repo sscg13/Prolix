@@ -144,17 +144,22 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
       if (score > bestscore) {
         bestscore = score;
       }
-      if (ismaster && Bitboards.nodecount >= searchlimits.hardnodelimit &&
-          searchlimits.hardnodelimit > 0) {
-        *stopsearch = true;
+      if (sharednode) {
+        sharednode->count.store(Bitboards.nodecount, std::memory_order_relaxed);
       }
       if ((Bitboards.nodecount & 1023) == 0) {
         auto now = std::chrono::steady_clock::now();
         auto timetaken =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-        if (ismaster && timetaken.count() >= searchlimits.hardtimelimit &&
-            searchlimits.hardtimelimit > 0) {
-          *stopsearch = true;
+        if (ismaster) {
+          if (searchlimits.hardnodelimit > 0 &&
+              totalnodes() >= (uint64_t)searchlimits.hardnodelimit) {
+            *stopsearch = true;
+          }
+          if (timetaken.count() >= searchlimits.hardtimelimit &&
+              searchlimits.hardtimelimit > 0) {
+            *stopsearch = true;
+          }
         }
       }
     }
@@ -462,17 +467,22 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         bestmove1 = i;
         bestscore = score;
       }
-      if (ismaster && Bitboards.nodecount >= searchlimits.hardnodelimit &&
-          searchlimits.hardnodelimit > 0) {
-        *stopsearch = true;
+      if (sharednode) {
+        sharednode->count.store(Bitboards.nodecount, std::memory_order_relaxed);
       }
       if ((Bitboards.nodecount & 1023) == 0) {
         auto now = std::chrono::steady_clock::now();
         auto timetaken =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-        if (ismaster && timetaken.count() >= searchlimits.hardtimelimit &&
-            searchlimits.hardtimelimit > 0) {
-          *stopsearch = true;
+        if (ismaster) {
+          if (searchlimits.hardnodelimit > 0 &&
+              totalnodes() >= (uint64_t)searchlimits.hardnodelimit) {
+            *stopsearch = true;
+          }
+          if (timetaken.count() >= searchlimits.hardtimelimit &&
+              searchlimits.hardtimelimit > 0) {
+            *stopsearch = true;
+          }
         }
       }
     }
@@ -507,6 +517,9 @@ int Searcher::normalize(int eval) {
 }
 int Searcher::iterative() {
   Bitboards.nodecount = 0;
+  if (sharednode) {
+    sharednode->count.store(0, std::memory_order_relaxed);
+  }
   tbhits = 0;
   if (ismaster) {
     *stopsearch = false;
@@ -550,8 +563,8 @@ int Searcher::iterative() {
     auto now = std::chrono::steady_clock::now();
     auto timetaken =
         std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-    if ((Bitboards.nodecount < searchlimits.hardnodelimit ||
-         searchlimits.hardnodelimit <= 0) &&
+    if ((searchlimits.hardnodelimit <= 0 ||
+         totalnodes() < (uint64_t)searchlimits.hardnodelimit) &&
         (timetaken.count() < searchlimits.hardtimelimit ||
          searchlimits.hardtimelimit <= 0) &&
         depth < searchlimits.maxdepth && bestmove >= 0) {
@@ -562,7 +575,7 @@ int Searcher::iterative() {
             int printedscore =
                 searchoptions.normalizeeval ? normalize(score) : score;
             infoline << "info depth " << depth << " nodes "
-                     << Bitboards.nodecount << " tbhits " << tbhits << " time "
+                     << totalnodes() << " tbhits " << tbhits << " time "
                      << timetaken.count() << " score cp " << printedscore;
             if (searchoptions.showWDL) {
               int winrate = wdlmodel(score);
@@ -583,7 +596,7 @@ int Searcher::iterative() {
               matescore = (-SCORE_MATE - score) / 2;
             }
             infoline << "info depth " << depth << " nodes "
-                     << Bitboards.nodecount << " tbhits " << tbhits << " time "
+                     << totalnodes() << " tbhits " << tbhits << " time "
                      << timetaken.count() << " score mate " << matescore;
             if (searchoptions.showWDL) {
               int winrate = 1000 * (matescore > 0);
@@ -606,7 +619,7 @@ int Searcher::iterative() {
           int printedscore =
               searchoptions.normalizeeval ? normalize(score) : score;
           std::cout << depth << " " << printedscore << " "
-                    << timetaken.count() / 10 << " " << Bitboards.nodecount
+                    << timetaken.count() / 10 << " " << totalnodes()
                     << " ";
           for (int i = 1; i < pvtable[0][0]; i++) {
             std::cout << algebraic(pvtable[0][i]) << " ";
@@ -630,10 +643,13 @@ int Searcher::iterative() {
     if (ismaster && ((timetaken.count() > (int)(complexitytmfactor *
                                                 searchlimits.softtimelimit) &&
                       searchlimits.softtimelimit > 0) ||
-                     (Bitboards.nodecount > searchlimits.softnodelimit &&
-                      searchlimits.softnodelimit > 0))) {
+                     (searchlimits.softnodelimit > 0 &&
+                      totalnodes() > (uint64_t)searchlimits.softnodelimit))) {
       *stopsearch = true;
     }
+  }
+  if (sharednode) {
+    sharednode->count.store(Bitboards.nodecount, std::memory_order_relaxed);
   }
   auto now = std::chrono::steady_clock::now();
   auto timetaken =
@@ -643,9 +659,10 @@ int Searcher::iterative() {
       if (searchoptions.minimal) {
         std::cout << lastinfoline << std::endl;
       }
-      int nps = 1000 * (Bitboards.nodecount /
+      uint64_t totalnodes_final = totalnodes();
+      int nps = 1000 * (totalnodes_final /
                         std::max((uint64_t)1, (uint64_t)timetaken.count()));
-      std::cout << "info nodes " << Bitboards.nodecount << " nps " << nps
+      std::cout << "info nodes " << totalnodes_final << " nps " << nps
                 << std::endl;
 
       std::cout << "bestmove " << algebraic(bestmove1) << std::endl;
@@ -664,9 +681,20 @@ int Searcher::iterative() {
   }
   return returnedscore;
 }
-void Engine::spawnworker() {
+void Engine::spawnworker(int threadIndex) {
   Searcher worker;
   worker.ismaster = false;
   worker.syncwith(*this);
+  worker.sharednode = &threadnodecounts[threadIndex];
   int score = worker.iterative();
+}
+uint64_t Searcher::totalnodes() const {
+  if (!allnodes) {
+    return (uint64_t)Bitboards.nodecount;
+  }
+  uint64_t total = 0;
+  for (int i = 0; i < threadcount; i++) {
+    total += allnodes[i].count.load(std::memory_order_relaxed);
+  }
+  return total;
 }
