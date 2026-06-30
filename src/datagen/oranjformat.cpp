@@ -26,9 +26,7 @@ void Oranjformat::initialize(const Board &Bitboards, int eval) {
   moves.clear();
 }
 
-void Oranjformat::push(int move, int score) {
-  moves.emplace_back(move, score);
-}
+void Oranjformat::push(int move, int score) { moves.emplace_back(move, score); }
 
 void Oranjformat::writewithwdl(std::ofstream &output, int wdl) {
   initialpos.wdl = wdl;
@@ -37,6 +35,4 @@ void Oranjformat::writewithwdl(std::ofstream &output, int wdl) {
   output.write(reinterpret_cast<const char *>(moves.data()), 4 * moves.size());
 }
 
-int Oranjformat::positioncount() {
-  return moves.size() - 1;
-}
+int Oranjformat::positioncount() { return moves.size() - 1; }

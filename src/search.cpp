@@ -590,8 +590,8 @@ int Searcher::iterative() {
                 searchoptions.normalizeeval ? normalize(score) : score;
             infoline << "info depth " << depth << " seldepth " << seldepth
                      << " nodes " << nodes << " nps " << nps << " tbhits "
-                     << tbhits << " time " << timetaken.count()
-                     << " score cp " << printedscore;
+                     << tbhits << " time " << timetaken.count() << " score cp "
+                     << printedscore;
             if (searchoptions.showWDL) {
               int winrate = wdlmodel(score);
               int lossrate = wdlmodel(-score);
@@ -635,8 +635,7 @@ int Searcher::iterative() {
           int printedscore =
               searchoptions.normalizeeval ? normalize(score) : score;
           std::cout << depth << " " << printedscore << " "
-                    << timetaken.count() / 10 << " " << totalnodes()
-                    << " ";
+                    << timetaken.count() / 10 << " " << totalnodes() << " ";
           for (int i = 1; i < pvtable[0][0]; i++) {
             std::cout << algebraic(pvtable[0][i]) << " ";
           }
@@ -676,10 +675,9 @@ int Searcher::iterative() {
         std::cout << lastinfoline << std::endl;
       }
       uint64_t nodes = totalnodes();
-      int nps = 1000 * (nodes /
-                        std::max((uint64_t)1, (uint64_t)timetaken.count()));
-      std::cout << "info nodes " << nodes << " nps " << nps
-                << std::endl;
+      int nps =
+          1000 * (nodes / std::max((uint64_t)1, (uint64_t)timetaken.count()));
+      std::cout << "info nodes " << nodes << " nps " << nps << std::endl;
 
       std::cout << "bestmove " << algebraic(bestmove1) << std::endl;
     }

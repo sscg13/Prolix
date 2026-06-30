@@ -6,14 +6,15 @@ KP_EXISTS := $(wildcard $(KPFILE))
 ARCH := native
 TUNE := native
 DEBUG := no
+BUILD_DIR := build
 
 rwildcard = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
 C_SRCS := $(call rwildcard,src,*.c)
 CPP_SRCS := $(call rwildcard,src,*.cpp)
 
-CPP_OBJS := $(patsubst %.cpp,%.o,$(CPP_SRCS))
-C_OBJS := $(patsubst %.c,%.o,$(C_SRCS))
+CPP_OBJS := $(patsubst src/%.cpp,$(BUILD_DIR)/%.o,$(CPP_SRCS))
+C_OBJS := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(C_SRCS))
 OBJS := $(CPP_OBJS) $(C_OBJS)
 
 CXX := clang++
@@ -52,10 +53,12 @@ endif
 
 OUT := $(EXE)$(SUFFIX)
 
-%.o: %.cpp
+$(BUILD_DIR)/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-%.o: %.c
+$(BUILD_DIR)/%.o: src/%.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(EXE): $(OBJS)
@@ -65,4 +68,4 @@ $(EXE): $(OBJS)
 -include $(DEPS)
 
 clean:
-	rm -f $(OBJS) $(DEPS)
+	rm -rf $(BUILD_DIR)

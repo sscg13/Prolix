@@ -247,7 +247,8 @@ void Searcher::bookgenautoplay(int lowerbound, int upperbound) {
 }
 void Engine::datagen(int n, int level, int softnodes, int hardnodes,
                      std::string outputfile) {
-  master.dataoutput.open(outputfile, std::ofstream::app | std::ofstream::binary);
+  master.dataoutput.open(outputfile,
+                         std::ofstream::app | std::ofstream::binary);
   searchlimits.softnodelimit = softnodes;
   searchlimits.hardnodelimit = hardnodes;
   searchlimits.softtimelimit = 0;
