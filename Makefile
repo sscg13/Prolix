@@ -53,6 +53,14 @@ endif
 
 OUT := $(EXE)$(SUFFIX)
 
+$(EXE): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $(OUT) $^
+	@echo "Build complete. Run with ./$(EXE)"
+
+$(BUILD_DIR)/eval/nnue.o: src/eval/nnue.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -mno-avxvnni -c $< -o $@
+
 $(BUILD_DIR)/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -60,10 +68,6 @@ $(BUILD_DIR)/%.o: src/%.cpp
 $(BUILD_DIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
-
-$(EXE): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(OUT) $^
-	@echo "Build complete. Run with ./$(EXE)"
 
 -include $(DEPS)
 
