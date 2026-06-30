@@ -58,6 +58,7 @@ void Searcher::syncwith(Engine &engine) {
   eval.init(Bitboards);
 }
 int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
+  seldepth = std::max(seldepth, ply + 1);
   int index = Bitboards.zobristhash % *TTsize;
   TTentry &ttentry = (*TT)[index];
   bool tthit = ((ttentry.key >> 16) == (Bitboards.zobristhash >> 16));
@@ -177,6 +178,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
 }
 int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
                         int nodetype) {
+  seldepth = std::max(seldepth, ply + 1);
   pvtable[ply][0] = ply + 1;
   if (Bitboards.repetitions() > 1) {
     return SCORE_DRAW;
@@ -529,6 +531,7 @@ int Searcher::iterative() {
     sharednode->count.store(0, std::memory_order_relaxed);
   }
   tbhits = 0;
+  seldepth = 0;
   if (ismaster) {
     *stopsearch = false;
   }
@@ -579,12 +582,16 @@ int Searcher::iterative() {
       returnedscore = score;
       if (ismaster) {
         if (proto == "uci" && !searchoptions.suppressoutput) {
+          uint64_t nodes = totalnodes();
+          int nps = 1000 * (nodes /
+                            std::max((uint64_t)1, (uint64_t)timetaken.count()));
           if (abs(score) <= SCORE_WIN) {
             int printedscore =
                 searchoptions.normalizeeval ? normalize(score) : score;
-            infoline << "info depth " << depth << " nodes "
-                     << totalnodes() << " tbhits " << tbhits << " time "
-                     << timetaken.count() << " score cp " << printedscore;
+            infoline << "info depth " << depth << " seldepth " << seldepth
+                     << " nodes " << nodes << " nps " << nps << " tbhits "
+                     << tbhits << " time " << timetaken.count()
+                     << " score cp " << printedscore;
             if (searchoptions.showWDL) {
               int winrate = wdlmodel(score);
               int lossrate = wdlmodel(-score);
@@ -603,9 +610,10 @@ int Searcher::iterative() {
             } else {
               matescore = (-SCORE_MATE - score) / 2;
             }
-            infoline << "info depth " << depth << " nodes "
-                     << totalnodes() << " tbhits " << tbhits << " time "
-                     << timetaken.count() << " score mate " << matescore;
+            infoline << "info depth " << depth << " seldepth " << seldepth
+                     << " nodes " << nodes << " nps " << nps << " tbhits "
+                     << tbhits << " time " << timetaken.count()
+                     << " score mate " << matescore;
             if (searchoptions.showWDL) {
               int winrate = 1000 * (matescore > 0);
               int lossrate = 1000 * (matescore < 0);

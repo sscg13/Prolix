@@ -31,6 +31,11 @@ else
 	CFLAGS := -g -march=$(ARCH) -mtune=$(TUNE)
 endif
 
+CXXFLAGS += -MMD -MP
+CFLAGS += -MMD -MP
+
+DEPS := $(OBJS:.o=.d)
+
 ifneq ($(EVAL_EXISTS),)
 	CXXFLAGS += -DHAS_EVALFILE
 endif
@@ -57,5 +62,7 @@ $(EXE): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(OUT) $^
 	@echo "Build complete. Run with ./$(EXE)"
 
+-include $(DEPS)
+
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) $(DEPS)

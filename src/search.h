@@ -47,6 +47,7 @@ class Searcher {
   std::atomic<bool> *stopsearch;
   int rootpiececount;
   int tbhits = 0;
+  int seldepth = 0;
   abinfo searchstack[maxmaxdepth + 32];
   int pvtable[maxmaxdepth + 1][maxmaxdepth + 1];
   int bestmove = 0;
