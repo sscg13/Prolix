@@ -1213,8 +1213,7 @@ bool Board::see_exceeds(int mov, int color, int threshold) {
     ourturn = !ourturn;
   }
 }
-int Board::probetbwdl() {
-  int success = 0;
+void Board::settbpos() {
   uint8_t convert[8] = {0, 0, 1, 3, 5, 2, 4, 6};
   tbpos->pt[0] = 6;
   tbpos->pt[1] = 14;
@@ -1247,6 +1246,14 @@ int Board::probetbwdl() {
     tbpos->pt[tbpos->num++] = piece;
     occ &= (occ - 1);
   }
+}
+int Board::probetbwdl() {
+  int success = 0;
+  settbpos();
   int result = TB_probe_wdl(tbpos, &success);
   return success ? result : -3;
+}
+int Board::probetbdtz(int *success) {
+  settbpos();
+  return TB_probe_dtz(tbpos, success);
 }

@@ -19,6 +19,7 @@ std::string uciinfostring =
     "option name EvalFile type string default <internal>\n"
     "option name UCI_ShowWDL type check default true\n"
     "option name SyzygyPath type string default <empty>\n"
+    "option name Syzygy70MoveRule type check default true\n"
     "uciok\n";
 // clang-format on
 Limits infinitesearch = {0, 0, 0, 0, maxmaxdepth};
@@ -110,6 +111,9 @@ void Engine::uci() {
       std::cout << "info string found " << TB_NumTables[0] << " WDL and "
                 << TB_NumTables[2] << " DTZ files \n";
     }
+    if (option == "Syzygy70MoveRule") {
+      searchoptions.TB70mr = (value == "true");
+    }
     if (option == "UCI_ShowWDL") {
       if (value == "true") {
         searchoptions.showWDL = true;
@@ -139,8 +143,10 @@ void Engine::uci() {
     int binc = 0;
     searchlimits = infinitesearch;
     rootmoves.clear();
+    bool sawsearchmoves = false;
     while (tokens >> token) {
       if (token == "searchmoves") {
+        sawsearchmoves = true;
         int color = Bitboards.position & 1;
         int genmoves[maxmoves];
         int len = Bitboards.generatemoves(color, 0, genmoves);
@@ -181,6 +187,10 @@ void Engine::uci() {
         tokens >> token;
         searchlimits.hardnodelimit = std::stoi(token);
       }
+    }
+    if (sawsearchmoves && rootmoves.empty()) {
+      std::cout << "info string warning: no legal searchmoves provided"
+                << std::endl;
     }
     int color = Bitboards.position & 1;
     int ourtime = color ? btime : wtime;

@@ -536,6 +536,79 @@ int Searcher::normalize(int eval) {
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   return round(100 * eval / a);
 }
+void Searcher::roottbprobe() {
+  if (!searchoptions.useTB || rootpiececount > MAX_TB_PIECES) {
+    return;
+  }
+  int color = Bitboards.position & 1;
+  int genmoves[maxmoves];
+  int gencount = Bitboards.generatemoves(color, 0, genmoves);
+  std::vector<int> candidates;
+  for (int i = 0; i < gencount; i++) {
+    if (rootmoves.empty() || std::find(rootmoves.begin(), rootmoves.end(),
+                                       genmoves[i]) != rootmoves.end()) {
+      candidates.push_back(genmoves[i]);
+    }
+  }
+  if (candidates.empty()) {
+    return;
+  }
+  int cnt = Bitboards.halfmovecount();
+  std::vector<std::pair<int, int>> ranked;
+  int bestrank = -1000000;
+  for (int mov : candidates) {
+    Bitboards.makemove(mov, true);
+    int success = 0;
+    int v = 0;
+    if (Bitboards.halfmovecount() != 0) {
+      v = Bitboards.probetbdtz(&success);
+      if (success) {
+        if (v > 0) {
+          v++;
+        } else if (v < 0) {
+          v--;
+        }
+      }
+    }
+    if (!success) {
+      // DTZ table missing/unavailable (or the move zeroed the counter,
+      // where WDL is already exact): fall back to WDL for this move.
+      int wdl = Bitboards.probetbwdl();
+      success = (wdl > -3);
+      v = (wdl == 2)   ? 1
+          : (wdl == 1) ? 141
+          : (wdl == 0) ? 0
+          : (wdl == -1) ? -141
+                        : -1;
+    }
+    v = -v;
+    Bitboards.unmakemove(mov);
+    if (!success) {
+      return;
+    }
+    int rank;
+    if (searchoptions.TB70mr) {
+      if (v > 0) {
+        rank = (v + cnt <= 139) ? 1000 : 1000 - (v + cnt);
+      } else if (v < 0) {
+        rank = (-v * 2 + cnt < 140) ? -1000 : -1000 + (-v + cnt);
+      } else {
+        rank = 0;
+      }
+    } else {
+      rank = (v > 0) ? 1000 : ((v < 0) ? -1000 : 0);
+    }
+    ranked.push_back({rank, mov});
+    bestrank = std::max(bestrank, rank);
+  }
+  std::vector<int> best;
+  for (auto &entry : ranked) {
+    if (entry.first == bestrank) {
+      best.push_back(entry.second);
+    }
+  }
+  rootmoves = best;
+}
 int Searcher::iterative() {
   Bitboards.nodecount = 0;
   if (sharednode) {
@@ -560,6 +633,7 @@ int Searcher::iterative() {
   resetauxdata();
   rootpiececount =
       __builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]);
+  roottbprobe();
   while (!(*stopsearch)) {
     bestmove = -1;
     int delta = 20;
