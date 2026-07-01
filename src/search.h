@@ -46,6 +46,8 @@ class Searcher {
   int countermoves[6][64];
   std::atomic<bool> *stopsearch;
   int rootpiececount;
+  int rootwdl = -3;
+  std::vector<int> rootmoves;
   int tbhits = 0;
   int seldepth = 0;
   abinfo searchstack[maxmaxdepth + 32];
@@ -54,12 +56,14 @@ class Searcher {
   std::random_device rd;
   std::mt19937 mt;
   void resetauxdata();
+  void roottbprobe();
   uint64_t totalnodes() const;
   int quiesce(int alpha, int beta, int depth, bool isPV);
   int alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
                 int nodetype);
   int wdlmodel(int eval);
   int normalize(int eval);
+  int displayscore(int score);
 
 public:
   Evaluator eval;

@@ -21,6 +21,7 @@ class Board {
   int root = 0;
   TB_Position *tbpos = nullptr;
   int startpiece[16] = {4, 3, 1, 5, 2, 1, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0};
+  void settbpos();
 
 public:
   U64 Bitboards[8];
@@ -54,6 +55,7 @@ public:
   int evaluate(int color);
   bool see_exceeds(int mov, int color, int threshold);
   int probetbwdl();
+  int probetbdtz();
 };
 
 void initializeleaperattacks();

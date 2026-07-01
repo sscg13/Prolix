@@ -54,6 +54,7 @@ void Searcher::syncwith(Engine &engine) {
   Bitboards.get_tbpos_pointer();
   searchlimits = engine.searchlimits;
   searchoptions = engine.searchoptions;
+  rootmoves = engine.rootmoves;
   eval.level = searchoptions.evallevel;
   eval.init(Bitboards);
 }
@@ -285,6 +286,16 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   movcount = Bitboards.generatemoves(color, 0, moves);
   if (movcount == 0) {
     return -1 * (SCORE_MATE - ply);
+  }
+  if (ply == 0 && !rootmoves.empty()) {
+    int filtered = 0;
+    for (int i = 0; i < movcount; i++) {
+      if (std::find(rootmoves.begin(), rootmoves.end(), moves[i]) !=
+          rootmoves.end()) {
+        moves[filtered++] = moves[i];
+      }
+    }
+    movcount = filtered;
   }
   int tbwdl = -3;
   int piececount =
@@ -525,6 +536,92 @@ int Searcher::normalize(int eval) {
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   return round(100 * eval / a);
 }
+int Searcher::displayscore(int score) {
+  if (abs(score) < SCORE_WIN && rootwdl > -3) {
+    int result = searchoptions.TB70mr ? (rootwdl / 2)
+                                       : ((rootwdl > 0) - (rootwdl < 0));
+    if (result != 0) {
+      return (result > 0) ? SCORE_TB_WIN : -SCORE_TB_WIN;
+    }
+  }
+  return searchoptions.normalizeeval ? normalize(score) : score;
+}
+void Searcher::roottbprobe() {
+  rootwdl = -3;
+  if (!searchoptions.useTB || rootpiececount > MAX_TB_PIECES) {
+    return;
+  }
+  rootwdl = Bitboards.probetbwdl();
+  int color = Bitboards.position & 1;
+  int genmoves[maxmoves];
+  int gencount = Bitboards.generatemoves(color, 0, genmoves);
+  std::vector<int> candidates;
+  for (int i = 0; i < gencount; i++) {
+    if (rootmoves.empty() || std::find(rootmoves.begin(), rootmoves.end(),
+                                       genmoves[i]) != rootmoves.end()) {
+      candidates.push_back(genmoves[i]);
+    }
+  }
+  if (candidates.empty()) {
+    return;
+  }
+  int cnt = Bitboards.halfmovecount();
+  std::vector<std::pair<int, int>> ranked;
+  int bestrank = -1000000;
+  for (int mov : candidates) {
+    Bitboards.makemove(mov, true);
+    bool success = false;
+    int v = 0;
+    if (Bitboards.halfmovecount() != 0) {
+      v = Bitboards.probetbdtz();
+      success = (v > -10000);
+      if (success) {
+        if (v > 0) {
+          v++;
+        } else if (v < 0) {
+          v--;
+        }
+      }
+    }
+    if (!success) {
+      // DTZ table missing/unavailable (or the move zeroed the counter,
+      // where WDL is already exact): fall back to WDL for this move.
+      int wdl = Bitboards.probetbwdl();
+      success = (wdl > -3);
+      v = (wdl == 2)   ? 1
+          : (wdl == 1) ? 141
+          : (wdl == 0) ? 0
+          : (wdl == -1) ? -141
+                        : -1;
+    }
+    v = -v;
+    Bitboards.unmakemove(mov);
+    if (!success) {
+      return;
+    }
+    int rank;
+    if (searchoptions.TB70mr) {
+      if (v > 0) {
+        rank = (v + cnt <= 139) ? 1000 : 1000 - (v + cnt);
+      } else if (v < 0) {
+        rank = (-v * 2 + cnt < 140) ? -1000 : -1000 + (-v + cnt);
+      } else {
+        rank = 0;
+      }
+    } else {
+      rank = (v > 0) ? 1000 : ((v < 0) ? -1000 : 0);
+    }
+    ranked.push_back({rank, mov});
+    bestrank = std::max(bestrank, rank);
+  }
+  std::vector<int> best;
+  for (auto &entry : ranked) {
+    if (entry.first == bestrank) {
+      best.push_back(entry.second);
+    }
+  }
+  rootmoves = best;
+}
 int Searcher::iterative() {
   Bitboards.nodecount = 0;
   if (sharednode) {
@@ -549,6 +646,7 @@ int Searcher::iterative() {
   resetauxdata();
   rootpiececount =
       __builtin_popcountll(Bitboards.Bitboards[0] | Bitboards.Bitboards[1]);
+  roottbprobe();
   while (!(*stopsearch)) {
     bestmove = -1;
     int delta = 20;
@@ -586,8 +684,7 @@ int Searcher::iterative() {
           int nps = 1000 * (nodes /
                             std::max((uint64_t)1, (uint64_t)timetaken.count()));
           if (abs(score) <= SCORE_WIN) {
-            int printedscore =
-                searchoptions.normalizeeval ? normalize(score) : score;
+            int printedscore = displayscore(score);
             infoline << "info depth " << depth << " seldepth " << seldepth
                      << " nodes " << nodes << " nps " << nps << " tbhits "
                      << tbhits << " time " << timetaken.count() << " score cp "
@@ -632,8 +729,7 @@ int Searcher::iterative() {
           infoline.str("");
         }
         if (proto == "xboard") {
-          int printedscore =
-              searchoptions.normalizeeval ? normalize(score) : score;
+          int printedscore = displayscore(score);
           std::cout << depth << " " << printedscore << " "
                     << timetaken.count() / 10 << " " << totalnodes() << " ";
           for (int i = 1; i < pvtable[0][0]; i++) {
