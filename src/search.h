@@ -46,6 +46,7 @@ class Searcher {
   int countermoves[6][64];
   std::atomic<bool> *stopsearch;
   int rootpiececount;
+  int rootwdl = -3;
   std::vector<int> rootmoves;
   int tbhits = 0;
   int seldepth = 0;
@@ -62,6 +63,7 @@ class Searcher {
                 int nodetype);
   int wdlmodel(int eval);
   int normalize(int eval);
+  int displayscore(int score);
 
 public:
   Evaluator eval;

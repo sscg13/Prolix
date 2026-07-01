@@ -536,10 +536,22 @@ int Searcher::normalize(int eval) {
   double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
   return round(100 * eval / a);
 }
+int Searcher::displayscore(int score) {
+  if (abs(score) < SCORE_WIN && rootwdl > -3) {
+    int result = searchoptions.TB70mr ? (rootwdl / 2)
+                                       : ((rootwdl > 0) - (rootwdl < 0));
+    if (result != 0) {
+      return (result > 0) ? SCORE_TB_WIN : -SCORE_TB_WIN;
+    }
+  }
+  return searchoptions.normalizeeval ? normalize(score) : score;
+}
 void Searcher::roottbprobe() {
+  rootwdl = -3;
   if (!searchoptions.useTB || rootpiececount > MAX_TB_PIECES) {
     return;
   }
+  rootwdl = Bitboards.probetbwdl();
   int color = Bitboards.position & 1;
   int genmoves[maxmoves];
   int gencount = Bitboards.generatemoves(color, 0, genmoves);
@@ -672,8 +684,7 @@ int Searcher::iterative() {
           int nps = 1000 * (nodes /
                             std::max((uint64_t)1, (uint64_t)timetaken.count()));
           if (abs(score) <= SCORE_WIN) {
-            int printedscore =
-                searchoptions.normalizeeval ? normalize(score) : score;
+            int printedscore = displayscore(score);
             infoline << "info depth " << depth << " seldepth " << seldepth
                      << " nodes " << nodes << " nps " << nps << " tbhits "
                      << tbhits << " time " << timetaken.count() << " score cp "
@@ -718,8 +729,7 @@ int Searcher::iterative() {
           infoline.str("");
         }
         if (proto == "xboard") {
-          int printedscore =
-              searchoptions.normalizeeval ? normalize(score) : score;
+          int printedscore = displayscore(score);
           std::cout << depth << " " << printedscore << " "
                     << timetaken.count() / 10 << " " << totalnodes() << " ";
           for (int i = 1; i < pvtable[0][0]; i++) {
