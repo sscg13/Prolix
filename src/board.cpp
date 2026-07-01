@@ -1253,7 +1253,9 @@ int Board::probetbwdl() {
   int result = TB_probe_wdl(tbpos, &success);
   return success ? result : -3;
 }
-int Board::probetbdtz(int *success) {
+int Board::probetbdtz() {
+  int success = 0;
   settbpos();
-  return TB_probe_dtz(tbpos, success);
+  int result = TB_probe_dtz(tbpos, &success);
+  return success ? result : -10000;
 }

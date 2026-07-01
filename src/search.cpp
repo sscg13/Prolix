@@ -558,10 +558,11 @@ void Searcher::roottbprobe() {
   int bestrank = -1000000;
   for (int mov : candidates) {
     Bitboards.makemove(mov, true);
-    int success = 0;
+    bool success = false;
     int v = 0;
     if (Bitboards.halfmovecount() != 0) {
-      v = Bitboards.probetbdtz(&success);
+      v = Bitboards.probetbdtz();
+      success = (v > -10000);
       if (success) {
         if (v > 0) {
           v++;

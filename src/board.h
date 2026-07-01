@@ -55,7 +55,7 @@ public:
   int evaluate(int color);
   bool see_exceeds(int mov, int color, int threshold);
   int probetbwdl();
-  int probetbdtz(int *success);
+  int probetbdtz();
 };
 
 void initializeleaperattacks();
