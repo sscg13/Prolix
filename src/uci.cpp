@@ -138,7 +138,21 @@ void Engine::uci() {
     int winc = 0;
     int binc = 0;
     searchlimits = infinitesearch;
+    rootmoves.clear();
     while (tokens >> token) {
+      if (token == "searchmoves") {
+        int color = Bitboards.position & 1;
+        int genmoves[maxmoves];
+        int len = Bitboards.generatemoves(color, 0, genmoves);
+        while (tokens >> token) {
+          for (int j = 0; j < len; j++) {
+            if (algebraic(genmoves[j]) == token) {
+              rootmoves.push_back(genmoves[j]);
+              break;
+            }
+          }
+        }
+      }
       if (token == "wtime") {
         tokens >> token;
         wtime = std::stoi(token);

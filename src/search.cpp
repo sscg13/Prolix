@@ -54,6 +54,7 @@ void Searcher::syncwith(Engine &engine) {
   Bitboards.get_tbpos_pointer();
   searchlimits = engine.searchlimits;
   searchoptions = engine.searchoptions;
+  rootmoves = engine.rootmoves;
   eval.level = searchoptions.evallevel;
   eval.init(Bitboards);
 }
@@ -285,6 +286,16 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   movcount = Bitboards.generatemoves(color, 0, moves);
   if (movcount == 0) {
     return -1 * (SCORE_MATE - ply);
+  }
+  if (ply == 0 && !rootmoves.empty()) {
+    int filtered = 0;
+    for (int i = 0; i < movcount; i++) {
+      if (std::find(rootmoves.begin(), rootmoves.end(), moves[i]) !=
+          rootmoves.end()) {
+        moves[filtered++] = moves[i];
+      }
+    }
+    movcount = filtered;
   }
   int tbwdl = -3;
   int piececount =

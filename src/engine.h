@@ -24,6 +24,7 @@ class Engine {
   int bestmove = 0;
   Limits searchlimits;
   Options searchoptions;
+  std::vector<int> rootmoves;
   std::random_device rd;
   std::mt19937 mt;
   std::ofstream dataoutput;

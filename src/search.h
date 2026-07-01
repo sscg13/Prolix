@@ -46,6 +46,7 @@ class Searcher {
   int countermoves[6][64];
   std::atomic<bool> *stopsearch;
   int rootpiececount;
+  std::vector<int> rootmoves;
   int tbhits = 0;
   int seldepth = 0;
   abinfo searchstack[maxmaxdepth + 32];
