@@ -7,7 +7,10 @@ void PRF::load() {
   }
 }
 
-int PRF::evaluate(const int color, const U64 *Bitboards, const int *pieces) {
+int PRF::evaluate(Board &board) {
+  int color = board.position & 1;
+  const U64 *Bitboards = board.Bitboards;
+  const int *pieces = board.pieces;
   evals[0] = 0;
   evals[1] = 0;
   for (int i = 0; i < 2; i++) {

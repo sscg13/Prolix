@@ -1,98 +1,66 @@
 #include "eval.h"
+
+// Resolve a requested eval level to one that is actually available in this
+// build.  Levels 0-3 and 5 are always present; 4 (KP), 6 (PP), 7 (PPxK) and
+// 8 (NNUE) each require their weight file.  Anything unavailable (or out of
+// range) falls back to the highest level that exists (`topevallevel`).  This is
+// the single place the HAS_*FILE macros gate the level set.
+int resolveevallevel(int requested) {
+  bool ok = (requested >= 0 && requested <= 3) || requested == 5;
+#ifdef HAS_KPFILE
+  ok = ok || requested == 4;
+#endif
+#ifdef HAS_PPFILE
+  ok = ok || requested == 6;
+#endif
+#ifdef HAS_PPXKFILE
+  ok = ok || requested == 7;
+#endif
+#ifdef HAS_EVALFILE
+  ok = ok || requested == 8;
+#endif
+  return ok ? requested : topevallevel;
+}
+
+void Evaluator::setlevel(int requested) {
+  level = resolveevallevel(requested);
+  active = methods[level];
+}
+
 void Evaluator::load(EvalParams &params) {
+  methods[0] = &randomeval;
+  methods[1] = &material;
+  methods[2] = &PFR;
+  methods[3] = &PST;
+  methods[4] = &kp;
+  methods[5] = &hce;
+  methods[6] = &pp;
+  methods[7] = &ppxk;
+  methods[8] = &EUNN;
+
   PFR.load();
 #ifdef HAS_KPFILE
   kp.load();
+#endif
+#ifdef HAS_PPFILE
+  pp.load();
+#endif
+#ifdef HAS_PPXKFILE
+  ppxk.load();
 #endif
 #ifdef HAS_EVALFILE
   EUNN.load(params.nnueweights);
 #endif
 }
-void Evaluator::init(Board &Bitboards) {
-  switch (level) {
-  case 1:
-    break;
-  case 2:
-    break;
-  case 3:
-    break;
-  case 4:
-    break;
-  case 5:
-    break;
-  default:
-#ifdef HAS_EVALFILE
-    EUNN.initialize(Bitboards.Bitboards, Bitboards.pieces);
-#endif
-    break;
-  }
-}
+
+void Evaluator::init(Board &Bitboards) { active->init(Bitboards); }
+
 void Evaluator::make(int notation, Board &Bitboards) {
-  switch (level) {
-  case 0:
-    break;
-  case 1:
-    break;
-  case 2:
-    break;
-  case 3:
-    break;
-  case 4:
-    break;
-  case 5:
-    break;
-  default:
-#ifdef HAS_EVALFILE
-    EUNN.make(notation, Bitboards.Bitboards, Bitboards.pieces);
-#endif
-    break;
-  }
+  active->make(notation, Bitboards);
 }
+
 void Evaluator::unmake(int notation, Board &Bitboards) {
-  switch (level) {
-  case 0:
-    break;
-  case 1:
-    break;
-  case 2:
-    break;
-  case 3:
-    break;
-  case 4:
-    break;
-  case 5:
-    break;
-  default:
-#ifdef HAS_EVALFILE
-    EUNN.unmake(notation, Bitboards.Bitboards, Bitboards.pieces);
-#endif
-    break;
-  }
+  active->unmake(notation, Bitboards);
 }
-int Evaluator::evaluate(Board &Bitboards) {
-  int color = Bitboards.position & 1;
-  switch (level) {
-  case 0:
-    return Bitboards.zobristhash % 64;
-  case 1:
-    return Bitboards.piecevaluediff(color);
-  case 2:
-    return PFR.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
-  case 3:
-    return PST.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
-  case 4:
-#ifdef HAS_KPFILE
-    return kp.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
-#else
-    return Bitboards.evaluate(color);
-#endif
-  case 5:
-    return Bitboards.evaluate(color);
-  default:
-#ifdef HAS_EVALFILE
-    return EUNN.evaluate(color, Bitboards.Bitboards, Bitboards.pieces);
-#else
-    return Bitboards.evaluate(color);
-#endif
-  }
-}
+
+int Evaluator::evaluate(Board &Bitboards) { return active->evaluate(Bitboards); }

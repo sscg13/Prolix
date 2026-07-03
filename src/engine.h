@@ -1,6 +1,6 @@
 #include "board.h"
 #include "consts.h"
-#include "eval/nnue.h"
+#include "eval/nnue/nnue.h"
 #include "history.h"
 #include "search.h"
 #include "tt.h"

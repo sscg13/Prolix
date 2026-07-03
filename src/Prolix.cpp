@@ -1,6 +1,6 @@
 #include "board.h"
 #include "engine.h"
-#include "eval/nnue.h"
+#include "eval/nnue/nnue.h"
 #include "external/probetool/jtbinterface.h"
 extern std::string uciinfostring;
 std::string proto = "uci";
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
       std::cout << "Threads: " << threads << std::endl;
       std::cout << "Positions per thread: " << positions << std::endl;
       std::string leveldescription = [evallevel]() {
-        switch (evallevel) {
+        switch (resolveevallevel(evallevel)) {
         case 0:
           return "Random";
         case 1:
@@ -112,18 +112,16 @@ int main(int argc, char *argv[]) {
           return "Piece Rank + Piece File";
         case 3:
           return "Piece Square Table";
-#ifdef HAS_KPFILE
         case 4:
           return "King Bucketed Piece Square Table";
-#endif
-        case 5:
-          return "HCE";
-        default:
-#ifdef HAS_EVALFILE
+        case 6:
+          return "Piece Pair";
+        case 7:
+          return "Piece Pair x King";
+        case 8:
           return "NNUE";
-#else
+        default:
           return "HCE";
-#endif
         }
       }();
       std::cout << "Eval level: " << leveldescription << std::endl;

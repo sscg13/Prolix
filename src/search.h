@@ -1,7 +1,7 @@
 #include "board.h"
 #include "consts.h"
 #include "eval.h"
-#include "eval/nnue.h"
+#include "eval/nnue/nnue.h"
 #include "external/probetool/jtbprobe.h"
 #include "history.h"
 #include "tt.h"
@@ -31,11 +31,7 @@ struct Options {
   bool suppressoutput = false;
   bool useTB = false;
   bool TB70mr = true;
-#ifdef HAS_EVALFILE
-  int evallevel = 6;
-#else
-  int evallevel = 5;
-#endif
+  int evallevel = topevallevel;
 };
 class Searcher {
   History *Histories = new History;

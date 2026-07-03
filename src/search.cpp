@@ -55,7 +55,7 @@ void Searcher::syncwith(Engine &engine) {
   searchlimits = engine.searchlimits;
   searchoptions = engine.searchoptions;
   rootmoves = engine.rootmoves;
-  eval.level = searchoptions.evallevel;
+  eval.setlevel(searchoptions.evallevel);
   eval.init(Bitboards);
 }
 int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {

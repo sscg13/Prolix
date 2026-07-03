@@ -1,8 +1,12 @@
 EXE := Prolix
 EVALFILE := shatranj-net59.nnue
 KPFILE := shatranj-kp1.bin
+PPFILE := shatranj-pp1.bin
+PPXKFILE := shatranj-ppxk1.bin
 EVAL_EXISTS := $(wildcard $(EVALFILE))
 KP_EXISTS := $(wildcard $(KPFILE))
+PP_EXISTS := $(wildcard $(PPFILE))
+PPXK_EXISTS := $(wildcard $(PPXKFILE))
 ARCH := native
 TUNE := native
 DEBUG := no
@@ -25,10 +29,10 @@ ifeq ($(CXX), g++)
 endif
 
 ifeq ($(DEBUG), no)
-	CXXFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\"
+	CXXFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\" -DPPfile=\"$(PPFILE)\" -DPPXKfile=\"$(PPXKFILE)\"
 	CFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE)
 else
-	CXXFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\"
+	CXXFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\" -DPPfile=\"$(PPFILE)\" -DPPXKfile=\"$(PPXKFILE)\"
 	CFLAGS := -g -march=$(ARCH) -mtune=$(TUNE)
 endif
 
@@ -42,6 +46,12 @@ ifneq ($(EVAL_EXISTS),)
 endif
 ifneq ($(KP_EXISTS),)
 	CXXFLAGS += -DHAS_KPFILE
+endif
+ifneq ($(PP_EXISTS),)
+	CXXFLAGS += -DHAS_PPFILE
+endif
+ifneq ($(PPXK_EXISTS),)
+	CXXFLAGS += -DHAS_PPXKFILE
 endif
 
 LDFLAGS :=
@@ -57,7 +67,7 @@ $(EXE): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(OUT) $^
 	@echo "Build complete. Run with ./$(EXE)"
 
-$(BUILD_DIR)/eval/nnue.o: src/eval/nnue.cpp
+$(BUILD_DIR)/eval/nnue/nnue.o: src/eval/nnue/nnue.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -mno-avxvnni -c $< -o $@
 
