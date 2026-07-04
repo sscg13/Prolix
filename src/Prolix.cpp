@@ -102,28 +102,7 @@ int main(int argc, char *argv[]) {
       int hardnodes = atoi(argv[6]);
       std::cout << "Threads: " << threads << std::endl;
       std::cout << "Positions per thread: " << positions << std::endl;
-      std::string leveldescription = [evallevel]() {
-        switch (resolveevallevel(evallevel)) {
-        case 0:
-          return "Random";
-        case 1:
-          return "Material Count + Random";
-        case 2:
-          return "Piece Rank + Piece File";
-        case 3:
-          return "Piece Square Table";
-        case 4:
-          return "King Bucketed Piece Square Table";
-        case 6:
-          return "Piece Pair";
-        case 7:
-          return "Piece Pair x King";
-        case 8:
-          return "NNUE";
-        default:
-          return "HCE";
-        }
-      }();
+      std::string leveldescription = evallevelname(resolveevallevel(evallevel));
       std::cout << "Eval level: " << leveldescription << std::endl;
       std::cout << "Soft node limit: " << softnodes << std::endl;
       std::cout << "Hard node limit: " << hardnodes << std::endl;

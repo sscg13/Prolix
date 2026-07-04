@@ -22,6 +22,7 @@ constexpr int topevallevel = 5;
 #endif
 
 int resolveevallevel(int requested);
+const char *evallevelname(int level);
 
 struct EvalParams {
 #ifdef HAS_EVALFILE
@@ -30,14 +31,14 @@ struct EvalParams {
 };
 class Evaluator {
   RandomEval randomeval; // 0
-  MaterialEval material;  // 1
-  PRF PFR;                // 2
-  PSQT PST;               // 3
-  KP kp;                  // 4
-  HCEEval hce;            // 5
-  PP pp;                  // 6
-  PPXK ppxk;              // 7
-  NNUE EUNN;              // 8
+  MaterialEval material; // 1
+  PRF PFR;               // 2
+  PSQT PST;              // 3
+  KP kp;                 // 4
+  HCEEval hce;           // 5
+  PP pp;                 // 6
+  PPXK ppxk;             // 7
+  NNUE EUNN;             // 8
   // Level -> method table, filled in load().  The active method is selected by
   // setlevel and every operation dispatches through it, so the Evaluator needs
   // no per-level switch.  The pointers point into this object, so they must be

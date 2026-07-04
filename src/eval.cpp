@@ -22,6 +22,29 @@ int resolveevallevel(int requested) {
   return ok ? requested : topevallevel;
 }
 
+const char *evallevelname(int level) {
+  switch (level) {
+  case 0:
+    return "Random";
+  case 1:
+    return "Material Count + Random";
+  case 2:
+    return "Piece Rank + Piece File";
+  case 3:
+    return "Piece Square Table";
+  case 4:
+    return "King Bucketed Piece Square Table";
+  case 6:
+    return "Piece Pair";
+  case 7:
+    return "Piece Pair x King";
+  case 8:
+    return "NNUE";
+  default: // 5
+    return "HCE";
+  }
+}
+
 void Evaluator::setlevel(int requested) {
   level = resolveevallevel(requested);
   active = methods[level];
@@ -63,4 +86,6 @@ void Evaluator::unmake(int notation, Board &Bitboards) {
   active->unmake(notation, Bitboards);
 }
 
-int Evaluator::evaluate(Board &Bitboards) { return active->evaluate(Bitboards); }
+int Evaluator::evaluate(Board &Bitboards) {
+  return active->evaluate(Bitboards);
+}
