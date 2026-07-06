@@ -41,7 +41,7 @@ const char *evallevelname(int level) {
   case 8:
     return "NNUE";
   default: // 5
-    return "HCE";
+    return "Piece Square Table + Partially Safe Mobility";
   }
 }
 
