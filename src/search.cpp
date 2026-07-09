@@ -55,7 +55,7 @@ void Searcher::syncwith(Engine &engine) {
   searchlimits = engine.searchlimits;
   searchoptions = engine.searchoptions;
   rootmoves = engine.rootmoves;
-  eval.level = searchoptions.evallevel;
+  eval.setlevel(searchoptions.evallevel);
   eval.init(Bitboards);
 }
 int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
@@ -538,8 +538,8 @@ int Searcher::normalize(int eval) {
 }
 int Searcher::displayscore(int score) {
   if (abs(score) < SCORE_WIN && rootwdl > -3) {
-    int result = searchoptions.TB70mr ? (rootwdl / 2)
-                                       : ((rootwdl > 0) - (rootwdl < 0));
+    int result =
+        searchoptions.TB70mr ? (rootwdl / 2) : ((rootwdl > 0) - (rootwdl < 0));
     if (result != 0) {
       return (result > 0) ? SCORE_TB_WIN : -SCORE_TB_WIN;
     }
@@ -588,9 +588,9 @@ void Searcher::roottbprobe() {
       // where WDL is already exact): fall back to WDL for this move.
       int wdl = Bitboards.probetbwdl();
       success = (wdl > -3);
-      v = (wdl == 2)   ? 1
-          : (wdl == 1) ? 141
-          : (wdl == 0) ? 0
+      v = (wdl == 2)    ? 1
+          : (wdl == 1)  ? 141
+          : (wdl == 0)  ? 0
           : (wdl == -1) ? -141
                         : -1;
     }

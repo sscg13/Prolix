@@ -15,7 +15,10 @@ void KP::load() {
 #endif
 }
 
-int KP::evaluate(const int color, const U64 *Bitboards, const int *pieces) {
+int KP::evaluate(Board &board) {
+  int color = board.position & 1;
+  const U64 *Bitboards = board.Bitboards;
+  const int *pieces = board.pieces;
   int evals[2] = {0, 0};
 
   for (int c = 0; c < 2; c++) {

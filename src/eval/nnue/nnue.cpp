@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 #define INCBIN_PREFIX
-#include "../external/incbin/incbin.h"
+#include "../../external/incbin/incbin.h"
 
 #ifdef HAS_EVALFILE
 INCBIN(char, NNUE, EUNNfile);
@@ -437,29 +437,32 @@ void NNUE::load(NNUEWeights *EUNNweights) {
   accumulators.load(EUNNweights);
   layers.load(EUNNweights);
 }
-void NNUE::initialize(const U64 *Bitboards, const int *pieces) {
+void NNUE::init(Board &board) {
+  const U64 *Bitboards = board.Bitboards;
   totalmaterial = 0;
   for (int i = 0; i < 6; i++) {
     totalmaterial += material[i] * __builtin_popcountll(Bitboards[2 + i]);
   }
-  accumulators.initialize(Bitboards, pieces);
+  accumulators.initialize(Bitboards, board.pieces);
 }
-void NNUE::make(int notation, const U64 *Bitboards, const int *pieces) {
+void NNUE::make(int notation, Board &board) {
   int captured = (notation >> 17) & 7;
   if (captured > 0) {
     totalmaterial -= material[captured - 2];
   }
-  accumulators.make(notation, Bitboards, pieces);
+  accumulators.make(notation, board.Bitboards, board.pieces);
 }
-void NNUE::unmake(int notation, const U64 *Bitboards, const int *pieces) {
+void NNUE::unmake(int notation, Board &board) {
   int captured = (notation >> 17) & 7;
   if (captured > 0) {
     totalmaterial += material[captured - 2];
   }
-  accumulators.unmake(notation, Bitboards, pieces);
+  accumulators.unmake(notation, board.Bitboards, board.pieces);
 }
-int NNUE::evaluate(int color, const U64 *Bitboards, const int *pieces) {
+int NNUE::evaluate(Board &board) {
+  int color = board.position & 1;
   int bucket = std::min(totalmaterial / bucketdivisor, outputbuckets - 1);
-  const I16 *layerstackinput = accumulators.transform(color, Bitboards, pieces);
+  const I16 *layerstackinput =
+      accumulators.transform(color, board.Bitboards, board.pieces);
   return layers.propagate(bucket, color, layerstackinput);
 }

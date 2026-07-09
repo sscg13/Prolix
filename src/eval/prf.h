@@ -1,5 +1,6 @@
 #include "../board.h"
 #include "../consts.h"
+#include "evalmethod.h"
 #pragma once
 const int filetable[6][8] = {{40, 77, 75, 79, 99, 78, 76, 41},
                              {91, 65, 103, 69, 79, 92, 64, 64},
@@ -14,12 +15,12 @@ const int ranktable[6][8] = {{0, 50, 68, 64, 67, 61, 88, 0},
                              {717, 714, 699, 717, 742, 751, 763, 778},
                              {-18, -23, -4, 17, 24, 8, 5, -27}};
 
-class PRF {
+class PRF : public EvalMethod {
   int piecetable[6][64];
   int evals[2];
   int tempo = 3;
 
 public:
   void load();
-  int evaluate(const int color, const U64 *Bitboards, const int *pieces);
+  int evaluate(Board &board) override;
 };

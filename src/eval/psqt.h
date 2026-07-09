@@ -1,5 +1,6 @@
 #include "../board.h"
 #include "../consts.h"
+#include "evalmethod.h"
 #pragma once
 // clang-format off
 const int piecesquaretable[6][64] = {
@@ -11,10 +12,10 @@ const int piecesquaretable[6][64] = {
     {-20, 10, -7, 2, -4, -7, -13, -6, -37, -8, -6, -13, -15, -6, -3, -46, -42, -10, 9, 3, -5, 8, -14, -15, -47, 0, -9, 27, -2, 17, 11, -22, 12, 10, 35, -1, 14, 23, 52, 44, -13, 32, -20, -27, -8, 7, 17, 12, -13, -36, -49, -33, -54, -40, -1, -56, -118, -36, -50, -84, -73, -52, -32, -85}
 };
 // clang-format on
-class PSQT {
+class PSQT : public EvalMethod {
   int evals[2];
   int tempo = 3;
 
 public:
-  int evaluate(const int color, const U64 *Bitboards, const int *pieces);
+  int evaluate(Board &board) override;
 };

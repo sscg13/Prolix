@@ -9,11 +9,7 @@ std::string uciinfostring =
     "option name UCI_Variant type combo default shatranj var shatranj\n"
     "option name Threads type spin default 1 min 1 max 8\n"
     "option name Hash type spin default 32 min 1 max 1024\n"
-#ifdef HAS_EVALFILE
-    "option name EvalLevel type spin default 6 min 0 max 6\n"
-#else
-    "option name EvalLevel type spin default 5 min 0 max 5\n"
-#endif
+    "option name EvalLevel type spin default 8 min 0 max 8\n"
     "option name MinimalReporting type check default false\n"
     "option name NormalizeEval type check default true\n"
     "option name EvalFile type string default <internal>\n"
@@ -255,30 +251,7 @@ void Engine::uci() {
   }
   if (token == "eval") {
     master.syncwith(*this);
-    std::string leveldescription = [this]() {
-      switch (master.eval.level) {
-      case 0:
-        return "Random";
-      case 1:
-        return "Material Count + Random";
-      case 2:
-        return "Piece Rank + Piece File";
-      case 3:
-        return "Piece Square Table";
-#ifdef HAS_KPFILE
-      case 4:
-        return "King Bucketed Piece Square Table";
-#endif
-      case 5:
-        return "HCE";
-      default:
-#ifdef HAS_EVALFILE
-        return "NNUE";
-#else
-        return "HCE";
-#endif
-      }
-    }();
+    std::string leveldescription = evallevelname(master.eval.level);
     int eval = master.eval.evaluate(Bitboards);
     std::cout << "Evaluation level: " << leveldescription << "\n";
     std::cout << "Raw eval: " << eval << "\n";

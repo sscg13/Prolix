@@ -1,4 +1,5 @@
-#include "../consts.h"
+#include "../../consts.h"
+#include "../evalmethod.h"
 #include "arch.h"
 #include "layers.h"
 #include "threats.h"
@@ -167,7 +168,7 @@ using LayerStack = MultiLayerStack;
 using LayerStack = SingleLayerStack;
 #endif
 
-class NNUE {
+class NNUE : public EvalMethod {
   AccumulatorStack accumulators;
   LayerStack layers;
 
@@ -175,8 +176,8 @@ class NNUE {
 
 public:
   void load(NNUEWeights *EUNNweights);
-  void initialize(const U64 *Bitboards, const int *pieces);
-  void make(const int notation, const U64 *Bitboards, const int *pieces);
-  void unmake(const int notation, const U64 *Bitboards, const int *pieces);
-  int evaluate(const int color, const U64 *Bitboards, const int *pieces);
+  void init(Board &board) override;
+  void make(int notation, Board &board) override;
+  void unmake(int notation, Board &board) override;
+  int evaluate(Board &board) override;
 };
