@@ -1,9 +1,10 @@
 #include "board.h"
 #include "engine.h"
-#include "eval/nnue/nnue.h"
 #include "external/probetool/jtbinterface.h"
+#include <fstream>
 extern std::string uciinfostring;
 std::string proto = "uci";
+
 void Engine::bench() {
   std::string benchfens[14] = {
       "r5r1/1k6/1pqb4/1Bppn1p1/P1n1p2p/P1N1P2P/2KQ1p2/1RBR2N1 w - - 0 45",
