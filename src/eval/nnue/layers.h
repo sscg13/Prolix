@@ -146,10 +146,16 @@ template <int inputsize> struct PerspectiveWeights {
 };
 
 struct PerspectiveTransform {
-  __attribute__((target("avx512f,avx512bw"))) static void
+  __attribute__((target("avx512f,avx512bw,avx512vl"))) static void
   pairwise_avx512(const I16 *__restrict input, U8 *__restrict output,
-                  int color) {
+                  int color, BlockNNZInfo<activatedL1size> *nnz) {
     constexpr int halfL1 = L1size / 2;
+    const bool use_index_list = __builtin_cpu_supports("avx512vnni");
+    if (use_index_list) {
+      nnz->begin_avx512();
+    } else {
+      nnz->begin_avx2();
+    }
     const __m512i v_one = _mm512_set1_epi16(L1Q);
     const __m512i v_zero = _mm512_setzero_si512();
     const int16_t *in0_lo = &input[color * L1size];
@@ -181,12 +187,20 @@ struct PerspectiveTransform {
       __m512i res1_p2 = compute_avx512(c1, d1);
       __m512i p1 = _mm512_packus_epi16(res1_p1, res1_p2);
       _mm512_store_si512((__m512i *)&output[halfL1 + i], p1);
+      if (use_index_list) {
+        nnz->record_avx512(p0, i);
+        nnz->record_avx512(p1, halfL1 + i);
+      } else {
+        nnz->record_avx512_bitset(p0, i);
+        nnz->record_avx512_bitset(p1, halfL1 + i);
+      }
     }
   }
 
   static void pairwise_avx2(const I16 *__restrict input, U8 *__restrict output,
-                            int color) {
+                            int color, BlockNNZInfo<activatedL1size> *nnz) {
     constexpr int halfL1 = L1size / 2;
+    nnz->begin_avx2();
     const __m256i v_one = _mm256_set1_epi16(L1Q);
     const __m256i v_zero = _mm256_setzero_si256();
     const int16_t *in0_lo = &input[color * L1size];
@@ -216,16 +230,18 @@ struct PerspectiveTransform {
       __m256i res1_p2 = compute_avx2(c1, d1);
       __m256i p1 = _mm256_packus_epi16(res1_p1, res1_p2);
       _mm256_store_si256((__m256i *)&output[halfL1 + i], p1);
+      nnz->record_avx2(p0, i);
+      nnz->record_avx2(p1, halfL1 + i);
     }
   }
 
   static void transform(const I16 *__restrict input, U8 *__restrict output,
-                        int color) {
+                        int color, BlockNNZInfo<activatedL1size> *nnz) {
     if (pairwise) {
       if (__builtin_cpu_supports("avx512bw")) {
-        pairwise_avx512(input, output, color);
+        pairwise_avx512(input, output, color, nnz);
       } else {
-        pairwise_avx2(input, output, color);
+        pairwise_avx2(input, output, color, nnz);
       }
     } else if (perspectivecrelu) {
       for (int i = 0; i < L1size; i++) {
@@ -233,6 +249,7 @@ struct PerspectiveTransform {
         output[L1size + i] =
             (crelu<I16>(input[(color ^ 1) * L1size + i], L1Q) >> l1shiftbits);
       }
+      nnz->find(output);
     } else {
       for (int i = 0; i < L1size; i++) {
         output[i] = (crelu<I16>(input[color * L1size + i], L1Q) *
@@ -243,6 +260,7 @@ struct PerspectiveTransform {
              crelu<I16>(input[(color ^ 1) * L1size + i], L1Q)) >>
             l1shiftbits;
       }
+      nnz->find(output);
     }
   }
 };

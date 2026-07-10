@@ -83,6 +83,7 @@ struct SingleLayerStack {
 struct MultiLayerStack {
   MultiLayerWeights *weights;
   alignas(64) U8 layer1activated[activatedL1size];
+  BlockNNZInfo<activatedL1size> layer1nnz;
   alignas(64) I32 layer2raw[L2size];
   alignas(64) I32 layer2activated[activatedL2size];
   // alignas(64) I32 layer3raw[L3size];

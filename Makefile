@@ -1,5 +1,5 @@
 EXE := Prolix
-EVALFILE := shatranj-net59.nnue
+EVALFILE := shatranj-net60.nnue
 KPFILE := shatranj-kp1.bin
 PPFILE := shatranj-pp1.bin
 PPXKFILE := shatranj-ppxk1.bin
