@@ -249,7 +249,7 @@ struct PerspectiveTransform {
         output[L1size + i] =
             (crelu<I16>(input[(color ^ 1) * L1size + i], L1Q) >> l1shiftbits);
       }
-      nnz->find_scalar(output);
+      nnz->find(output);
     } else {
       for (int i = 0; i < L1size; i++) {
         output[i] = (crelu<I16>(input[color * L1size + i], L1Q) *
@@ -260,7 +260,7 @@ struct PerspectiveTransform {
              crelu<I16>(input[(color ^ 1) * L1size + i], L1Q)) >>
             l1shiftbits;
       }
-      nnz->find_scalar(output);
+      nnz->find(output);
     }
   }
 };

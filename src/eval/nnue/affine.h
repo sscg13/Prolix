@@ -38,23 +38,12 @@ template <int inputsize> struct BlockNNZInfo {
 
   void begin_avx512() { count = 0; }
 
-  void find_scalar(const U8 *input) {
-    if (__builtin_cpu_supports("avx512vnni")) {
-      begin_avx512();
-      for (int byte = 0; byte < inputsize; byte += 4) {
-        if (input[byte] | input[byte + 1] | input[byte + 2] |
-            input[byte + 3]) {
-          nnz[count++] = byte / 4;
-        }
-      }
-    } else {
-      begin_avx2();
-      for (int byte = 0; byte < inputsize; byte += 4) {
-        if (input[byte] | input[byte + 1] | input[byte + 2] |
-            input[byte + 3]) {
-          bitset[byte / 256] |= U64(1) << ((byte / 4) % 64);
-        }
-      }
+  __attribute__((target("avx2"))) void find_avx2(const U8 *input) {
+    begin_avx2();
+    for (int byte = 0; byte < inputsize; byte += 32) {
+      const __m256i values =
+          _mm256_load_si256((const __m256i *)(input + byte));
+      record_avx2(values, byte);
     }
   }
 
@@ -70,6 +59,24 @@ template <int inputsize> struct BlockNNZInfo {
         _mm512_maskz_compress_epi32(nonzero_blocks, indices);
     _mm512_mask_cvtepi32_storeu_epi16(nnz + count, 0xFFFF, live_indices);
     count += __builtin_popcount(nonzero_blocks);
+  }
+
+  __attribute__((target("avx512f,avx512bw,avx512vl"))) void
+  find_avx512(const U8 *input) {
+    begin_avx512();
+    for (int byte = 0; byte < inputsize; byte += 64) {
+      const __m512i values =
+          _mm512_load_si512((const __m512i *)(input + byte));
+      record_avx512(values, byte);
+    }
+  }
+
+  void find(const U8 *input) {
+    if (__builtin_cpu_supports("avx512vnni")) {
+      find_avx512(input);
+    } else {
+      find_avx2(input);
+    }
   }
 };
 
