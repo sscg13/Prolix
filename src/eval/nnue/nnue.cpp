@@ -418,8 +418,7 @@ int SingleLayerStack::propagate(int bucket, int color, const I16 *input) {
   return eval;
 }
 int MultiLayerStack::propagate(int bucket, int color, const I16 *input) {
-  PerspectiveTransform::transform(input, layer1activated, color);
-  layer1nnz.find(layer1activated);
+  PerspectiveTransform::transform(input, layer1activated, color, &layer1nnz);
   Layer2Affine::transform(layer1activated, layer2raw, &(weights->layer2weights),
                           bucket, &layer1nnz);
   Layer2Activation::transform(layer2raw, layer2activated, totalL2Q);

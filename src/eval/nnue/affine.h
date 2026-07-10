@@ -3,46 +3,73 @@
 #include <immintrin.h>
 #include <string.h>
 
-// One bit per consecutive four-byte input block. A set bit means that the
-// block contains at least one non-zero activation and must be evaluated.
+// AVX2 consumes one bit per consecutive four-byte input block. AVX-512 VNNI
+// consumes a compact list of the live block indices instead: that avoids a
+// ctz/bit-clear iteration in the hot affine loop.
 template <int inputsize> struct BlockNNZInfo {
   static_assert(inputsize % 4 == 0,
                 "Sparse affine input must consist of four-byte blocks");
   static constexpr int blockcount = inputsize / 4;
   static constexpr int wordcount = (blockcount + 63) / 64;
   alignas(64) U64 bitset[wordcount];
+  alignas(64) U16 nnz[blockcount];
+  int count;
 
-  __attribute__((target("avx2"))) void find_avx2(const U8 *input) {
+  void begin_avx2() { memset(bitset, 0, sizeof(bitset)); }
+
+  __attribute__((target("avx2"), always_inline)) void
+  record_avx2(__m256i values, int byte) {
     const __m256i zero = _mm256_setzero_si256();
-    memset(bitset, 0, sizeof(bitset));
-    for (int byte = 0; byte < inputsize; byte += 32) {
-      const __m256i values = _mm256_load_si256((const __m256i *)(input + byte));
-      const __m256i equals_zero = _mm256_cmpeq_epi32(values, zero);
-      const U64 nonzero_blocks =
-          U64((~_mm256_movemask_ps(_mm256_castsi256_ps(equals_zero))) & 0xFF);
-      const int block = byte / 4;
-      bitset[block / 64] |= nonzero_blocks << (block % 64);
-    }
+    const __m256i equals_zero = _mm256_cmpeq_epi32(values, zero);
+    const U64 nonzero_blocks =
+        U64((~_mm256_movemask_ps(_mm256_castsi256_ps(equals_zero))) & 0xFF);
+    const int block = byte / 4;
+    bitset[block / 64] |= nonzero_blocks << (block % 64);
   }
 
-  __attribute__((target("avx512f"))) void find_avx512(const U8 *input) {
+  __attribute__((target("avx512f"), always_inline)) void
+  record_avx512_bitset(__m512i values, int byte) {
     const __m512i zero = _mm512_setzero_si512();
-    memset(bitset, 0, sizeof(bitset));
-    for (int byte = 0; byte < inputsize; byte += 64) {
-      const __m512i values = _mm512_load_si512((const __m512i *)(input + byte));
-      const U64 nonzero_blocks =
-          U64(~_mm512_cmpeq_epi32_mask(values, zero) & 0xFFFF);
-      const int block = byte / 4;
-      bitset[block / 64] |= nonzero_blocks << (block % 64);
+    const U64 nonzero_blocks =
+        U64(_mm512_cmpneq_epi32_mask(values, zero));
+    const int block = byte / 4;
+    bitset[block / 64] |= nonzero_blocks << (block % 64);
+  }
+
+  void begin_avx512() { count = 0; }
+
+  void find_scalar(const U8 *input) {
+    if (__builtin_cpu_supports("avx512vnni")) {
+      begin_avx512();
+      for (int byte = 0; byte < inputsize; byte += 4) {
+        if (input[byte] | input[byte + 1] | input[byte + 2] |
+            input[byte + 3]) {
+          nnz[count++] = byte / 4;
+        }
+      }
+    } else {
+      begin_avx2();
+      for (int byte = 0; byte < inputsize; byte += 4) {
+        if (input[byte] | input[byte + 1] | input[byte + 2] |
+            input[byte + 3]) {
+          bitset[byte / 256] |= U64(1) << ((byte / 4) % 64);
+        }
+      }
     }
   }
 
-  void find(const U8 *input) {
-    if (__builtin_cpu_supports("avx512f")) {
-      find_avx512(input);
-    } else {
-      find_avx2(input);
-    }
+  __attribute__((target("avx512f,avx512bw,avx512vl"), always_inline)) void
+  record_avx512(__m512i values, int byte) {
+    const __m512i zero = _mm512_setzero_si512();
+    const __m512i indices = _mm512_add_epi32(
+        _mm512_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+                           15),
+        _mm512_set1_epi32(byte / 4));
+    const __mmask16 nonzero_blocks = _mm512_cmpneq_epi32_mask(values, zero);
+    const __m512i live_indices =
+        _mm512_maskz_compress_epi32(nonzero_blocks, indices);
+    _mm512_mask_cvtepi32_storeu_epi16(nnz + count, 0xFFFF, live_indices);
+    count += __builtin_popcount(nonzero_blocks);
   }
 };
 
@@ -88,20 +115,18 @@ template <int inputsize, int outputsize> struct SparseAffine {
       }
     }
     int dependency_chain = 0;
-    for (int word = 0; word < BlockNNZInfo<inputsize>::wordcount; word++) {
-      U64 blocks = nnz->bitset[word];
-      while (blocks) {
-        const int k = 64 * word + __builtin_ctzll(blocks);
-        blocks &= blocks - 1;
-        const __m512i in = _mm512_set1_epi32(*(const int32_t *)(&input[4 * k]));
-        for (int i = 0; i < numaccums; i++) {
-          const __m512i w =
-              _mm512_load_si512((__m512i *)(weightptr + k * numaccums + i));
-          sums[i][dependency_chain] =
-              _mm512_dpbusd_epi32(sums[i][dependency_chain], in, w);
-        }
-        dependency_chain = (dependency_chain + 1) & 3;
+    const U16 *index = nnz->nnz;
+    const U16 *end = index + nnz->count;
+    while (index != end) {
+      const int k = *index++;
+      const __m512i in = _mm512_set1_epi32(*(const int32_t *)(&input[4 * k]));
+      for (int i = 0; i < numaccums; i++) {
+        const __m512i w =
+            _mm512_load_si512((__m512i *)(weightptr + k * numaccums + i));
+        sums[i][dependency_chain] =
+            _mm512_dpbusd_epi32(sums[i][dependency_chain], in, w);
       }
+      dependency_chain = (dependency_chain + 1) & 3;
     }
     for (int i = 0; i < numaccums; i++) {
       __m512i sum01 = _mm512_add_epi32(sums[i][0], sums[i][1]);
