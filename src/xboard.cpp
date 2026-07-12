@@ -104,6 +104,7 @@ void Engine::xboard() {
         searchlimits.hardnodelimit = 0;
         master.syncwith(*this);
         int score = master.iterative();
+        Bitboards = master.Bitboards;
       }
     }
   }
@@ -112,6 +113,7 @@ void Engine::xboard() {
     searchlimits.hardnodelimit = 0;
     master.syncwith(*this);
     int score = master.iterative();
+    Bitboards = master.Bitboards;
     gosent = true;
   }
 }
