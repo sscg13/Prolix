@@ -10,7 +10,7 @@ void Engine::xboard() {
   }
   if (xcommand == "new") {
     initializett();
-    Bitboards.initialize();
+    Bitboards.parseFEN(startposFEN);
     gosent = false;
   }
   if (xcommand.substr(0, 8) == "setboard") {

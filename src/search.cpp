@@ -16,7 +16,8 @@ void initializelmr() {
 void Engine::startup() {
   searchlimits.maxdepth = maxmaxdepth;
   initializett();
-  Bitboards.initialize();
+  Bitboards.parseFEN(startposFEN);
+  Bitboards.ensure_tbpos_pointer();
   master.syncwith(*this);
   master.seedrng();
 }

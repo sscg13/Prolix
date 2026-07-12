@@ -36,13 +36,13 @@ void Engine::uci() {
   }
   if (token == "ucinewgame") {
     initializett();
-    Bitboards.initialize();
+    Bitboards.parseFEN(startposFEN);
   }
   if (token == "position") {
     std::string fen;
     tokens >> token;
     if (token == "startpos") {
-      fen = "rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR w - - 0 1";
+      fen = startposFEN;
     }
     if (token == "fen") {
       for (int i = 0; i < 6; i++) {
