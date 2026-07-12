@@ -729,7 +729,7 @@ int Searcher::iterative() {
           infoline.clear();
           infoline.str("");
         }
-        if (proto == "xboard") {
+        if (proto == "xboard" && !searchoptions.minimal) {
           int printedscore = displayscore(score);
           std::cout << depth << " " << printedscore << " "
                     << timetaken.count() / 10 << " " << totalnodes() << " ";
