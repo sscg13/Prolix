@@ -926,19 +926,38 @@ void Board::parseFEN(std::string FEN) {
     }
     tracker++;
   }
-  while (FEN[tracker] == ' ') {
+  while (tracker < (int)FEN.length() && FEN[tracker] == ' ') {
     tracker++;
   }
-  if (FEN[tracker] == 'b') {
+  if (tracker < (int)FEN.length() && FEN[tracker] == 'b') {
     color = 1;
   }
   position = color;
-  tracker += 6;
-  int halfmove = (int)(FEN[tracker]) - 48;
-  tracker++;
-  while (FEN[tracker] != ' ') {
-    halfmove = 10 * halfmove + (int)(FEN[tracker]) - 48;
+  while (tracker < (int)FEN.length() && FEN[tracker] != ' ') {
     tracker++;
+  }
+  int halfmove = 0;
+  while (tracker < (int)FEN.length()) {
+    while (tracker < (int)FEN.length() && FEN[tracker] == ' ') {
+      tracker++;
+    }
+    if (tracker >= (int)FEN.length()) {
+      break;
+    }
+    int tokenstart = tracker;
+    bool numeric = true;
+    while (tracker < (int)FEN.length() && FEN[tracker] != ' ') {
+      if (FEN[tracker] < '0' || FEN[tracker] > '9') {
+        numeric = false;
+      }
+      tracker++;
+    }
+    if (numeric && tracker > tokenstart) {
+      for (int i = tokenstart; i < tracker; i++) {
+        halfmove = 10 * halfmove + (int)(FEN[i]) - 48;
+      }
+      break;
+    }
   }
   position |= (halfmove << 1);
   zobristhash = scratchzobrist();
