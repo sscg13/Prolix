@@ -1,0 +1,6 @@
+*.exe
+*.nnue
+*.bin
+*.txt
+*.epd
+/build/

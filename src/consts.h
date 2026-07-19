@@ -36,3 +36,5 @@ const int EXPECTED_ALL_NODE = 2;
 const int EXPECTED_CUT_NODE = 1;
 constexpr int maxmaxdepth = 64;
 constexpr int maxmoves = 128;
+constexpr char startposFEN[] =
+    "rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR w - - 0 1";

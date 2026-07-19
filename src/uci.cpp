@@ -36,13 +36,13 @@ void Engine::uci() {
   }
   if (token == "ucinewgame") {
     initializett();
-    Bitboards.initialize();
+    Bitboards.parseFEN(startposFEN);
   }
   if (token == "position") {
     std::string fen;
     tokens >> token;
     if (token == "startpos") {
-      fen = "rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR w - - 0 1";
+      fen = startposFEN;
     }
     if (token == "fen") {
       for (int i = 0; i < 6; i++) {
@@ -78,19 +78,13 @@ void Engine::uci() {
     tokens >> token;
     tokens >> value;
     if (option == "Threads") {
-      threads = std::stoi(value);
+      setthreadcount(std::stoi(value));
     }
     if (option == "Hash") {
-      int sum = std::stoi(value);
-      if (sum <= 1024) {
-        int oldTTsize = TTsize;
-        TTsize = 65536 * sum;
-        TT.resize(TTsize);
-        TT.shrink_to_fit();
-      }
+      sethashsize(std::stoi(value));
     }
     if (option == "EvalLevel") {
-      searchoptions.evallevel = std::stoi(value);
+      setevallevel(std::stoi(value));
     }
 #ifdef HAS_EVALFILE
     if (option == "EvalFile") {
@@ -203,28 +197,7 @@ void Engine::uci() {
                    "nondeterministic behavior"
                 << std::endl;
     }
-    master.syncwith(*this);
-    threadnodecounts.reset(new PaddedNodeCount[threads]);
-    for (int i = 0; i < threads; i++) {
-      threadnodecounts[i].count.store(0, std::memory_order_relaxed);
-    }
-    master.sharednode = &threadnodecounts[0];
-    master.allnodes = threadnodecounts.get();
-    master.threadcount = threads;
-    if (threads > 1) {
-      std::vector<std::thread> workers(threads - 1);
-      for (int i = 0; i < threads - 1; i++) {
-        workers[i] = std::thread(&Engine::spawnworker, this, i + 1);
-      }
-      int score = master.iterative();
-      for (auto &thread : workers) {
-        if (thread.joinable()) {
-          thread.join();
-        }
-      }
-    } else {
-      int score = master.iterative();
-    }
+    runsearch(false);
   }
   if (token == "perft") {
     tokens >> token;
