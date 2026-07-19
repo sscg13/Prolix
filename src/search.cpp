@@ -28,6 +28,46 @@ void Engine::initializett() {
     TT[i].data = 0;
   }
 }
+void Engine::setthreadcount(int count) {
+  threads = std::max(1, std::min(count, 8));
+}
+void Engine::sethashsize(int megabytes) {
+  if (megabytes >= 1 && megabytes <= 1024) {
+    TTsize = 65536 * megabytes;
+    TT.resize(TTsize);
+    TT.shrink_to_fit();
+  }
+}
+void Engine::setevallevel(int level) {
+  searchoptions.evallevel = std::max(0, std::min(level, 8));
+}
+void Engine::runsearch(bool updateBoard) {
+  master.syncwith(*this);
+  threadnodecounts.reset(new PaddedNodeCount[threads]);
+  for (int i = 0; i < threads; i++) {
+    threadnodecounts[i].count.store(0, std::memory_order_relaxed);
+  }
+  master.sharednode = &threadnodecounts[0];
+  master.allnodes = threadnodecounts.get();
+  master.threadcount = threads;
+  if (threads > 1) {
+    std::vector<std::thread> workers(threads - 1);
+    for (int i = 0; i < threads - 1; i++) {
+      workers[i] = std::thread(&Engine::spawnworker, this, i + 1);
+    }
+    master.iterative();
+    for (auto &thread : workers) {
+      if (thread.joinable()) {
+        thread.join();
+      }
+    }
+  } else {
+    master.iterative();
+  }
+  if (updateBoard) {
+    Bitboards = master.Bitboards;
+  }
+}
 void Searcher::resetauxdata() {
   for (int i = 0; i < 6; i++) {
     for (int j = 0; j < 64; j++) {

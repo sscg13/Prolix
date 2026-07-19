@@ -32,6 +32,10 @@ class Engine {
   std::unique_ptr<PaddedNodeCount[]> threadnodecounts;
   Searcher master;
   void initializett();
+  void setthreadcount(int count);
+  void sethashsize(int megabytes);
+  void setevallevel(int level);
+  void runsearch(bool updateBoard);
 
 public:
   friend class Searcher;

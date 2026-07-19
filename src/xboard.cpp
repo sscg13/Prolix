@@ -33,44 +33,6 @@ void Engine::xboard() {
     return;
   }
 
-  auto setthreads = [this](int count) {
-    threads = std::max(1, std::min(count, 8));
-  };
-  auto sethash = [this](int megabytes) {
-    if (megabytes >= 1 && megabytes <= 1024) {
-      TTsize = 65536 * megabytes;
-      TT.resize(TTsize);
-      TT.shrink_to_fit();
-    }
-  };
-  auto setevallevel = [this](int level) {
-    searchoptions.evallevel = std::max(0, std::min(level, 8));
-  };
-  auto runsearch = [this]() {
-    master.syncwith(*this);
-    threadnodecounts.reset(new PaddedNodeCount[threads]);
-    for (int i = 0; i < threads; i++) {
-      threadnodecounts[i].count.store(0, std::memory_order_relaxed);
-    }
-    master.sharednode = &threadnodecounts[0];
-    master.allnodes = threadnodecounts.get();
-    master.threadcount = threads;
-    if (threads > 1) {
-      std::vector<std::thread> workers(threads - 1);
-      for (int i = 0; i < threads - 1; i++) {
-        workers[i] = std::thread(&Engine::spawnworker, this, i + 1);
-      }
-      int score = master.iterative();
-      for (auto &thread : workers) {
-        if (thread.joinable()) {
-          thread.join();
-        }
-      }
-    } else {
-      int score = master.iterative();
-    }
-    Bitboards = master.Bitboards;
-  };
   if (token == "new") {
     initializett();
     Bitboards.parseFEN(startposFEN);
@@ -115,14 +77,14 @@ void Engine::xboard() {
   if (token == "cores") {
     int count;
     if (tokens >> count) {
-      setthreads(count);
+      setthreadcount(count);
     }
     return;
   }
   if (token == "memory") {
     int megabytes;
     if (tokens >> megabytes) {
-      sethash(megabytes);
+      sethashsize(megabytes);
     }
     return;
   }
@@ -194,7 +156,7 @@ void Engine::xboard() {
   if (token == "go") {
     searchlimits.softnodelimit = 0;
     searchlimits.hardnodelimit = 0;
-    runsearch();
+    runsearch(true);
     gosent = true;
     return;
   }
@@ -216,7 +178,7 @@ void Engine::xboard() {
       if (gosent) {
         searchlimits.softnodelimit = 0;
         searchlimits.hardnodelimit = 0;
-        runsearch();
+        runsearch(true);
       }
     }
   }
