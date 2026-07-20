@@ -2,18 +2,7 @@
 
 #include <random>
 
-namespace {
-U64 piecekeys[2][6][64];
-constexpr U64 colorhash = 0xE344F58E0F3B26E5ULL;
-
-bool validpiece(int piece) {
-  int color = piece / 8;
-  int type = (piece % 8) - 2;
-  return color >= 0 && color < 2 && type >= 0 && type < 6;
-}
-
-bool validsquare(int square) { return square >= 0 && square < 64; }
-} // namespace
+U64 Zobrist::piecekeys[2][6][64];
 
 void initializezobrist() {
   std::mt19937_64 mt(20346892);
@@ -28,31 +17,44 @@ void initializezobrist() {
   for (int color = 0; color < 2; color++) {
     for (int type = 0; type < 6; type++) {
       for (int square = 0; square < 64; square++) {
-        piecekeys[color][type][square] =
+        Zobrist::piecekeys[color][type][square] =
             oldhashes[color][square] ^ oldhashes[type + 2][square];
       }
     }
   }
 }
 
-U64 Zobrist::piecekey(int piece, int square) {
-  if (!validpiece(piece) || !validsquare(square)) {
-    return 0ULL;
+void Zobrist::modmove(int notation) {
+  int from = notation & 63;
+  int to = (notation >> 6) & 63;
+  int color = (notation >> 12) & 1;
+  int piece = (notation >> 13) & 7;
+  int captured = (notation >> 17) & 7;
+  int movedpiece = piece;
+
+  if (notation & (1 << 20)) {
+    movedpiece = 4;
   }
 
-  return piecekeys[piece / 8][(piece % 8) - 2][square];
-}
+  int pieceindex = piece - 2;
+  int movedindex = movedpiece - 2;
+  U64 fromchange = piecekeys[color][pieceindex][from];
+  U64 tochange = piecekeys[color][movedindex][to];
 
-void Zobrist::modpiece(int piece, int square) {
-  if (!validpiece(piece) || !validsquare(square)) {
-    return;
+  if (pieceindex == movedindex) {
+    piecehash[color][pieceindex] ^= fromchange ^ tochange;
+  } else {
+    piecehash[color][pieceindex] ^= fromchange;
+    piecehash[color][movedindex] ^= tochange;
   }
+  totalhash ^= fromchange ^ tochange;
 
-  int color = piece / 8;
-  int type = (piece % 8) - 2;
-  U64 change = piecekeys[color][type][square];
-  piecehash[color][type] ^= change;
-  totalhash ^= change;
+  if (captured != 0) {
+    int capturedindex = captured - 2;
+    U64 capturechange = piecekeys[color ^ 1][capturedindex][to];
+    piecehash[color ^ 1][capturedindex] ^= capturechange;
+    totalhash ^= capturechange;
+  }
 }
 
 void Zobrist::modturn() { totalhash ^= colorhash; }
@@ -70,8 +72,13 @@ void Zobrist::reset(const int *pieces) {
   }
 
   for (int square = 0; square < 64; square++) {
-    if (validpiece(pieces[square])) {
-      modpiece(pieces[square], square);
+    int piece = pieces[square];
+    if (piece != 0) {
+      int color = piece / 8;
+      int type = (piece % 8) - 2;
+      U64 change = piecekeys[color][type][square];
+      piecehash[color][type] ^= change;
+      totalhash ^= change;
     }
   }
 }
@@ -86,17 +93,17 @@ U64 Zobrist::keyafter(int notation) const {
   int color = (notation >> 12) & 1;
   int piece = (notation >> 13) & 7;
   int captured = (notation >> 17) & 7;
-  int movedpiece = 8 * color + piece;
+  int movedpiece = piece;
 
   if (notation & (1 << 20)) {
-    movedpiece = 8 * color + 4;
+    movedpiece = 4;
   }
 
   U64 result = totalhash;
-  result ^= Zobrist::piecekey(8 * color + piece, from);
-  result ^= Zobrist::piecekey(movedpiece, to);
+  result ^= piecekeys[color][piece - 2][from];
+  result ^= piecekeys[color][movedpiece - 2][to];
   if (captured != 0) {
-    result ^= Zobrist::piecekey(8 * (color ^ 1) + captured, to);
+    result ^= piecekeys[color ^ 1][captured - 2][to];
   }
   result ^= colorhash;
   return result;

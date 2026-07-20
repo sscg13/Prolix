@@ -306,15 +306,7 @@ void Board::makemove(int notation, bool reversible) {
   pieces[to] = pieces[from];
   pieces[from] = 0;
   int captured = (notation >> 17) & 7;
-  zobriststate.modpiece(8 * color + piece, from);
-  if (notation & (1 << 16)) {
-    zobriststate.modpiece(8 * (color ^ 1) + captured, to);
-  }
-  int movedpiece = 8 * color + piece;
-  if (notation & (1 << 20)) {
-    movedpiece = 8 * color + 4;
-  }
-  zobriststate.modpiece(movedpiece, to);
+  zobriststate.modmove(notation);
   int halfmove = (position >> 1);
   position ^= (halfmove << 1);
   halfmove++;
@@ -365,19 +357,13 @@ void Board::unmakemove(int notation) {
   int to = (notation >> 6) & 63;
   int color = (notation >> 12) & 1;
   int piece = (notation >> 13) & 7;
-  int movedpiece = 8 * color + piece;
-  if (notation & (1 << 20)) {
-    movedpiece = 8 * color + 4;
-  }
-  zobriststate.modpiece(movedpiece, to);
-  zobriststate.modpiece(8 * color + piece, from);
+  int captured = (notation >> 17) & 7;
+  zobriststate.modmove(notation);
   Bitboards[color] ^= ((1ULL << from) | (1ULL << to));
   Bitboards[piece] ^= ((1ULL << from) | (1ULL << to));
   pieces[from] = pieces[to];
   pieces[to] = 0;
-  int captured = (notation >> 17) & 7;
   if (notation & (1 << 16)) {
-    zobriststate.modpiece(8 * (color ^ 1) + captured, to);
     Bitboards[color ^ 1] ^= (1ULL << to);
     Bitboards[captured] ^= (1ULL << to);
     pieces[to] = 8 * (color ^ 1) + captured;
