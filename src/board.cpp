@@ -11,8 +11,6 @@ U64 KnightAttacks[64];
 U64 RankMask[64];
 U64 FileMask[64];
 U64 RankAttacks[512];
-U64 hashes[8][64];
-const U64 colorhash = 0xE344F58E0F3B26E5;
 U64 shift_w(U64 bitboard) { return (bitboard & ~FileA) >> 1; }
 U64 shift_n(U64 bitboard) { return bitboard << 8; }
 U64 shift_s(U64 bitboard) { return bitboard >> 8; }
@@ -93,14 +91,6 @@ U64 GetRankAttacks(U64 occupied, int square) {
   int file = square & 7;
   int relevant = (occupied >> (row + 1)) & 63;
   return (RankAttacks[8 * relevant + file] << row);
-}
-void initializezobrist() {
-  std::mt19937_64 mt(20346892);
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 64; j++) {
-      hashes[i][j] = mt();
-    }
-  }
 }
 std::string algebraic(int notation) {
   std::string convert[64] = {
@@ -236,18 +226,11 @@ void Board::ensure_tbpos_pointer() {
 }
 void Board::free_tbpos_pointer() { TBitf_free_position(tbpos); }
 U64 Board::scratchzobrist() {
-  U64 scratch = 0ULL;
-  for (int i = 0; i < 64; i++) {
-    int piece = pieces[i];
-    if (piece > 0) {
-      scratch ^= hashes[piece / 8][i];
-      scratch ^= hashes[piece % 8][i];
-    }
-  }
+  zobriststate.reset(pieces);
   if (position & 1) {
-    scratch ^= colorhash;
+    zobriststate.modturn();
   }
-  return scratch;
+  return zobriststate.totalhash;
 }
 int Board::repetitions() {
   int repeats = 0;
@@ -290,33 +273,23 @@ U64 Board::checkers(int color) {
 void Board::makenullmove() {
   gamelength++;
   int halfmove = (position >> 1) & 127;
-  zobristhash ^= colorhash;
+  zobriststate.modturn();
   position ^= (halfmove << 1);
   halfmove++;
   position ^= (halfmove << 1);
   position ^= 1;
+  zobristhash = zobriststate.totalhash;
   zobrist[gamelength] = zobristhash;
   history[gamelength] = position;
 }
 void Board::unmakenullmove() {
   gamelength--;
   position = history[gamelength];
-  zobristhash = zobrist[gamelength];
+  zobriststate.modturn();
+  zobristhash = zobriststate.totalhash;
 }
 U64 Board::keyafter(int notation) {
-  int from = notation & 63;
-  int to = (notation >> 6) & 63;
-  int color = (notation >> 12) & 1;
-  int piece = (notation >> 13) & 7;
-  int captured = (notation >> 17) & 7;
-  int promoted = (notation >> 20) & 1;
-  int piece2 = (promoted > 0) ? 4 : piece;
-  U64 change = (colorhash ^ hashes[color][from] ^ hashes[color][to] ^
-                hashes[piece][from] ^ hashes[piece2][to]);
-  if (captured) {
-    change ^= (hashes[color ^ 1][to] ^ hashes[captured][to]);
-  }
-  return zobristhash ^ change;
+  return zobriststate.keyafter(notation);
 }
 void Board::makemove(int notation, bool reversible) {
   // 6 bits from square, 6 bits to square, 1 bit color, 3 bits piece moved, 1
@@ -332,9 +305,16 @@ void Board::makemove(int notation, bool reversible) {
   Bitboards[piece] ^= ((1ULL << from) | (1ULL << to));
   pieces[to] = pieces[from];
   pieces[from] = 0;
-  zobristhash ^= (hashes[color][from] ^ hashes[color][to]);
-  zobristhash ^= (hashes[piece][from] ^ hashes[piece][to]);
   int captured = (notation >> 17) & 7;
+  zobriststate.modpiece(8 * color + piece, from);
+  if (notation & (1 << 16)) {
+    zobriststate.modpiece(8 * (color ^ 1) + captured, to);
+  }
+  int movedpiece = 8 * color + piece;
+  if (notation & (1 << 20)) {
+    movedpiece = 8 * color + 4;
+  }
+  zobriststate.modpiece(movedpiece, to);
   int halfmove = (position >> 1);
   position ^= (halfmove << 1);
   halfmove++;
@@ -348,7 +328,6 @@ void Board::makemove(int notation, bool reversible) {
   if (notation & (1 << 16)) {
     Bitboards[color ^ 1] ^= (1ULL << to);
     Bitboards[captured] ^= (1ULL << to);
-    zobristhash ^= (hashes[color ^ 1][to] ^ hashes[captured][to]);
     evalm[color ^ 1] -= materialm[captured - 2];
     evale[color ^ 1] -= materiale[captured - 2];
     gamephase[color ^ 1] -= phase[captured - 2];
@@ -361,7 +340,6 @@ void Board::makemove(int notation, bool reversible) {
     Bitboards[2] ^= (1ULL << to);
     Bitboards[4] ^= (1ULL << to);
     pieces[to] = 8 * color + 4;
-    zobristhash ^= (hashes[2][to] ^ hashes[4][to]);
     evalm[color] -= materialm[0];
     evalm[color] += materialm[2];
     evale[color] -= materiale[0];
@@ -374,7 +352,8 @@ void Board::makemove(int notation, bool reversible) {
   }
   position ^= 1;
   position ^= (halfmove << 1);
-  zobristhash ^= colorhash;
+  zobriststate.modturn();
+  zobristhash = zobriststate.totalhash;
   history[gamelength] = position;
   zobrist[gamelength] = zobristhash;
   nodecount++;
@@ -382,17 +361,23 @@ void Board::makemove(int notation, bool reversible) {
 void Board::unmakemove(int notation) {
   gamelength--;
   position = history[gamelength];
-  zobristhash = zobrist[gamelength];
   int from = notation & 63;
   int to = (notation >> 6) & 63;
   int color = (notation >> 12) & 1;
   int piece = (notation >> 13) & 7;
+  int movedpiece = 8 * color + piece;
+  if (notation & (1 << 20)) {
+    movedpiece = 8 * color + 4;
+  }
+  zobriststate.modpiece(movedpiece, to);
+  zobriststate.modpiece(8 * color + piece, from);
   Bitboards[color] ^= ((1ULL << from) | (1ULL << to));
   Bitboards[piece] ^= ((1ULL << from) | (1ULL << to));
   pieces[from] = pieces[to];
   pieces[to] = 0;
   int captured = (notation >> 17) & 7;
   if (notation & (1 << 16)) {
+    zobriststate.modpiece(8 * (color ^ 1) + captured, to);
     Bitboards[color ^ 1] ^= (1ULL << to);
     Bitboards[captured] ^= (1ULL << to);
     pieces[to] = 8 * (color ^ 1) + captured;
@@ -411,6 +396,8 @@ void Board::unmakemove(int notation) {
     gamephase[color] -= phase[2];
     gamephase[color] += phase[0];
   }
+  zobriststate.modturn();
+  zobristhash = zobriststate.totalhash;
 }
 int Board::generatemoves(int color, bool capturesonly, int *movelist) {
   int movecount = 0;

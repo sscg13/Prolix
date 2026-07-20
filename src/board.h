@@ -1,10 +1,12 @@
 #include "consts.h"
+#include "zobrist.h"
 #include <algorithm>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
+#include <vector>
 #pragma once
 using U64 = uint64_t;
 using U8 = uint8_t;
@@ -17,6 +19,7 @@ class Board {
   int mobilitym[2] = {0, 0};
   int mobilitye[2] = {0, 0};
   U64 zobrist[1024];
+  Zobrist zobriststate;
   int history[1024];
   int root = 0;
   TB_Position *tbpos = nullptr;
