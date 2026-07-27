@@ -4,7 +4,7 @@
 #include <cstdlib>
 
 constexpr int pawncorrectionbonuslimit = 256;
-constexpr int pawncorrectionweight = 150;
+constexpr int pawncorrectionweight = 120;
 constexpr int pawncorrectionscale = 1024;
 
 int pawncorrectionbonus(int searchEval, int correctedEval, int depth) {
