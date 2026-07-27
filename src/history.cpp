@@ -3,6 +3,15 @@
 #include <cstring>
 #include <cstdlib>
 
+constexpr int pawncorrectionbonuslimit = 256;
+constexpr int pawncorrectionweight = 150;
+constexpr int pawncorrectionscale = 1024;
+
+int pawncorrectionbonus(int searchEval, int correctedEval, int depth) {
+  return std::clamp((searchEval - correctedEval) * depth * 12 / 128,
+                    -pawncorrectionbonuslimit, pawncorrectionbonuslimit);
+}
+
 void History::reset() {
   memset(quiethistory, 0, sizeof(quiethistory));
   memset(noisyhistory, 0, sizeof(noisyhistory));
@@ -85,6 +94,7 @@ void History::updatepawncorrection(U64 pawnkey, int color, int bonus) {
   pawncorrection[color][index] = value;
 }
 
-int History::pawncorrectionscore(U64 pawnkey, int color) const {
-  return pawncorrection[color][pawnkey & (pawncorrectionsize - 1)];
+int History::pawncorrectionscore(U64 pawnkey, int color) {
+  return pawncorrection[color][pawnkey & (pawncorrectionsize - 1)] *
+         pawncorrectionweight / pawncorrectionscale;
 }

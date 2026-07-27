@@ -4,13 +4,6 @@ int quiet_reductions[maxmaxdepth][maxmoves];
 int noisy_reductions[maxmaxdepth][maxmoves];
 std::chrono::time_point<std::chrono::steady_clock> start =
     std::chrono::steady_clock::now();
-constexpr int pawncorrectionweight = 15341;
-constexpr int pawncorrectionscale = 131072;
-constexpr int pawncorrectionbonuslimit = 256;
-int pawncorrectionbonus(int searchEval, int correctedEval, int depth) {
-  return std::clamp((searchEval - correctedEval) * depth * 12 / 128,
-                    -pawncorrectionbonuslimit, pawncorrectionbonuslimit);
-}
 bool iscapture(int notation) { return ((notation >> 16) & 1); }
 void initializelmr() {
   for (int i = 0; i < maxmaxdepth; i++) {
@@ -138,7 +131,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   }
   int pawncorrection = Histories->pawncorrectionscore(
       Bitboards.pawnkey(), color);
-  staticeval += pawncorrection * pawncorrectionweight / pawncorrectionscale;
+  staticeval += pawncorrection;
   int score = staticeval;
   if ((!isPV && tthit) &&
       ((tteval > score) ? (ttnodetype & EXPECTED_CUT_NODE)
@@ -322,7 +315,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   }
   int pawncorrection = Histories->pawncorrectionscore(
       Bitboards.pawnkey(), color);
-  staticeval += pawncorrection * pawncorrectionweight / pawncorrectionscale;
+  staticeval += pawncorrection;
   ttcorreval = staticeval;
   if (tthit && ttdepth < depth) {
     int ttnodetype = ttentry.nodetype();
@@ -506,7 +499,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
           if (score >= beta) {
             if (!(*stopsearch)) {
               if (!incheck && !iscapture(mov) && staticeval < beta &&
-                  std::abs(score) < SCORE_TB_WIN) {
+                  std::abs(score) < SCORE_MAX_EVAL) {
                 Histories->updatepawncorrection(
                     Bitboards.pawnkey(), color,
                     pawncorrectionbonus(score, staticeval, depth));
@@ -578,7 +571,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   bestscore = std::min(std::max(bestscore, mintbscore), maxtbscore);
   if (!(*stopsearch) && !incheck && !improvedalpha && bestmove1 >= 0 &&
       !iscapture(moves[bestmove1]) && staticeval > alpha &&
-      std::abs(bestscore) < SCORE_TB_WIN) {
+      std::abs(bestscore) < SCORE_MAX_EVAL) {
     Histories->updatepawncorrection(
         Bitboards.pawnkey(), color,
         pawncorrectionbonus(bestscore, staticeval, depth));
