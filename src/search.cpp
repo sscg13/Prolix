@@ -272,7 +272,6 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   int rawstaticeval;
   int staticeval;
   int ttcorreval;
-  bool ttcorrevalfromscore = false;
   bool improving = false;
   int quiets = 0;
   if (!isPV) {
@@ -310,12 +309,6 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
           (margin < 500)) {
         return (score + beta) / 2;
       }
-      bool ttcorr = (score > staticeval && (ttnodetype & EXPECTED_CUT_NODE)) ||
-                    (score < staticeval && (ttnodetype & EXPECTED_ALL_NODE));
-      if (ttcorr) {
-        ttcorreval = score;
-        ttcorrevalfromscore = true;
-      }
       ttnmpgood = (score >= beta + 50 - 10 * (depth - ttdepth) ||
                    ttnodetype == EXPECTED_CUT_NODE);
     }
@@ -330,8 +323,14 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   int pawncorrection = Histories->pawncorrectionscore(
       Bitboards.pawnkey(), color);
   staticeval += pawncorrection * pawncorrectionweight / pawncorrectionscale;
-  if (!ttcorrevalfromscore) {
-    ttcorreval = staticeval;
+  ttcorreval = staticeval;
+  if (tthit && ttdepth < depth) {
+    int ttnodetype = ttentry.nodetype();
+    bool ttcorr = (score > staticeval && (ttnodetype & EXPECTED_CUT_NODE)) ||
+                  (score < staticeval && (ttnodetype & EXPECTED_ALL_NODE));
+    if (ttcorr) {
+      ttcorreval = score;
+    }
   }
   if (ply > 1) {
     improving = (staticeval > searchstack[ply - 2].eval);
@@ -577,7 +576,8 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     }
   }
   bestscore = std::min(std::max(bestscore, mintbscore), maxtbscore);
-  if (!incheck && !improvedalpha && staticeval > alpha &&
+  if (!(*stopsearch) && !incheck && !improvedalpha && bestmove1 >= 0 &&
+      !iscapture(moves[bestmove1]) && staticeval > alpha &&
       std::abs(bestscore) < SCORE_TB_WIN) {
     Histories->updatepawncorrection(
         Bitboards.pawnkey(), color,
