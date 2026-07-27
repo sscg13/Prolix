@@ -1,10 +1,13 @@
 #include "history.h"
+#include <algorithm>
 #include <cstring>
+#include <cstdlib>
 
 void History::reset() {
   memset(quiethistory, 0, sizeof(quiethistory));
   memset(noisyhistory, 0, sizeof(noisyhistory));
   memset(conthist, 0, sizeof(conthist));
+  memset(pawncorrection, 0, sizeof(pawncorrection));
 }
 
 int History::movescore(int move) {
@@ -70,4 +73,18 @@ void History::updateconthist(int priormove, int move, int bonus) {
                            contlimit)
             : bonus;
   }
+}
+
+void History::updatepawncorrection(U64 pawnkey, int color, int bonus) {
+  int index = pawnkey & (pawncorrectionsize - 1);
+  int clampedbonus = std::max(-pawncorrectionlimit,
+                              std::min(pawncorrectionlimit, bonus));
+  int value = pawncorrection[color][index];
+  value += clampedbonus -
+           value * std::abs(clampedbonus) / pawncorrectionlimit;
+  pawncorrection[color][index] = value;
+}
+
+int History::pawncorrectionscore(U64 pawnkey, int color) const {
+  return pawncorrection[color][pawnkey & (pawncorrectionsize - 1)];
 }

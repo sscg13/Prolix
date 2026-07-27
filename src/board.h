@@ -38,6 +38,7 @@ public:
   void ensure_tbpos_pointer();
   void free_tbpos_pointer();
   U64 scratchzobrist();
+  U64 pawnkey();
   int repetitions();
   int halfmovecount();
   bool twokings();

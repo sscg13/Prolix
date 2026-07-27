@@ -232,6 +232,7 @@ U64 Board::scratchzobrist() {
   }
   return zobriststate.totalhash;
 }
+U64 Board::pawnkey() { return zobriststate.pawnhash(); }
 int Board::repetitions() {
   int repeats = 0;
   for (int i = gamelength - 2; i >= 0; i -= 2) {

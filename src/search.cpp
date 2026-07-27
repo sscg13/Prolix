@@ -4,6 +4,13 @@ int quiet_reductions[maxmaxdepth][maxmoves];
 int noisy_reductions[maxmaxdepth][maxmoves];
 std::chrono::time_point<std::chrono::steady_clock> start =
     std::chrono::steady_clock::now();
+constexpr int pawncorrectionweight = 15341;
+constexpr int pawncorrectionscale = 131072;
+constexpr int pawncorrectionbonuslimit = 256;
+int pawncorrectionbonus(int searchEval, int correctedEval, int depth) {
+  return std::clamp((searchEval - correctedEval) * depth * 12 / 128,
+                    -pawncorrectionbonuslimit, pawncorrectionbonuslimit);
+}
 bool iscapture(int notation) { return ((notation >> 16) & 1); }
 void initializelmr() {
   for (int i = 0; i < maxmaxdepth; i++) {
@@ -106,9 +113,12 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   bool tthit = ((ttentry.key >> 16) == (Bitboards.zobristhash >> 16));
   int tteval;
   int ttnodetype;
+  int color = Bitboards.position & 1;
+  int rawstaticeval;
   int staticeval;
   if (tthit) {
-    staticeval = ttentry.staticeval();
+    rawstaticeval = ttentry.staticeval();
+    staticeval = rawstaticeval;
     if (!isPV) {
       tteval = std::min(std::max(ttentry.score(0), -SCORE_WIN), SCORE_WIN);
       ttnodetype = ttentry.nodetype();
@@ -123,9 +133,12 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
       }
     }
   } else {
-    staticeval = eval.evaluate(Bitboards);
+    rawstaticeval = eval.evaluate(Bitboards);
+    staticeval = rawstaticeval;
   }
-  int color = Bitboards.position & 1;
+  int pawncorrection = Histories->pawncorrectionscore(
+      Bitboards.pawnkey(), color);
+  staticeval += pawncorrection * pawncorrectionweight / pawncorrectionscale;
   int score = staticeval;
   if ((!isPV && tthit) &&
       ((tteval > score) ? (ttnodetype & EXPECTED_CUT_NODE)
@@ -175,7 +188,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
       if (score >= beta) {
         if (!tthit) {
           ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0, ply,
-                         false, score, staticeval, EXPECTED_CUT_NODE, mov);
+                         false, score, rawstaticeval, EXPECTED_CUT_NODE, mov);
         }
         return score;
       }
@@ -213,7 +226,7 @@ int Searcher::quiesce(int alpha, int beta, int ply, bool isPV) {
   }
   if (!tthit) {
     ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, 0, ply,
-                   (savednodetype == EXPECTED_PV_NODE), score, staticeval,
+                   (savednodetype == EXPECTED_PV_NODE), score, rawstaticeval,
                    EXPECTED_CUT_NODE, bestmove1);
   }
   return bestscore;
@@ -256,8 +269,10 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   bool incheck = (Bitboards.checkers(color) != 0ULL);
   bool isPV = (nodetype == EXPECTED_PV_NODE);
   bool isttPV = isPV;
+  int rawstaticeval;
   int staticeval;
   int ttcorreval;
+  bool ttcorrevalfromscore = false;
   bool improving = false;
   int quiets = 0;
   if (!isPV) {
@@ -269,14 +284,12 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
   }
   if (tthit) {
     score = ttentry.score(ply);
-    staticeval = ttentry.staticeval();
+    rawstaticeval = ttentry.staticeval();
+    staticeval = rawstaticeval;
     ttcorreval = staticeval;
     ttmove = ttentry.hashmove();
     int ttnodetype = ttentry.nodetype();
     isttPV |= ttentry.isttPV();
-    if (ply > 1) {
-      improving = (staticeval > searchstack[ply - 2].eval);
-    }
     if (ttdepth >= depth) {
       if (!isPV && Bitboards.repetitions() == 0) {
         if (ttnodetype == EXPECTED_PV_NODE) {
@@ -301,6 +314,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
                     (score < staticeval && (ttnodetype & EXPECTED_ALL_NODE));
       if (ttcorr) {
         ttcorreval = score;
+        ttcorrevalfromscore = true;
       }
       ttnmpgood = (score >= beta + 50 - 10 * (depth - ttdepth) ||
                    ttnodetype == EXPECTED_CUT_NODE);
@@ -309,11 +323,18 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     if (depth >= 3) {
       depth--;
     }
-    staticeval = eval.evaluate(Bitboards);
+    rawstaticeval = eval.evaluate(Bitboards);
+    staticeval = rawstaticeval;
     ttcorreval = staticeval;
-    if (ply > 1) {
-      improving = (staticeval > searchstack[ply - 2].eval);
-    }
+  }
+  int pawncorrection = Histories->pawncorrectionscore(
+      Bitboards.pawnkey(), color);
+  staticeval += pawncorrection * pawncorrectionweight / pawncorrectionscale;
+  if (!ttcorrevalfromscore) {
+    ttcorreval = staticeval;
+  }
+  if (ply > 1) {
+    improving = (staticeval > searchstack[ply - 2].eval);
   }
   searchstack[ply].eval = staticeval;
   int margin = std::max(20 * isttPV, 70 * depth - 70 * improving);
@@ -356,7 +377,7 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
           (ttnodetype == EXPECTED_CUT_NODE && tbscore >= beta) ||
           (ttnodetype == EXPECTED_ALL_NODE && tbscore <= alpha)) {
         ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
-                       isttPV, tbscore, staticeval, ttnodetype, 0);
+                       isttPV, tbscore, rawstaticeval, ttnodetype, 0);
         return tbscore;
       }
       if (isPV) {
@@ -485,9 +506,15 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
         if (score > alpha) {
           if (score >= beta) {
             if (!(*stopsearch)) {
+              if (!incheck && !iscapture(mov) && staticeval < beta &&
+                  std::abs(score) < SCORE_TB_WIN) {
+                Histories->updatepawncorrection(
+                    Bitboards.pawnkey(), color,
+                    pawncorrectionbonus(score, staticeval, depth));
+              }
               if (update) {
                 ttentry.update(Bitboards.zobristhash, Bitboards.gamelength,
-                               depth, ply, isttPV, score, staticeval,
+                               depth, ply, isttPV, score, rawstaticeval,
                                EXPECTED_CUT_NODE, mov);
               }
               if (!iscapture(mov) && (killers[ply][0] != mov)) {
@@ -550,11 +577,17 @@ int Searcher::alphabeta(int depth, int ply, int alpha, int beta, bool nmp,
     }
   }
   bestscore = std::min(std::max(bestscore, mintbscore), maxtbscore);
+  if (!incheck && !improvedalpha && staticeval > alpha &&
+      std::abs(bestscore) < SCORE_TB_WIN) {
+    Histories->updatepawncorrection(
+        Bitboards.pawnkey(), color,
+        pawncorrectionbonus(bestscore, staticeval, depth));
+  }
   int realnodetype = improvedalpha ? EXPECTED_PV_NODE : EXPECTED_ALL_NODE;
   int savedmove = improvedalpha ? moves[bestmove1] : ttmove;
   if (((update || (realnodetype == EXPECTED_PV_NODE)) && !(*stopsearch))) {
     ttentry.update(Bitboards.zobristhash, Bitboards.gamelength, depth, ply,
-                   isttPV, bestscore, staticeval, realnodetype, savedmove);
+                   isttPV, bestscore, rawstaticeval, realnodetype, savedmove);
   }
   return bestscore;
 }
