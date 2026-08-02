@@ -4,7 +4,7 @@
 
 // clang-format off
 std::string uciinfostring =
-    "id name Prolix\n"
+    "id name Prolix " PROLIX_VERSION "\n"
     "id author sscg13\n"
     "option name UCI_Variant type combo default shatranj var shatranj\n"
     "option name Threads type spin default 1 min 1 max 8\n"

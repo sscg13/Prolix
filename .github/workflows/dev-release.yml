@@ -35,6 +35,9 @@ jobs:
       subject: ${{ steps.check.outputs.subject }}
       build_id: ${{ steps.check.outputs.build_id }}
       nets_md: ${{ steps.check.outputs.nets_md }}
+      date_slash: ${{ steps.check.outputs.date_slash }}
+      date_compact: ${{ steps.check.outputs.date_compact }}
+      built_at: ${{ steps.check.outputs.built_at }}
     steps:
       - id: check
         env:
@@ -75,6 +78,15 @@ jobs:
             echo "Neither main nor the nets have changed; nothing to do."
             echo "should_build=false" >> "$GITHUB_OUTPUT"
           fi
+
+          # One clock read for the whole run. The date ends up in three places
+          # -- the name compiled into the binary, the asset filename, and the
+          # release title -- and jobs run minutes apart on different machines,
+          # so reading the clock in each would let them disagree across midnight.
+          now=$(date -u '+%s')
+          echo "date_slash=$(date -u -d "@$now" '+%m/%d/%y')" >> "$GITHUB_OUTPUT"
+          echo "date_compact=$(date -u -d "@$now" '+%m%d%y')" >> "$GITHUB_OUTPUT"
+          echo "built_at=$(date -u -d "@$now" '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
 
           echo "sha=$head" >> "$GITHUB_OUTPUT"
           echo "short_sha=${head:0:7}" >> "$GITHUB_OUTPUT"
@@ -148,19 +160,29 @@ jobs:
       - name: Build
         run: |
           make -j STRICT_NETS=yes \
-            EXE=Prolix-${{ matrix.name }} \
+            EXE=Prolix-${{ needs.check.outputs.date_compact }}-${{ matrix.name }} \
             SUFFIX='${{ matrix.ext }}' \
+            VERSION='${{ needs.check.outputs.date_slash }}' \
             ARCH=x86-64-v3 TUNE=generic
 
       # Safe on any runner: both the Intel and AMD pools GitHub allocates from
       # have AVX2, and nothing above v3 is baked into the binary.
       - name: Bench
-        run: ./Prolix-${{ matrix.name }}${{ matrix.ext }} bench
+        run: ./Prolix-${{ needs.check.outputs.date_compact }}-${{ matrix.name }}${{ matrix.ext }} bench
+
+      # Cheap guard against the exe name and the compiled-in name drifting apart.
+      - name: Check reported name
+        run: |
+          set -euo pipefail
+          expected='id name Prolix ${{ needs.check.outputs.date_slash }}'
+          actual=$(printf 'uci\nquit\n' | ./Prolix-${{ needs.check.outputs.date_compact }}-${{ matrix.name }}${{ matrix.ext }} | head -n1 | tr -d '\r')
+          echo "reported: $actual"
+          [ "$actual" = "$expected" ] || { echo "expected: $expected" >&2; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Prolix-${{ matrix.name }}
-          path: Prolix-${{ matrix.name }}${{ matrix.ext }}
+          name: Prolix-${{ needs.check.outputs.date_compact }}-${{ matrix.name }}
+          path: Prolix-${{ needs.check.outputs.date_compact }}-${{ matrix.name }}${{ matrix.ext }}
           if-no-files-found: error
 
   publish:
@@ -191,15 +213,19 @@ jobs:
           SUBJECT: ${{ needs.check.outputs.subject }}
           BUILD_ID: ${{ needs.check.outputs.build_id }}
           NETS_MD: ${{ needs.check.outputs.nets_md }}
+          BUILT_AT: ${{ needs.check.outputs.built_at }}
+          STAMP: ${{ needs.check.outputs.date_compact }}
         run: |
+          set -euo pipefail
           cat > notes.md <<EOF
-          Rolling development build. Overwritten in place whenever \`main\` moves,
-          so the download links are stable but the binaries behind them are not.
+          Rolling development build, overwritten in place whenever \`main\` or the
+          nets change. The filenames carry the build date, so a link to a specific
+          day's binary stops working once the next build replaces it.
 
           | Download | For |
           | --- | --- |
-          | \`Prolix-linux\` | Linux x86-64 |
-          | \`Prolix-windows.exe\` | Windows x86-64 |
+          | \`Prolix-$STAMP-linux\` | Linux x86-64 |
+          | \`Prolix-$STAMP-windows.exe\` | Windows x86-64 |
 
           **Requires a CPU with AVX2 and FMA** (Intel Haswell / AMD Excavator or
           newer, roughly 2013+). There is no non-AVX2 build; older CPUs will
@@ -209,8 +235,11 @@ jobs:
           select between AVX2 and AVX-512 VNNI at runtime, so AVX-512 hardware
           gets the faster path automatically with nothing to choose.
 
+          The engine reports itself as \`Prolix ${{ needs.check.outputs.date_slash }}\`
+          over both UCI and xboard, so a build can be identified from inside a GUI.
+
           **Commit:** \`$SHORT_SHA\` — $SUBJECT
-          **Built:** $(date -u '+%Y-%m-%d %H:%M UTC')
+          **Built:** $BUILT_AT
 
           Compiled-in weights:
 
@@ -222,17 +251,28 @@ jobs:
       - name: Create or update the release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TITLE: "Prolix ${{ needs.check.outputs.date_slash }} (${{ needs.check.outputs.short_sha }})"
         run: |
           set -euo pipefail
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release edit "$RELEASE_TAG" \
-              --title "Development build ${{ needs.check.outputs.short_sha }}" \
+              --title "$RELEASE_TITLE" \
               --notes-file notes.md \
               --prerelease
           else
             gh release create "$RELEASE_TAG" \
-              --title "Development build ${{ needs.check.outputs.short_sha }}" \
+              --title "$RELEASE_TITLE" \
               --notes-file notes.md \
               --prerelease
           fi
+
+          # Asset names now carry the build date, so --clobber no longer replaces
+          # yesterday's binaries -- it would only ever add alongside them, and the
+          # rolling release would grow by ~40 MB a day. Clear it out first.
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' \
+            | while read -r stale; do
+                echo "removing stale asset $stale"
+                gh release delete-asset "$RELEASE_TAG" "$stale" --yes
+              done
+
           gh release upload "$RELEASE_TAG" dist/* --clobber

@@ -12,6 +12,11 @@ TUNE := native
 DEBUG := no
 BUILD_DIR := build
 
+# Build date (UTC, not local) baked into the engine name for UCI and xboard.
+# CI overrides this so the embedded date, the exe name and the release title all
+# come from one timestamp instead of three separate clock reads.
+VERSION ?= $(shell date -u '+%m/%d/%y')
+
 # Where `make net` pulls weight files from.  Single, permanently-edited release
 # acting as an asset bucket; add a new net with
 #   gh release upload nets shatranj-netNN.nnue
@@ -34,10 +39,10 @@ ifeq ($(CXX), g++)
 endif
 
 ifeq ($(DEBUG), no)
-	CXXFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\" -DPPfile=\"$(PPFILE)\" -DPPXKfile=\"$(PPXKFILE)\"
+	CXXFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\" -DPPfile=\"$(PPFILE)\" -DPPXKfile=\"$(PPXKFILE)\" -DPROLIX_VERSION=\"$(VERSION)\"
 	CFLAGS := -O3 -march=$(ARCH) -mtune=$(TUNE)
 else
-	CXXFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\" -DPPfile=\"$(PPFILE)\" -DPPXKfile=\"$(PPXKFILE)\"
+	CXXFLAGS := -g -march=$(ARCH) -mtune=$(TUNE) -std=c++17 -static -pthread -DEUNNfile=\"$(EVALFILE)\" -DKPfile=\"$(KPFILE)\" -DPPfile=\"$(PPFILE)\" -DPPXKfile=\"$(PPXKFILE)\" -DPROLIX_VERSION=\"$(VERSION)\"
 	CFLAGS := -g -march=$(ARCH) -mtune=$(TUNE)
 endif
 

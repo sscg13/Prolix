@@ -1,5 +1,13 @@
 #include <cstdint>
 #pragma once
+
+// Build date (UTC) reported as part of the engine name over UCI and xboard.
+// The Makefile passes -DPROLIX_VERSION; this fallback only covers builds that
+// bypass it, so an engine calling itself "dev" was compiled by hand.
+#ifndef PROLIX_VERSION
+#define PROLIX_VERSION "dev"
+#endif
+
 using U64 = uint64_t;
 using U16 = uint16_t;
 using U8 = uint8_t;
