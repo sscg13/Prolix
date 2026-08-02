@@ -27,7 +27,7 @@ void Engine::xboard() {
     std::cout << "feature ping=1 setboard=1 analyze=0 sigint=0 sigterm=0 "
                  "colors=0 draw=0 smp=1 memory=1\n"
                  "feature option=\"EvalLevel -spin 8 0 8\"\n"
-                 "feature myname=\"Prolix\" variants=\"shatranj\"\n"
+                 "feature myname=\"Prolix " PROLIX_VERSION "\" variants=\"shatranj\"\n"
                  "feature done=1"
               << std::endl;
     return;
