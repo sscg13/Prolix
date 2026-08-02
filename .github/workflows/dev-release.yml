@@ -95,6 +95,12 @@ jobs:
     needs: check
     if: needs.check.outputs.should_build == 'true'
     runs-on: ${{ matrix.os }}
+    # Must live here, not on the individual steps: the step-level `shell` key is
+    # not an expression position, so `shell: ${{ matrix.shell }}` there is a
+    # workflow parse error. jobs.<id>.defaults.run does accept `matrix`.
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     strategy:
       fail-fast: false
       # One binary per OS. The NNUE kernels select AVX2 vs AVX-512 VNNI at
@@ -133,7 +139,6 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
 
       - name: Fetch nets
-        shell: ${{ matrix.shell }}
         run: make net
 
       # STRICT_NETS turns a missing weight file into a build failure instead of
@@ -141,7 +146,6 @@ jobs:
       # than left to the Makefile's $(OS) check, which depends on the shell
       # exporting OS=Windows_NT and otherwise yields an extension-less binary.
       - name: Build
-        shell: ${{ matrix.shell }}
         run: |
           make -j STRICT_NETS=yes \
             EXE=Prolix-${{ matrix.name }} \
@@ -151,7 +155,6 @@ jobs:
       # Safe on any runner: both the Intel and AMD pools GitHub allocates from
       # have AVX2, and nothing above v3 is baked into the binary.
       - name: Bench
-        shell: ${{ matrix.shell }}
         run: ./Prolix-${{ matrix.name }}${{ matrix.ext }} bench
 
       - uses: actions/upload-artifact@v4

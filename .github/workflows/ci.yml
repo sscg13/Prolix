@@ -14,6 +14,12 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    # Must live here, not on the individual steps: the step-level `shell` key is
+    # not an expression position, so `shell: ${{ matrix.shell }}` there is a
+    # workflow parse error. jobs.<id>.defaults.run does accept `matrix`.
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     strategy:
       fail-fast: false
       matrix:
@@ -43,14 +49,12 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
 
       - name: Fetch nets
-        shell: ${{ matrix.shell }}
         run: make net
 
       # SUFFIX is pinned rather than left to the Makefile's $(OS) check, which
       # depends on the shell exporting OS=Windows_NT and quietly produces an
       # extension-less binary when it does not.
       - name: Build
-        shell: ${{ matrix.shell }}
         run: |
           make -j STRICT_NETS=yes \
             EXE=Prolix-${{ matrix.name }} \
@@ -58,7 +62,6 @@ jobs:
             ARCH=x86-64-v3 TUNE=generic
 
       - name: Bench
-        shell: ${{ matrix.shell }}
         run: ./Prolix-${{ matrix.name }}${{ matrix.ext }} bench
 
       - uses: actions/upload-artifact@v4
