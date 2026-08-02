@@ -1,0 +1,238 @@
+name: Dev release
+
+on:
+  schedule:
+    # 0000 UTC daily. Scheduled runs can be delayed or dropped entirely when
+    # GitHub is busy, which is why `check` diffs against a fingerprint recorded
+    # on the existing release rather than using a 24h time window -- a skipped
+    # night then just means the next run picks up two days of changes.
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild even if main has not moved"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dev-release
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: dev
+
+jobs:
+  check:
+    name: Check for new commits
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+      sha: ${{ steps.check.outputs.sha }}
+      short_sha: ${{ steps.check.outputs.short_sha }}
+      subject: ${{ steps.check.outputs.subject }}
+      build_id: ${{ steps.check.outputs.build_id }}
+      nets_md: ${{ steps.check.outputs.nets_md }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          repo=${{ github.repository }}
+
+          # Split the subject out with jq rather than `| head -n1`: under
+          # pipefail, head closing the pipe early SIGPIPEs gh and fails the step.
+          commit=$(gh api "repos/$repo/commits/main")
+          head=$(jq -r .sha <<<"$commit")
+          subject=$(jq -r '.commit.message | split("\n")[0]' <<<"$commit")
+
+          # A net can be replaced under the same filename without main moving,
+          # which changes the binary just as much as a commit does. So the
+          # identity of a build is the commit *plus* the content of every net.
+          # GitHub exposes a sha256 per release asset; keying on that rather
+          # than updated_at means re-uploading identical bytes is a no-op.
+          # Source archives are not in .assets[], so nothing to filter out.
+          assets=$(gh api "repos/$repo/releases/tags/nets" \
+                     --jq '[.assets[] | "\(.name) \(.digest)"] | sort | .[]' 2>/dev/null || true)
+          build_id=$(printf '%s\n%s\n' "$head" "$assets" | sha256sum | cut -d' ' -f1)
+
+          # Marker written into the release body by the publish job below.
+          built=$(gh release view "$RELEASE_TAG" --repo "$repo" --json body --jq .body 2>/dev/null \
+                  | sed -n 's/.*prolix-build-id: \([0-9a-f]\{64\}\).*/\1/p' || true)
+
+          echo "main is at $head"
+          echo "nets:"
+          echo "${assets:-  (none -- the nets release is missing or empty)}"
+          echo "build id $build_id vs published ${built:-<no existing release>}"
+
+          if [ "$FORCE" = "true" ] || [ "$build_id" != "${built:-}" ]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Neither main nor the nets have changed; nothing to do."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "sha=$head" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${head:0:7}" >> "$GITHUB_OUTPUT"
+          echo "subject=$subject" >> "$GITHUB_OUTPUT"
+          echo "build_id=$build_id" >> "$GITHUB_OUTPUT"
+
+          # Nets can change without a commit, so the notes have to name them --
+          # otherwise two dev builds are indistinguishable to whoever downloads.
+          {
+            echo "nets_md<<PROLIX_EOF"
+            gh api "repos/$repo/releases/tags/nets" \
+              --jq '[.assets[] | "- `\(.name)` `\(.digest[7:19])`"] | sort | .[]' 2>/dev/null || true
+            echo "PROLIX_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.name }}
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ${{ matrix.os }}
+    # Must live here, not on the individual steps: the step-level `shell` key is
+    # not an expression position, so `shell: ${{ matrix.shell }}` there is a
+    # workflow parse error. jobs.<id>.defaults.run does accept `matrix`.
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    strategy:
+      fail-fast: false
+      # One binary per OS. The NNUE kernels select AVX2 vs AVX-512 VNNI at
+      # runtime via __builtin_cpu_supports (src/eval/nnue/affine.h), so a
+      # separate AVX-512 build would only differ in search/movegen codegen.
+      #
+      # x86-64-v3 is the floor, not a preference: none of the multiversioned
+      # kernels has a scalar fallback, and transform_avx2 is target("avx2,fma"),
+      # so a pre-AVX2 CPU has nothing to dispatch to and would SIGILL.
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+            shell: bash
+            ext: ""
+          - name: windows
+            os: windows-latest
+            shell: "msys2 {0}"
+            ext: ".exe"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check.outputs.sha }}
+
+      - name: Set up MSYS2
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make
+            curl
+            mingw-w64-ucrt-x86_64-clang
+            mingw-w64-ucrt-x86_64-gcc
+
+      - name: Fetch nets
+        run: make net
+
+      # STRICT_NETS turns a missing weight file into a build failure instead of
+      # a quietly HCE-only binary shipped as a release.  SUFFIX is pinned rather
+      # than left to the Makefile's $(OS) check, which depends on the shell
+      # exporting OS=Windows_NT and otherwise yields an extension-less binary.
+      - name: Build
+        run: |
+          make -j STRICT_NETS=yes \
+            EXE=Prolix-${{ matrix.name }} \
+            SUFFIX='${{ matrix.ext }}' \
+            ARCH=x86-64-v3 TUNE=generic
+
+      # Safe on any runner: both the Intel and AMD pools GitHub allocates from
+      # have AVX2, and nothing above v3 is baked into the binary.
+      - name: Bench
+        run: ./Prolix-${{ matrix.name }}${{ matrix.ext }} bench
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Prolix-${{ matrix.name }}
+          path: Prolix-${{ matrix.name }}${{ matrix.ext }}
+          if-no-files-found: error
+
+  publish:
+    name: Update dev prerelease
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check.outputs.sha }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Move the dev tag
+        run: |
+          set -euo pipefail
+          git tag -f "$RELEASE_TAG" "${{ needs.check.outputs.sha }}"
+          git push -f origin "refs/tags/$RELEASE_TAG"
+
+      # Commit subjects reach the shell through env, not ${{ }} interpolation --
+      # a backtick or $( in a commit message would otherwise be executed here.
+      - name: Write release notes
+        env:
+          SHORT_SHA: ${{ needs.check.outputs.short_sha }}
+          SUBJECT: ${{ needs.check.outputs.subject }}
+          BUILD_ID: ${{ needs.check.outputs.build_id }}
+          NETS_MD: ${{ needs.check.outputs.nets_md }}
+        run: |
+          cat > notes.md <<EOF
+          Rolling development build. Overwritten in place whenever \`main\` moves,
+          so the download links are stable but the binaries behind them are not.
+
+          | Download | For |
+          | --- | --- |
+          | \`Prolix-linux\` | Linux x86-64 |
+          | \`Prolix-windows.exe\` | Windows x86-64 |
+
+          **Requires a CPU with AVX2 and FMA** (Intel Haswell / AMD Excavator or
+          newer, roughly 2013+). There is no non-AVX2 build; older CPUs will
+          crash with an illegal instruction rather than fall back.
+
+          One binary covers every supported CPU: the NNUE inference kernels
+          select between AVX2 and AVX-512 VNNI at runtime, so AVX-512 hardware
+          gets the faster path automatically with nothing to choose.
+
+          **Commit:** \`$SHORT_SHA\` — $SUBJECT
+          **Built:** $(date -u '+%Y-%m-%d %H:%M UTC')
+
+          Compiled-in weights:
+
+          $NETS_MD
+
+          <!-- prolix-build-id: $BUILD_ID -->
+          EOF
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" \
+              --title "Development build ${{ needs.check.outputs.short_sha }}" \
+              --notes-file notes.md \
+              --prerelease
+          else
+            gh release create "$RELEASE_TAG" \
+              --title "Development build ${{ needs.check.outputs.short_sha }}" \
+              --notes-file notes.md \
+              --prerelease
+          fi
+          gh release upload "$RELEASE_TAG" dist/* --clobber

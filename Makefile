@@ -12,6 +12,11 @@ TUNE := native
 DEBUG := no
 BUILD_DIR := build
 
+# Where `make net` pulls weight files from.  Single, permanently-edited release
+# acting as an asset bucket; add a new net with
+#   gh release upload nets shatranj-netNN.nnue
+NET_BASE_URL ?= https://github.com/sscg13/Prolix/releases/download/nets
+
 rwildcard = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
 C_SRCS := $(call rwildcard,src,*.c)
@@ -40,6 +45,19 @@ CXXFLAGS += -MMD -MP
 CFLAGS += -MMD -MP
 
 DEPS := $(OBJS:.o=.d)
+
+# The HAS_*FILE gates below silently downgrade the engine when a weight file is
+# absent (see resolveevallevel in src/eval.cpp -- no EVALFILE means topevallevel
+# drops from 8 to 5).  That is the right default for local hacking and dead
+# wrong for a release, so STRICT_NETS=yes turns a missing net into a hard error.
+ifeq ($(STRICT_NETS), yes)
+ifeq ($(EVAL_EXISTS),)
+$(error STRICT_NETS=yes but EVALFILE '$(EVALFILE)' is missing -- run `make net` first)
+endif
+ifeq ($(KP_EXISTS),)
+$(error STRICT_NETS=yes but KPFILE '$(KPFILE)' is missing -- run `make net` first)
+endif
+endif
 
 ifneq ($(EVAL_EXISTS),)
 	CXXFLAGS += -DHAS_EVALFILE
@@ -81,5 +99,17 @@ $(BUILD_DIR)/%.o: src/%.c
 
 -include $(DEPS)
 
+# Weight files are gitignored and live on the `nets` release.  EVALFILE and
+# KPFILE are required; PPFILE and PPXKFILE are experimental and simply skipped
+# when the release has no such asset.
+#
+# The HAS_*FILE wildcards above are expanded when make parses this file, so
+# `make net` has to be its own invocation:  make net && make
+net:
+	@bash scripts/fetch-nets.sh "$(NET_BASE_URL)" required $(EVALFILE) $(KPFILE)
+	@bash scripts/fetch-nets.sh "$(NET_BASE_URL)" optional $(PPFILE) $(PPXKFILE)
+
 clean:
 	rm -rf $(BUILD_DIR)
+
+.PHONY: net clean
